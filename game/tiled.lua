@@ -3,6 +3,7 @@ local xml = require "pl.xml"
 local tablex = require "pl.tablex"
 local ffi = require "ffi"
 local floor = math.floor
+local tonumber = tonumber
 local love = love
 local LD = love.data
 local LFS = love.filesystem
@@ -144,7 +145,8 @@ margin='$margin' tilecount='$tilecount' columns='$columns'/>
 	parseChildren(tileset, doc, function(tileset, tag, parsed)
 		if parsed then
 			if tag == "tile" then
-				tileset[#tileset + 1] = parsed
+				local tileid = tonumber(parsed.id) or parsed.id
+				tileset[tileid] = parsed
 			else
 				tileset[tag] = parsed
 			end
