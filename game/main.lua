@@ -287,7 +287,8 @@ function love.load()
 	}
 	LW.setMode(window_width, window_height, window_flags)
 	newObject(Level)
-	pretty.dump(tiled.load("title.tmx"))
+	local map = tiled.load("title.tmx")
+	LFS.write("title.tmx.lua", pretty.write(map))
 end
 
 local stats = {}
