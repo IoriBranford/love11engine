@@ -172,6 +172,9 @@ opacity='$opacity' visible='$visible' offsetx='$offsetx' offsety='$offsety'/>
 end
 
 local function decodeData(gids, data, encoding, compression)
+	if not data then
+		return
+	end
 	if encoding == "base64" then
 		data = LD.decode("data", encoding, data)
 	end
@@ -184,7 +187,6 @@ local function decodeData(gids, data, encoding, compression)
 	for i = 0, n-1 do
 		gids[#gids + 1] = pointer[i]
 	end
-	return gids
 end
 
 function Parsers.chunk(doc)
@@ -195,7 +197,7 @@ end
 
 function Parsers.data(doc)
 	local data = doc:match([[
-<data encoding='$encoding' compression='$compression'>$data</data>
+<data encoding='$encoding' compression='$compression'/>
 	]])
 	local encoding = data.encoding
 	local compression = data.compression
