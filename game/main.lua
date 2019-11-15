@@ -9,6 +9,7 @@
 --@field beginContact
 --@table ShmupObject
 
+local LFS = love.filesystem
 local LG = love.graphics
 local LJ = love.joystick
 local LK = love.keyboard
@@ -271,7 +272,10 @@ function Level:init()
 end
 
 function love.load()
-	LJ.loadGamepadMappings("gamecontrollerdb.txt")
+	local gamepadfile = "gamecontrollerdb.txt"
+	if LFS.getInfo(gamepadfile) then
+		LJ.loadGamepadMappings(gamepadfile)
+	end
 
 	local window_width = 480
 	local window_height = 640
