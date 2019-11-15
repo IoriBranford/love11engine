@@ -65,7 +65,6 @@ function Engine.newObject(...)
 	local id = nextid
 	nextid = nextid + 1
 	object.id = id
-	objects[id] = object
 	newobjects[#newobjects + 1] = object
 
 	return object
@@ -90,9 +89,10 @@ local function initNewObjects()
 	local i = 1
 	while i <= #newobjects do
 		local object = newobjects[i]
+		local id = object.id
+		objects[id] = object
 		object:init()
 
-		local id = object.id
 		local think = object.think
 		if think then
 			objectsthink[id] = true
