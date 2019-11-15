@@ -203,13 +203,14 @@ function Parsers.data(doc)
 				data[#data + 1] = parsed
 				decodeData(parsed, parsed.data,
 					encoding, compression)
+				parsed.data = nil
 			else
 				data[tag] = parsed
 			end
 		end
 	end)
 	decodeData(data, data.data, encoding, compression)
-	pretty.dump(data)
+	data.data = nil
 	return data
 end
 
