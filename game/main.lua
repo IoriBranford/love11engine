@@ -25,6 +25,8 @@ local sin = math.sin
 local cos = math.cos
 local pi = math.pi
 
+local pretty = require "pl.pretty"
+local tiled = require("tiled")
 local engine = require "engine"
 local newObject = engine.newObject
 local getObject = engine.getObject
@@ -285,7 +287,7 @@ function love.load()
 	}
 	LW.setMode(window_width, window_height, window_flags)
 	newObject(Level)
-	require("tiled").load("title.tmx")
+	pretty.dump(tiled.load("title.tmx"))
 end
 
 local stats = {}
