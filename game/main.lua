@@ -9,6 +9,7 @@
 --@field beginContact
 --@table ShmupObject
 
+local love = love
 local LFS = love.filesystem
 local LG = love.graphics
 local LJ = love.joystick
@@ -284,6 +285,7 @@ function love.load()
 	}
 	LW.setMode(window_width, window_height, window_flags)
 	newObject(Level)
+	require("tiled").load("title.tmx")
 end
 
 local stats = {}
