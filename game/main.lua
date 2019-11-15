@@ -9,12 +9,15 @@
 --@field beginContact
 --@table ShmupObject
 
+local LG = love.graphics
 local LJ = love.joystick
 local LK = love.keyboard
 local LM = love.math
 local LP = love.physics
+local LT = love.timer
 local LW = love.window
 
+local floor = math.floor
 local sqrt = math.sqrt
 local sin = math.sin
 local cos = math.cos
@@ -277,4 +280,19 @@ function love.load()
 	}
 	LW.setMode(window_width, window_height, window_flags)
 	newObject(Level)
+end
+
+function love.draw(fraction)
+	LG.setLineStyle("rough")
+	LG.getFont():setFilter("nearest", "nearest")
+	LG.scale(2)
+	engine.debugDrawBoundingBoxes(fraction)
+
+	local font = LG.getFont()
+	local fps = LT.getFPS()
+	local lgw = LG.getWidth()
+	local mem = floor(collectgarbage("count"))
+	LG.origin()
+	LG.printf(fps.." fps", 0, 0, lgw, "right")
+	LG.printf(mem.." kb", 0, font:getHeight(), lgw, "right")
 end

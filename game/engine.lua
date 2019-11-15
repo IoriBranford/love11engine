@@ -1,8 +1,8 @@
 local pairs = pairs
 local type = type
+local select = select
 local unpack = unpack
 local collectgarbage = collectgarbage
-local floor = math.floor
 local love = love
 local LE = love.event
 local LT = love.timer
@@ -46,27 +46,25 @@ end
 
 local Engine = {}
 
-function Engine.newObject(template)
+function Engine.newObject(...)
 	local object
 	if #freeobjects > 0 then
 		object = freeobjects[#freeobjects]
 		freeobjects[#freeobjects] = nil
 	else
-		object = { id = nextid }
-		nextid = nextid + 1
+		object = {}
 	end
 
-	for k,v in pairs(Object) do
-		object[k] = v
-	end
-
-	if template then
+	for i = 1, select("#", Object, ...) do
+		local template = select(i, Object, ...)
 		for k,v in pairs(template) do
 			object[k] = v
 		end
 	end
 
-	local id = object.id
+	local id = nextid
+	nextid = nextid + 1
+	object.id = id
 	objects[id] = object
 	newobjects[#newobjects + 1] = object
 
@@ -116,7 +114,6 @@ local function freeObjects()
 		for k, _ in pairs(object) do
 			object[k] = nil
 		end
-		object.id = id
 		if body then
 			body:destroy()
 		end
@@ -147,10 +144,7 @@ local function update()
 	freeObjects()
 end
 
-local function drawBoxes(fraction)
-	LG.setLineStyle("rough")
-	LG.getFont():setFilter("nearest", "nearest")
-	LG.scale(2)
+function Engine.debugDrawBoundingBoxes(fraction)
 	for _, body in pairs(world:getBodies()) do
 		local vx, vy = body:getLinearVelocity()
 		for _, fixture in pairs(body:getFixtures()) do
@@ -203,16 +197,7 @@ function love.run()
 		if LG and LG.isActive() then
 			LG.origin()
 			LG.clear(LG.getBackgroundColor())
-
-			drawBoxes(timeaccum*worldfps)
-
-			LG.origin()
-			local font = LG.getFont()
-			local fps = LT.getFPS()
-			local lgw = LG.getWidth()
-			local mem = floor(collectgarbage("count"))
-			LG.printf(fps.." fps", 0, 0, lgw, "right")
-			LG.printf(mem.." kb", 0, font:getHeight(), lgw, "right")
+			if love.draw then love.draw(timeaccum*worldfps) end
 			LG.present()
 		end
 
