@@ -1,6 +1,10 @@
 local pretty = require "pl.pretty"
 local xml = require "pl.xml"
 local tablex = require "pl.tablex"
+local ffi = require "ffi"
+local floor = math.floor
+local love = love
+local LD = love.data
 local LFS = love.filesystem
 local LG = love.graphics
 
@@ -165,10 +169,48 @@ opacity='$opacity' visible='$visible' offsetx='$offsetx' offsety='$offsety'/>
 	return layer
 end
 
-function Parsers.data(doc)
+local function decodeData(gids, data, encoding, compression)
+	if encoding == "base64" then
+		data = LD.decode("data", encoding, data)
+	end
+	if compression then
+		data = LD.decompress("data", compression, data)
+	end
+	local pointer = ffi.cast("uint32_t*", data:getFFIPointer())
+	gids = gids or {}
+	local n = floor(data:getSize() / ffi.sizeof("uint32_t"))
+	for i = 0, n-1 do
+		gids[#gids + 1] = pointer[i]
+	end
+	return gids
+end
+
+function Parsers.chunk(doc)
 	return doc:match([[
+<chunk x='$x' y='$y' width='$width' height='$height'>$data</chunk>
+	]])
+end
+
+function Parsers.data(doc)
+	local data = doc:match([[
 <data encoding='$encoding' compression='$compression'>$data</data>
 	]])
+	local encoding = data.encoding
+	local compression = data.compression
+	parseChildren(data, doc, function(data, tag, parsed)
+		if parsed then
+			if tag == "chunk" then
+				data[#data + 1] = parsed
+				decodeData(parsed, parsed.data,
+					encoding, compression)
+			else
+				data[tag] = parsed
+			end
+		end
+	end)
+	decodeData(data, data.data, encoding, compression)
+	pretty.dump(data)
+	return data
 end
 
 function Parsers.imagelayer(doc)
@@ -257,7 +299,7 @@ local function parseValue(key, value, dir)
 	if type(value)=="table" then
 		if key == "image" then
 			local file = dir..value.source
-			return loaded[file] or LG.newImage(file)
+			return loaded[file] or (LFS.getInfo(file) and LG.newImage(file))
 		end
 
 		local properties = value.properties
@@ -304,7 +346,9 @@ function Tiled.load(file)
 			if source then
 				local tsxfile = dir..source
 				local tileset = Tiled.load(tsxfile)
-				tablex.update(exttileset, tileset)
+				if tileset then
+					tablex.update(exttileset, tileset)
+				end
 			end
 		end
 	end
