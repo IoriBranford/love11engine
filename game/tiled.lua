@@ -44,9 +44,7 @@ function parseChildren(tbl, doc, insert)
 		local tag = child.tag
 		local parser = Parsers[tag]
 		local childtbl
-		if parser then
-			parsed = parser(child)
-		end
+		local parsed = parser and parser(child) or child
 		insert(tbl, tag, parsed)
 	end
 end
@@ -139,7 +137,10 @@ function Parsers.tileset(doc)
 	local tileset = doc:match[[
 <tileset firstgid='$firstgid' source='$source' name='$name'
 tilewidth='$tilewidth' tileheight='$tileheight' spacing='$spacing'
-margin='$margin' tilecount='$tilecount' columns='$columns'/>
+margin='$margin' tilecount='$tilecount' columns='$columns'>
+	<tileoffset x='$tileoffsetx' y='$tileoffsety'/>
+	<grid orientation='$gridorient' width='$gridwidth' height='$gridheight'/>
+</tileset>
 	]]
 
 	parseChildren(tileset, doc, function(tileset, tag, parsed)
@@ -150,13 +151,6 @@ margin='$margin' tilecount='$tilecount' columns='$columns'/>
 			else
 				tileset[tag] = parsed
 			end
-		elseif tag == "tileoffset" then
-			tileset.tileoffsetx = child.attr.x
-			tileset.tileoffsety = child.attr.y
-		elseif tag == "grid" then
-			tileset.gridorient = child.attr.orientation
-			tileset.gridwidth = child.attr.width
-			tileset.gridheight = child.attr.height
 		end
 	end)
 	return tileset
@@ -213,8 +207,9 @@ function Parsers.data(doc)
 			end
 		end
 	end)
-	decodeData(data, data.data, encoding, compression)
-	data.data = nil
+	local datadata = doc:match("<data>$1</data>")
+	datadata = datadata and datadata[1]
+	decodeData(data, datadata, encoding, compression)
 	return data
 end
 
@@ -227,7 +222,7 @@ x='$x' y='$y' opacity='$opacity' visible='$visible'/>
 	return layer
 end
 
-function Parsers.group()
+function Parsers.group(doc)
 	local group = doc:match([[
 <group id='$id' name='$name' offsetx='$offsetx' offsety='$offsety'
 opacity='$opacity' visible='$visible'/>
@@ -239,9 +234,9 @@ opacity='$opacity' visible='$visible'/>
 			or tag == "imagelayer"
 			or tag == "group"
 			then
-				map[#map + 1] = parsed
+				group[#group + 1] = parsed
 			else
-				map[tag] = parsed
+				group[tag] = parsed
 			end
 		end
 	end)
