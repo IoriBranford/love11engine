@@ -281,6 +281,11 @@ function Parsers.objecttypes(doc)
  </objecttype>}}
 </objecttypes>
 	]])
+	for tname, properties in pairs(objecttypes) do
+		for pname, property in pairs(properties) do
+			properties[pname] = property.default
+		end
+	end
 	return objecttypes
 end
 
@@ -349,14 +354,6 @@ function Tiled.load(file)
 				if tileset then
 					tablex.update(exttileset, tileset)
 				end
-			end
-		end
-	end
-
-	if doc.tag == "objecttypes" then
-		for tname, properties in pairs(tbl) do
-			for pname, property in pairs(properties) do
-				properties[pname] = property.default
 			end
 		end
 	end
