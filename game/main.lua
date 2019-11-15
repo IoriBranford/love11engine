@@ -286,6 +286,8 @@ function love.load()
 	newObject(Level)
 end
 
+local stats = {}
+
 function love.draw(alpha)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
@@ -293,10 +295,19 @@ function love.draw(alpha)
 	engine.debugDrawBoundingBoxes(alpha)
 
 	local font = LG.getFont()
+	local h = font:getHeight()
 	local fps = LT.getFPS()
 	local lgw = LG.getWidth()
 	local mem = floor(collectgarbage("count"))
 	LG.origin()
-	LG.printf(fps.." fps", 0, 0, lgw, "right")
-	LG.printf(mem.." kb", 0, font:getHeight(), lgw, "right")
+
+	local y = 0
+	LG.printf(fps.." fps", 0, y, lgw, "right")
+	y = y + h
+	LG.printf(mem.." kb", 0, y, lgw, "right")
+	y = y + h
+	for k, v in pairs(LG.getStats(stats)) do
+		LG.printf(v.." "..k, 0, y, lgw, "right")
+		y = y + h
+	end
 end
