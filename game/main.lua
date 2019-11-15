@@ -211,9 +211,9 @@ function Enemy:think()
 
 	local velx
 	if self.x > 120 then
-		velx = -sin(pi*time/60)
+		velx = -sin(pi*time/engine.worldfps)
 	else
-		velx = sin(pi*time/60)
+		velx = sin(pi*time/engine.worldfps)
 	end
 	self.body:setLinearVelocity(velx, 2)
 
@@ -253,7 +253,7 @@ function Level:think()
 	if nextenemytime <= 0 then
 		nextenemytime = nextenemytime + Level.nextenemytime
 		local enemy = newObject(Enemy)
-		enemy.x = LM.random(2) == 1 and 180 or 60
+		enemy.x = LM.random(2) == 1 and 3*engine.worldfps or engine.worldfps
 		enemy.y = 0
 	end
 	self.nextenemytime = nextenemytime

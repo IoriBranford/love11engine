@@ -19,6 +19,11 @@ local nextid = 1
 
 local Object = {}
 
+local Engine = {
+	worldfps = 60
+}
+Engine.worlddt = 1/Engine.worldfps
+
 function Object:init()
 end
 
@@ -43,8 +48,6 @@ end
 function Object:setFree(free)
 	objectstofree[self.id] = free or true
 end
-
-local Engine = {}
 
 function Engine.newObject(...)
 	local object
@@ -165,10 +168,8 @@ function love.run()
 	-- We don't want the first frame's dt to include time taken by love.load.
 	if LT then LT.step() end
 
-	local worldfps = 60
 	local dt = 0
 	local timeaccum = 0
-	local drawingstats = {}
 
 	-- Main loop time.
 	return function()
@@ -188,16 +189,16 @@ function love.run()
 		if LT then dt = LT.step() end
 
 		timeaccum = timeaccum + dt
-		local fixeddt = 1/worldfps
-		while timeaccum >= fixeddt do
+		local worlddt = Engine.worlddt
+		while timeaccum >= worlddt do
 			update()
-			timeaccum = timeaccum - fixeddt
+			timeaccum = timeaccum - worlddt
 		end
 
 		if LG and LG.isActive() then
 			LG.origin()
 			LG.clear(LG.getBackgroundColor())
-			if love.draw then love.draw(timeaccum*worldfps) end
+			if love.draw then love.draw(timeaccum*Engine.worldfps) end
 			LG.present()
 		end
 
