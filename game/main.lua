@@ -286,11 +286,11 @@ function love.load()
 	newObject(Level)
 end
 
-function love.draw(fraction)
+function love.draw(alpha)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
 	LG.scale(2)
-	engine.debugDrawBoundingBoxes(fraction)
+	engine.debugDrawBoundingBoxes(alpha)
 
 	local font = LG.getFont()
 	local fps = LT.getFPS()

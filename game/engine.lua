@@ -144,14 +144,14 @@ local function update()
 	freeObjects()
 end
 
-function Engine.debugDrawBoundingBoxes(fraction)
+function Engine.debugDrawBoundingBoxes(alpha)
 	for _, body in pairs(world:getBodies()) do
 		local vx, vy = body:getLinearVelocity()
 		for _, fixture in pairs(body:getFixtures()) do
 			local x1, y1, x2, y2 = fixture:getBoundingBox()
 			local w, h = x2-x1, y2-y1
-			x1 = x1 + vx*fraction
-			y1 = y1 + vy*fraction
+			x1 = x1 + vx*alpha
+			y1 = y1 + vy*alpha
 			LG.rectangle("line", x1, y1, w, h)
 		end
 	end
