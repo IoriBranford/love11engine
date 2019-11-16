@@ -268,12 +268,13 @@ function Level:init()
 	local fixture = LP.newFixture(body, shape)
 	fixture:setFriction(0)
 
+
 	local player = newObject(Player)
 	player.x, player.y = 120, 304
 	Level.instance = self
 	self.playerid = player.id
 end
-
+local map
 function love.load()
 	local gamepadfile = "gamecontrollerdb.txt"
 	if LFS.getInfo(gamepadfile) then
@@ -287,7 +288,8 @@ function love.load()
 	}
 	LW.setMode(window_width, window_height, window_flags)
 	newObject(Level)
-	local map = tiled.load("title.tmx")
+
+	map = tiled.load("title.tmx")
 	LFS.write("title.tmx.lua", pretty.write(map))
 end
 
@@ -297,6 +299,7 @@ function love.draw(alpha)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
 	LG.scale(2)
+	tiled.draw(map)
 	engine.debugDrawBoundingBoxes(alpha)
 
 	local font = LG.getFont()

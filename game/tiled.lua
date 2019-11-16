@@ -8,6 +8,7 @@ local love = love
 local LD = love.data
 local LFS = love.filesystem
 local LG = love.graphics
+local LM = love.math
 
 local function dirname(fullpath)
 	return fullpath:match'(.*/)[^/]*$'
@@ -44,7 +45,7 @@ function parseChildren(tbl, doc, insert)
 		local tag = child.tag
 		local parser = Parsers[tag]
 		local childtbl
-		local parsed = parser and parser(child) or child
+		local parsed = parser and parser(child)-- or child
 		insert(tbl, tag, parsed)
 	end
 end
@@ -57,9 +58,7 @@ visible='$visible' template='$template'/>
 	]])
 
 	parseChildren(object, doc, function(object, tag, parsed)
-		if parsed then
-			object[tag] = parsed
-		elseif tag == "ellipse" then
+		if tag == "ellipse" then
 			object.ellipse = true
 		elseif tag == "point" then
 			object.point = true
@@ -67,6 +66,8 @@ visible='$visible' template='$template'/>
 			object.polygon = child.attr.points
 		elseif tag == "polyline" then
 			object.polyline = child.attr.points
+		elseif parsed then
+			object[tag] = parsed
 		end
 	end)
 
@@ -144,13 +145,11 @@ margin='$margin' tilecount='$tilecount' columns='$columns'>
 	]]
 
 	parseChildren(tileset, doc, function(tileset, tag, parsed)
-		if parsed then
-			if tag == "tile" then
-				local tileid = tonumber(parsed.id) or parsed.id
-				tileset[tileid] = parsed
-			else
-				tileset[tag] = parsed
-			end
+		if tag == "tile" then
+			local tileid = tonumber(parsed.id) or parsed.id
+			tileset[tileid] = parsed
+		else
+			tileset[tag] = parsed
 		end
 	end)
 	return tileset
@@ -342,24 +341,135 @@ function Tiled.load(file)
 	local dir = dirname(file) or ""
 	local parser = Parsers[doc.tag]
 	local tbl = parser and parser(doc)
+	tbl = parseValue(doc.tag, tbl, dir)
 
 	local tilesets = tbl.tilesets
 	if tilesets then
+		local tiles = {}
+		tbl.tiles = tiles
 		for i = 1, #tilesets do
-			local exttileset = tilesets[i]
-			local source = exttileset.source
+			local tileset = tilesets[i]
+			local source = tileset.source
 			if source then
 				local tsxfile = dir..source
-				local tileset = Tiled.load(tsxfile)
-				if tileset then
-					tablex.update(exttileset, tileset)
+				local exttileset = Tiled.load(tsxfile)
+				if exttileset then
+					tablex.update(tileset, exttileset)
 				end
+			end
+			local image = tileset.image
+			image:setFilter("nearest", "nearest")
+			local imagewidth = 0
+			local imageheight = 0
+			if image then
+				imagewidth = image:getWidth()
+				imageheight = image:getHeight()
+			end
+			local tilecount = tileset.tilecount or 0
+			local columns = tileset.columns or 0
+			local rows = floor(tilecount/columns)
+			local i, x, y = 0, 0, 0
+			local gid = tileset.firstgid
+			local tilewidth = tileset.tilewidth
+			local tileheight = tileset.tileheight
+			for r = 1, rows do
+				for c = 1, columns do
+					local tile = tileset[i] or {}
+					tiles[gid] = tile
+					tile.tileset = tileset
+					tile.gid = gid
+					tile.quad = LG.newQuad(x, y,
+						tilewidth, tileheight,
+						imagewidth, imageheight)
+					x = x + tilewidth
+					i = i + 1
+					gid = gid + 1
+				end
+				x = 0
+				y = y + tileheight
 			end
 		end
 	end
 
-	return parseValue(doc.tag, tbl, dir)
+	return tbl
 end
+
+local function draw(elem, tiles)
+	if elem.visible == false then
+		return
+	end
+	local gid = elem.gid
+	local tile
+	local tileset
+	tiles = tiles or elem.tiles
+	if tiles and gid then
+		tile = tiles[gid]
+	end
+
+	local pushed
+
+	local x = elem.x
+	local y = elem.y
+	local width = elem.width
+	local height = elem.height
+	local rotation = elem.rotation
+	local scalex, scaley
+	local tilewidth
+	local tileheight
+	if tile then
+		tileset = tile.tileset
+		tilewidth = tileset.tilewidth
+		tileheight = tileset.tileheight
+		if width ~= tilewidth or height ~= tileheight then
+			scalex = width / tilewidth
+			scaley = height / tileheight
+			if not pushed then
+				LG.push("transform")
+				pushed = true
+			end
+			LG.scale(scalex, scaley)
+		end
+	end
+
+	if rotation then
+		if not pushed then
+			LG.push("transform")
+			pushed = true
+		end
+		LG.rotate(rad(rotation))
+	end
+	if x and y then
+		if not pushed then
+			LG.push("transform")
+			pushed = true
+		end
+		local offsetx = elem.offsetx or 0
+		local offsety = elem.offsety or 0
+		LG.translate(x + offsetx, y + offsety)
+	end
+
+	local spritebatch = elem.spritebatch
+	if spritebatch then
+		LG.draw(spritebatch)
+	end
+
+	if tile then
+		local tileoffsetx = tileset.tileoffsetx or 0
+		local tileoffsety = tileset.tileoffsety or 0
+
+		LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
+			-tileoffsetx, tileheight - tileoffsety)
+	end
+
+	for i = 1, #elem do
+		draw(elem[i], tiles)
+	end
+
+	if pushed then
+		LG.pop()
+	end
+end
+Tiled.draw = draw
 
 function Tiled.unload()
 	loaded = {}

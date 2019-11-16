@@ -19,7 +19,7 @@
    <property name="tilewrap" type="bool" value="true"/>
   </properties>
   <data encoding="base64" compression="gzip">
-   H4sIAAAAAAAECr2RSW5CQRQDPzMhzAQI978otW3LuxK05MWz5OpFTdN33oxv5mRBlmRFTMd8eGuuDdmSH7IjpmM+vF+uPTmQIzkR0zEf3pnrQq7kRv6I6ZgP7871IE/yT17EdMyHZ1y27QDnMC7bNvnGZdsm37hs2+Qbl22b/ObIdMlvjkyX/ObIdMlvjkyX/ObIdMk3Lts2+cZl2ybfuGzb5BuXbZt847Jtk98cmS75zZHpkt8cmS75zZHpkt8cmS75xmXbJt+4bNvkG5dtm3zjsm2Tb1y2bfI/db8B39JDKgAMAAA=
+   H4sIAAAAAAAEA72RSW5CQRQDPzMhzAQI978otW3LuxK05MWz5OpFTdN33oxv5mRBlmRFTMd8eGuuDdmSH7IjpmM+vF+uPTmQIzkR0zEf3pnrQq7kRv6I6ZgP7871IE/yT17EdMyHZ1y27QDnMC7bNvnGZdsm37hs2+Qbl22b/ObIdMlvjkyX/ObIdMlvjkyX/ObIdMk3Lts2+cZl2ybfuGzb5BuXbZt847Jtk98cmS75zZHpkt8cmS75zZHpkt8cmS75xmXbJt+4bNvkG5dtm3zjsm2Tb1y2bfI/db8B39JDKgAMAAA=
   </data>
  </layer>
  <objectgroup draworder="index" id="2" name="info">
@@ -72,7 +72,7 @@ ioribranford.itch.io</text>
   <properties>
    <property name="script" value="PlayerTeam"/>
   </properties>
-  <object id="42" gid="43" x="120" y="360" width="64" height="64">
+  <object id="42" gid="43" x="120" y="165" width="64" height="64">
    <properties>
     <property name="coroutine" value="waitCoroutine"/>
    </properties>
