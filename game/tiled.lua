@@ -3,6 +3,7 @@ local xml = require "pl.xml"
 local tablex = require "pl.tablex"
 local ffi = require "ffi"
 local floor = math.floor
+local rad = math.rad
 local tonumber = tonumber
 local love = love
 local LD = love.data
@@ -394,28 +395,33 @@ function Tiled.load(file)
 	return tbl
 end
 
-local function draw(elem, tiles)
+local function draw(elem, mapelem)
 	if elem.visible == false then
 		return
 	end
+
+	local x = elem.x or 0
+	local y = elem.y or 0
+	local offsetx = elem.offsetx or 0
+	local offsety = elem.offsety or 0
+	local width = elem.width
+	local height = elem.height
+	local rotation = elem.rotation or 0
+	local scalex, scaley = 1, 1
+	local tilewidth
+	local tileheight
+
 	local gid = elem.gid
 	local tile
 	local tileset
-	tiles = tiles or elem.tiles
-	if tiles and gid then
+
+	mapelem = mapelem or elem
+	local tiles = mapelem.tiles
+
+	if gid then
 		tile = tiles[gid]
 	end
 
-	local pushed
-
-	local x = elem.x
-	local y = elem.y
-	local width = elem.width
-	local height = elem.height
-	local rotation = elem.rotation
-	local scalex, scaley
-	local tilewidth
-	local tileheight
 	if tile then
 		tileset = tile.tileset
 		tilewidth = tileset.tilewidth
@@ -423,34 +429,37 @@ local function draw(elem, tiles)
 		if width ~= tilewidth or height ~= tileheight then
 			scalex = width / tilewidth
 			scaley = height / tileheight
-			if not pushed then
-				LG.push("transform")
-				pushed = true
+		end
+	end
+
+	LG.push("transform")
+	LG.translate(x + offsetx, y + offsety)
+	LG.rotate(rad(rotation))
+	LG.scale(scalex, scaley)
+
+	local data = elem.data
+
+	if data then
+		local maptilewidth = mapelem.tilewidth
+		local maptileheight = mapelem.tileheight
+		local i = 1
+		local x, y = 0, 0
+		for r = 1, height do
+			for c = 1, width do
+				local tile = tiles[data[i]]
+				if tile then
+					local tileset = tile.tileset
+					local tileoffsetx = tileset.tileoffsetx or 0
+					local tileoffsety = tileset.tileoffsety or 0
+					LG.draw(tileset.image, tile.quad, x, y, 0, 1, 1,
+						-tileoffsetx, -tileoffsety)
+				end
+				i = i + 1
+				x = x + maptilewidth
 			end
-			LG.scale(scalex, scaley)
+			x = 0
+			y = y + maptileheight
 		end
-	end
-
-	if rotation then
-		if not pushed then
-			LG.push("transform")
-			pushed = true
-		end
-		LG.rotate(rad(rotation))
-	end
-	if x and y then
-		if not pushed then
-			LG.push("transform")
-			pushed = true
-		end
-		local offsetx = elem.offsetx or 0
-		local offsety = elem.offsety or 0
-		LG.translate(x + offsetx, y + offsety)
-	end
-
-	local spritebatch = elem.spritebatch
-	if spritebatch then
-		LG.draw(spritebatch)
 	end
 
 	if tile then
@@ -462,12 +471,10 @@ local function draw(elem, tiles)
 	end
 
 	for i = 1, #elem do
-		draw(elem[i], tiles)
+		draw(elem[i], mapelem)
 	end
 
-	if pushed then
-		LG.pop()
-	end
+	LG.pop()
 end
 Tiled.draw = draw
 
