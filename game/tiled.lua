@@ -276,7 +276,6 @@ local function layerSpriteBatch(data, layer, map)
 		local firstgid = ts.firstgid
 		local tilecount = ts.tilecount
 		if firstgid <= mingid and maxgid < firstgid + tilecount then
-		print(firstgid, mingid, maxgid, firstgid+tilecount)
 			tileset = ts
 			break
 		end
@@ -500,7 +499,20 @@ function draw.text(node, parent, root)
 	local wrap = node.wrap
 	local width = parent.width
 	local halign = node.halign
-	LG.printf(node.string, node.font, 0, 0, wrap and width, halign)
+	local valign = node.valign
+	local font = node.font
+	local y = 0
+	local str = node.string
+	if valign then
+		local height = parent.height
+		local _, lines = font:getWrap(str, wrap and width or 1048576)
+		local textheight = font:getHeight()*#lines
+		y = height - textheight
+		if valign == "center" then
+			y = y/2
+		end
+	end
+	LG.printf(str, font, 0, y, wrap and width, halign)
 	return true
 end
 
