@@ -71,9 +71,7 @@ ioribranford.itch.io</text>
   <object id="52" x="120" y="50">
    <polygon points="0,0 -10,10 0,20 15,10"/>
   </object>
-  <object id="53" x="0" y="0" width="60" height="40">
-   <ellipse/>
-  </object>
+  <object id="53" template="egg.tx" x="0" y="0"/>
   <object id="54" x="240.607" y="0.251263" width="20" height="50" rotation="45">
    <ellipse/>
   </object>

@@ -140,7 +140,7 @@ end
 
 function load.template(node, parent, dir)
 	load.map(node, parent, dir)
-	local object = node[2]
+	local object = node[2] or node[1]
 	object.tiles = node.tiles
 	return object
 end
@@ -365,22 +365,18 @@ setmetatable(transform, {
 })
 
 function transform.object(node, parent, root)
-	local width, height, gid, maptiles
-	local template = node.template
-	if template then
-		maptiles = template.tiles
-		gid = template.gid
-		width = template.width
-		height = template.height
-	else
-		maptiles = root.tiles
-		gid = node.gid
-		width = node.width
-		height = node.height
-	end
 	transform_default(node, parent, root)
+	local template = node.template
+	local maptiles = root.tiles
+	if template then
+		node = template
+		maptiles = template.tiles
+	end
+	local gid = node.gid
 	local tile = gid and maptiles[gid]
 	if tile then
+		local width = node.width
+		local height = node.height
 		local tileset = tile.tileset
 		local tilewidth = tileset.tilewidth
 		local tileheight = tileset.tileheight
@@ -443,13 +439,12 @@ end
 
 function draw.object(node, parent, root)
 	local template = node.template
+	local maptiles = root.tiles
 	if template then
-		gid = template.gid
+		node = template
 		maptiles = template.tiles
-	else
-		gid = node.gid
-		maptiles = root.tiles
 	end
+	local gid = node.gid
 	local tile = gid and maptiles[gid]
 	if tile then
 		local tileset = tile.tileset
