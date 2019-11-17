@@ -138,6 +138,24 @@ local function decodeData(gids, data, encoding, compression)
 	end
 end
 
+function load.template(node, parent, dir)
+	load.map(node, parent, dir)
+	local object = node[2]
+	object.tiles = node.tiles
+	return object
+end
+
+function load.object(node, parent, dir)
+	local template = node.template
+	if template then
+		local file = dir..template
+		template = loaded[file] or Tiled.load(file)
+		loaded[file] = template
+		node.template = template
+	end
+	return node
+end
+
 function load.animation(node, parent, dir)
 	parent.animation = node
 end
@@ -347,20 +365,27 @@ setmetatable(transform, {
 })
 
 function transform.object(node, parent, root)
+	local width, height, gid, maptiles
+	local template = node.template
+	if template then
+		maptiles = template.tiles
+		gid = template.gid
+		width = template.width
+		height = template.height
+	else
+		maptiles = root.tiles
+		gid = node.gid
+		width = node.width
+		height = node.height
+	end
 	transform_default(node, parent, root)
-	local gid = node.gid
-	if gid then
-		local maptiles = root.tiles
-		local tile = maptiles[gid]
-		if tile then
-			local tileset = tile.tileset
-			local tilewidth = tileset.tilewidth
-			local tileheight = tileset.tileheight
-			local width = node.width
-			local height = node.height
-			local sx, sy = width/tilewidth, height/tileheight
-			LG.scale(sx, sy)
-		end
+	local tile = gid and maptiles[gid]
+	if tile then
+		local tileset = tile.tileset
+		local tilewidth = tileset.tilewidth
+		local tileheight = tileset.tileheight
+		local sx, sy = width/tilewidth, height/tileheight
+		LG.scale(sx, sy)
 	end
 end
 
@@ -417,8 +442,14 @@ function draw.text(node, parent, root)
 end
 
 function draw.object(node, parent, root)
-	local maptiles = root.tiles
-	local gid = node.gid
+	local template = node.template
+	if template then
+		gid = template.gid
+		maptiles = template.tiles
+	else
+		gid = node.gid
+		maptiles = root.tiles
+	end
 	local tile = gid and maptiles[gid]
 	if tile then
 		local tileset = tile.tileset
