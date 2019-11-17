@@ -1,3 +1,4 @@
+require("pl.strict")
 local pairs = pairs
 local type = type
 local select = select
