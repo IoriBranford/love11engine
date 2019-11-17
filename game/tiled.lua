@@ -61,12 +61,22 @@ function load.point(node, parent, dir)
 	parent.point = true
 end
 
+local function parsePoints(pointsstring)
+	local points = {}
+	for point in pointsstring:gmatch("[-.%d]+,[-.%d]+") do
+		local x, y = point:match("([-.%d]+),([-.%d]+)")
+		points[#points+1] = tonumber(x)
+		points[#points+1] = tonumber(y)
+	end
+	return points
+end
+
 function load.polygon(node, parent, dir)
-	parent.polygon = node.points
+	parent.polygon = parsePoints(node.points)
 end
 
 function load.polyline(node, parent, dir)
-	parent.polyline = node.points
+	parent.polyline = parsePoints(node.points)
 end
 
 function load.text(node, parent, dir)
