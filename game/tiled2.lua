@@ -15,18 +15,18 @@ local Tiled = {}
 
 local loaded = {}
 
-local postprocess = {}
-setmetatable(postprocess, {
+local load = {}
+setmetatable(load, {
 	__index = function()
-		return function(doc)
-			return doc
+		return function(node)
+			return node
 		end
 	end
 })
 
-function postprocess.properties(node, parent, dir)
-	for c = 1, #node do
-		local property = node[c]
+function load.properties(node, parent, dir)
+	for i = 1, #node do
+		local property = node[i]
 		local ptype = property.type
 		local value = property.value or property.default
 		if value and ptype == "file" then
@@ -36,25 +36,40 @@ function postprocess.properties(node, parent, dir)
 	end
 end
 
-postprocess.objecttype = postprocess.properties
+function load.objecttype(node, parent, dir)
+	load.properties(node, node, dir)
+	for i = #node, 1, -1 do
+		node[i] = nil
+	end
+	return node
+end
 
-function postprocess.ellipse(node, parent, dir)
+function load.objecttypes(node, parent, dir)
+	for i = #node, 1, -1 do
+		local objecttype = node[i]
+		node[objecttype.name] = objecttype
+		node[i] = nil
+	end
+	return node
+end
+
+function load.ellipse(node, parent, dir)
 	parent.ellipse = true
 end
 
-function postprocess.point(node, parent, dir)
+function load.point(node, parent, dir)
 	parent.point = true
 end
 
-function postprocess.polygon(node, parent, dir)
+function load.polygon(node, parent, dir)
 	parent.polygon = node.points
 end
 
-function postprocess.polyline(node, parent, dir)
+function load.polyline(node, parent, dir)
 	parent.polyline = node.points
 end
 
-function postprocess.text(node, parent, dir)
+function load.text(node, parent, dir)
 	node.string = node[1]
 	node[1] = nil
 	local fontfamily = node.fontfamily
@@ -73,17 +88,24 @@ function postprocess.text(node, parent, dir)
 	local fnt = file..pixelsize..".fnt"
 	local font = loaded[fnt] or loaded[ttfsize]
 	if not font then
-		font = LFS.getInfo(fnt) and LG.newFont(file)
+		font = LFS.getInfo(fnt) and LG.newFont(fnt)
 		if font then
 			loaded[fnt] = font
-		else
-			local ttf = file..".ttf"
-			font = LFS.getInfo(ttf) and LG.newFont(ttf, pixelsize)
-			if font then
-				loaded[ttfsize] = font
-			end
 		end
 	end
+	if not font then
+		local ttf = file..".ttf"
+		font = LFS.getInfo(ttf) and LG.newFont(ttf, pixelsize)
+		if font then
+			loaded[ttfsize] = font
+		end
+	end
+	if not font then
+		local defaultfont = "defaultfont"..pixelsize
+		font = loaded[defaultfont] or LG.newFont(pixelsize)
+		loaded[defaultfont] = font
+	end
+	font:setFilter("nearest", "nearest")
 	node.font = font
 	return node
 end
@@ -106,7 +128,7 @@ local function decodeData(gids, data, encoding, compression)
 	end
 end
 
-function postprocess.tile(node, parent, dir)
+function load.tile(node, parent, dir)
 	local gid = node.gid
 	if gid then
 		parent[#parent + 1] = gid
@@ -114,11 +136,12 @@ function postprocess.tile(node, parent, dir)
 	return node
 end
 
-function postprocess.data(node, parent, dir)
+function load.data(node, parent, dir)
 	local encoding = node.encoding
 	local compression = node.compression
 	if encoding or compression then
 		local data = node[1]
+		node[1] = nil
 		if type(data) == "string" then
 			decodeData(node, data, encoding, compression)
 		else
@@ -131,18 +154,18 @@ function postprocess.data(node, parent, dir)
 	return node
 end
 
-function postprocess.tileoffset(node, parent, dir)
+function load.tileoffset(node, parent, dir)
 	parent.tileoffsetx = node.x
 	parent.tileoffsety = node.y
 end
 
-function postprocess.grid(node, parent, dir)
+function load.grid(node, parent, dir)
 	parent.gridwidth = node.width
 	parent.gridheight = node.height
 	parent.gridorientation = node.orientation
 end
 
-function postprocess.image(node, parent, dir)
+function load.image(node, parent, dir)
 	local file = dir..node.source
 	local image = loaded[file]
 	if not image then
@@ -155,7 +178,7 @@ function postprocess.image(node, parent, dir)
 	parent.image = image
 end
 
-function postprocess.tileset(node, parent, dir)
+function load.tileset(node, parent, dir)
 	local source = node.source
 	if source then
 		local file = dir..source
@@ -200,14 +223,19 @@ function postprocess.tileset(node, parent, dir)
 	return node
 end
 
-function postprocess.map(node, parent, dir)
+function load.map(node, parent, dir)
 	local tilesets = node.tilesets or {}
 	local tiles = {}
 	node.tiles = tiles
 	for i = 1, #tilesets do
 		local tileset = tilesets[i]
 		local gid = tileset.firstgid
-		for t = 0, #tileset-1 do
+		local tile = tileset[0]
+		if tile then
+			tiles[gid] = tile
+			gid = gid + 1
+		end
+		for t = 1, #tileset do
 			local tile = tileset[t]
 			tiles[gid] = tile
 			gid = gid + 1
@@ -216,7 +244,7 @@ function postprocess.map(node, parent, dir)
 	return node
 end
 
-local function walk(doc, parent, dir)
+local function loadRecursive(doc, parent, dir)
 	if type(doc) == "string" then
 		return doc
 	end
@@ -239,9 +267,9 @@ local function walk(doc, parent, dir)
 	end
 	local n = #doc
 	for i = 1, n do
-		node[i] = walk(doc[i], node, dir)
+		node[i] = loadRecursive(doc[i], node, dir)
 	end
-	node = postprocess[tag](node, parent, dir)
+	node = load[tag](node, parent, dir)
 	if not node then
 		return
 	end
@@ -278,7 +306,7 @@ function Tiled.load(file)
 	end
 
 	local dir = file:match('(.*/)[^/]*$') or ""
-	return walk(doc, nil, dir)
+	return loadRecursive(doc, nil, dir)
 end
 
 local transform = {}
@@ -302,7 +330,7 @@ function transform.object(node, parent, root)
 	local gid = node.gid
 	if gid then
 		local maptiles = root.tiles
-		local tile = tiles[gid]
+		local tile = maptiles[gid]
 		if tile then
 			local tileset = tile.tileset
 			local tilewidth = tileset.tilewidth
@@ -310,7 +338,7 @@ function transform.object(node, parent, root)
 			local width = node.width
 			local height = node.height
 			local sx, sy = width/tilewidth, height/tileheight
-			LG.scale(sx, sy)
+			--LG.scale(sx, sy)
 		end
 	end
 end
@@ -318,7 +346,9 @@ end
 local draw = {}
 setmetatable(draw, {
 	__index = function()
-		return function() end
+		return function()
+			return false
+		end
 	end
 })
 
@@ -327,15 +357,15 @@ function draw.data(node, parent, root)
 	if not maptiles then
 		return
 	end
-	local width = node.width
-	local height = node.height
+	local width = node.width or parent.width
+	local height = node.height or parent.height
 	local maptilewidth = root.tilewidth
 	local maptileheight = root.tileheight
 	local i = 1
 	local x, y = 0, 0
 	for r = 1, height do
 		for c = 1, width do
-			local tile = maptiles[data[i]]
+			local tile = maptiles[node[i]]
 			if tile then
 				local tileset = tile.tileset
 				local tileoffsetx = tileset.tileoffsetx or 0
@@ -349,6 +379,7 @@ function draw.data(node, parent, root)
 		x = 0
 		y = y + maptileheight
 	end
+	return true
 end
 draw.chunk = draw.data
 
@@ -357,13 +388,14 @@ function draw.text(node, parent, root)
 	local width = parent.width
 	local halign = node.halign
 	LG.printf(node.string, node.font, 0, 0, wrap and width, halign)
+	return true
 end
 
 function draw.object(node, parent, root)
 	local gid = node.gid
 	if gid then
 		local maptiles = root.tiles
-		local tile = tiles[gid]
+		local tile = maptiles[gid]
 		if tile then
 			local width = node.width
 			local tileset = tile.tileset
@@ -374,30 +406,38 @@ function draw.object(node, parent, root)
 			LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
 				-tileoffsetx, tileheight - tileoffsety)
 		end
+		return true
 	elseif node.ellipse then
+		local x = node.x
+		local y = node.y
 		local width = node.width
 		local height = node.height
-		LG.ellipse("line", 0, 0, width/2, height/2)
-	else
+		LG.ellipse("line", x/2, y/2, width/2, height/2)
+		return true
+	elseif node.rectangle then
 		local width = node.width or 0
 		local height = node.height or 0
 		LG.rectangle("line", 0, 0, width, height)
+		return true
 	end
 end
 
-function Tiled.draw(node, parent, root)
-	if node.visible == false then
+local function drawRecursive(node, parent, root)
+	if node.visible == 0 then
 		return
 	end
 	root = root or node
 	local tag = node.tag
 	LG.push("transform")
-	transform[tag](node)
-	for i = 1, #node do
-		draw[tag](node[i], node, root)
+	transform[tag](node, parent, root)
+	if not draw[tag](node, parent, root) then
+		for i = 1, #node do
+			drawRecursive(node[i], node, root)
+		end
 	end
 	LG.pop()
 end
+Tiled.draw = drawRecursive
 
 function Tiled.unload()
 	loaded = {}
