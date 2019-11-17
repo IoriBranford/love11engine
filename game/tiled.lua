@@ -429,18 +429,22 @@ function draw.object(node, parent, root)
 		LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
 			-tileoffsetx, tileheight - tileoffsety)
 		return true
-	elseif node.ellipse then
-		local x = node.x
-		local y = node.y
-		local width = node.width
-		local height = node.height
-		LG.ellipse("line", x/2, y/2, width/2, height/2)
-		return true
 	elseif #node == 0 then
-		local width = node.width or 0
-		local height = node.height or 0
-		LG.rectangle("line", 0, 0, width, height)
-		return true
+		if node.ellipse then
+			local hwidth = node.width/2
+			local hheight = node.height/2
+			LG.ellipse("line", hwidth, hheight, hwidth, hheight)
+			return true
+		elseif node.polygon then
+			LG.polygon("line", node.polygon)
+		elseif node.polyline then
+			LG.line(node.polyline)
+		else
+			local width = node.width or 0
+			local height = node.height or 0
+			LG.rectangle("line", 0, 0, width, height)
+			return true
+		end
 	end
 end
 
