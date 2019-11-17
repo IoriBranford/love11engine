@@ -128,6 +128,10 @@ local function decodeData(gids, data, encoding, compression)
 	end
 end
 
+function load.animation(node, parent, dir)
+	parent.animation = node
+end
+
 function load.tile(node, parent, dir)
 	local gid = node.gid
 	if gid then
@@ -338,7 +342,7 @@ function transform.object(node, parent, root)
 			local width = node.width
 			local height = node.height
 			local sx, sy = width/tilewidth, height/tileheight
-			--LG.scale(sx, sy)
+			LG.scale(sx, sy)
 		end
 	end
 end
@@ -392,20 +396,17 @@ function draw.text(node, parent, root)
 end
 
 function draw.object(node, parent, root)
+	local maptiles = root.tiles
 	local gid = node.gid
-	if gid then
-		local maptiles = root.tiles
-		local tile = maptiles[gid]
-		if tile then
-			local width = node.width
-			local tileset = tile.tileset
-			local tileheight = tileset.tileheight
-			local tileoffsetx = tileset.tileoffsetx or 0
-			local tileoffsety = tileset.tileoffsety or 0
+	local tile = gid and maptiles[gid]
+	if tile then
+		local tileset = tile.tileset
+		local tileheight = tileset.tileheight
+		local tileoffsetx = tileset.tileoffsetx or 0
+		local tileoffsety = tileset.tileoffsety or 0
 
-			LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
-				-tileoffsetx, tileheight - tileoffsety)
-		end
+		LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
+			-tileoffsetx, tileheight - tileoffsety)
 		return true
 	elseif node.ellipse then
 		local x = node.x
@@ -414,7 +415,7 @@ function draw.object(node, parent, root)
 		local height = node.height
 		LG.ellipse("line", x/2, y/2, width/2, height/2)
 		return true
-	elseif node.rectangle then
+	elseif #node == 0 then
 		local width = node.width or 0
 		local height = node.height or 0
 		LG.rectangle("line", 0, 0, width, height)
