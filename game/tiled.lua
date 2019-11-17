@@ -141,22 +141,16 @@ function load.tile(node, parent, dir)
 end
 
 function load.data(node, parent, dir)
-	local encoding = node.encoding
-	local compression = node.compression
-	if encoding or compression then
-		local data = node[1]
+	local data = node[1]
+	if type(data) == "string" then
 		node[1] = nil
-		if type(data) == "string" then
-			decodeData(node, data, encoding, compression)
-		else
-			for i = 1, #node do
-				data = node[i]
-				decodeData(data, data, encoding, compression)
-			end
-		end
+		local encoding = node.encoding or parent.encoding
+		local compression = node.compression or parent.compression
+		decodeData(node, data, encoding, compression)
 	end
 	return node
 end
+load.chunk = load.data
 
 function load.tileoffset(node, parent, dir)
 	parent.tileoffsetx = node.x
@@ -357,6 +351,9 @@ setmetatable(draw, {
 })
 
 function draw.data(node, parent, root)
+	if type(node[1]) ~= "number" then
+		return
+	end
 	local maptiles = root.tiles
 	if not maptiles then
 		return
@@ -366,7 +363,8 @@ function draw.data(node, parent, root)
 	local maptilewidth = root.tilewidth
 	local maptileheight = root.tileheight
 	local i = 1
-	local x, y = 0, 0
+	local x = node.x or 0
+	local y = node.y or 0
 	for r = 1, height do
 		for c = 1, width do
 			local tile = maptiles[node[i]]
