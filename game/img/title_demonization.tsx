@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset name="title_demonization" tilewidth="32" tileheight="24" tilecount="16" columns="8">
+<tileset version="1.2" tiledversion="1.3.0" name="title_demonization" tilewidth="32" tileheight="24" tilecount="16" columns="8">
  <image source="title_demonization.png" width="256" height="48"/>
  <tile id="0">
   <animation>

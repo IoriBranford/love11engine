@@ -4,6 +4,9 @@ local tablex = require "pl.tablex"
 local ffi = require "ffi"
 local floor = math.floor
 local rad = math.rad
+local max = math.max
+local min = math.min
+local huge = math.huge
 local tonumber = tonumber
 local love = love
 local LD = love.data
@@ -120,27 +123,9 @@ function load.text(node, parent, dir)
 	return node
 end
 
-local function decodeData(gids, data, encoding, compression)
-	if not data then
-		return
-	end
-	if encoding == "base64" then
-		data = LD.decode("data", encoding, data)
-	end
-	if compression then
-		data = LD.decompress("data", compression, data)
-	end
-	local pointer = ffi.cast("uint32_t*", data:getFFIPointer())
-	gids = gids or {}
-	local n = floor(data:getSize() / ffi.sizeof("uint32_t"))
-	for i = 0, n-1 do
-		gids[#gids + 1] = pointer[i]
-	end
-end
-
 function load.template(node, parent, dir)
 	load.map(node, parent, dir)
-	local object = node[2] or node[1]
+	local object = node[#node]
 	object.tiles = node.tiles
 	return object
 end
@@ -187,7 +172,26 @@ function load.data(node, parent, dir)
 		node[1] = nil
 		local encoding = node.encoding or parent.encoding
 		local compression = node.compression or parent.compression
-		decodeData(node, data, encoding, compression)
+		if encoding == "base64" then
+			data = LD.decode("data", encoding, data)
+		end
+		if compression then
+			data = LD.decompress("data", compression, data)
+		end
+		local pointer = ffi.cast("uint32_t*", data:getFFIPointer())
+		local n = floor(data:getSize() / ffi.sizeof("uint32_t"))
+		local mingid = huge
+		local maxgid = 0
+		for i = 0, n-1 do
+			local gid = pointer[i]
+			node[#node + 1] = gid
+			if gid ~= 0 then
+				mingid = min(gid, mingid)
+				maxgid = max(gid, maxgid)
+			end
+		end
+		node.mingid = mingid
+		node.maxgid = maxgid
 	end
 	return node
 end
@@ -262,6 +266,56 @@ function load.tileset(node, parent, dir)
 	return node
 end
 
+local function layerSpriteBatch(data, layer, map)
+	local mingid = data.mingid or layer.mingid
+	local maxgid = data.maxgid or layer.maxgid
+	local tileset
+	local tilesets = map.tilesets
+	for i = 1, #tilesets do
+		local ts = tilesets[i]
+		local firstgid = ts.firstgid
+		local tilecount = ts.tilecount
+		if firstgid <= mingid and maxgid < firstgid + tilecount then
+		print(firstgid, mingid, maxgid, firstgid+tilecount)
+			tileset = ts
+			break
+		end
+	end
+	if tileset then
+		local tileoffsetx = tileset.tileoffsetx or 0
+		local tileoffsety = tileset.tileoffsety or 0
+		local tilewidth = tileset.tilewidth
+		local tileheight = tileset.tileheight
+		local width = data.width or layer.width
+		local height = data.height or layer.height
+		local tiles = map.tiles
+		local maptilewidth = map.tilewidth
+		local maptileheight = map.tileheight
+		local spritebatchusage = layer.spritebatchusage or "dynamic"
+		local spritebatch = LG.newSpriteBatch(tileset.image,
+					width * height, spritebatchusage)
+		local i, x, y = 1, 0, 0
+		for r = 1, height do
+			for c = 1, width do
+				local gid = data[i]
+				local tile = gid and tiles[gid]
+				if tile then
+					spritebatch:add(tile.quad, x, y, 0, 1, 1,
+							-tileoffsetx,
+							tileheight-tileoffsety)
+				else
+					spritebatch:add(x, y, 0, 0)
+				end
+				i = i + 1
+				x = x + maptilewidth
+			end
+			x = 0
+			y = y + maptileheight
+		end
+		data.spritebatch = spritebatch
+	end
+end
+
 function load.map(node, parent, dir)
 	local tilesets = node.tilesets or {}
 	local tiles = {}
@@ -278,6 +332,21 @@ function load.map(node, parent, dir)
 			local tile = tileset[t]
 			tiles[gid] = tile
 			gid = gid + 1
+		end
+	end
+	for i = 1, #node do
+		local layer = node[i]
+		if layer.tag == "layer" then
+			for d = 1, #layer do
+				local data = layer[d]
+				if type(data[1])=="number" then
+					layerSpriteBatch(data, layer, node)
+					break
+				end
+				for c = 1, #data do
+					layerSpriteBatch(data[c], layer, node)
+				end
+			end
 		end
 	end
 	return node
@@ -306,28 +375,9 @@ local function loadRecursive(doc, parent, dir)
 	end
 	local n = #doc
 	for i = 1, n do
-		node[i] = loadRecursive(doc[i], node, dir)
+		node[#node + 1] = loadRecursive(doc[i], node, dir)
 	end
 	node = load[tag](node, parent, dir)
-	if not node then
-		return
-	end
-	for gap2 = n-1, 1, -1 do
-		if not node[gap2] then
-			for gap1 = gap2-1, 0, -1 do
-				if gap1 == 0 or node[gap1] then
-					local gapsize = gap2 - (gap1 + 1)
-					for i = gap2+1, n do
-						gap1 = gap1 + 1
-						node[gap1] = node[i]
-						node[i] = nil
-					end
-					n = n - gapsize
-					break
-				end
-			end
-		end
-	end
 	return node
 end
 
@@ -354,9 +404,7 @@ local function transform_default(node, parent, root)
 	local y = node.y or 0
 	local offsetx = node.offsetx or 0
 	local offsety = node.offsety or 0
-	local rotation = node.rotation or 0
 	LG.translate(x + offsetx, y + offsety)
-	LG.rotate(rad(rotation))
 end
 setmetatable(transform, {
 	__index = function()
@@ -364,8 +412,24 @@ setmetatable(transform, {
 	end
 })
 
+function transform.chunk(node, parent, root)
+	local x = node.x or 0
+	local y = node.y or 0
+	local maptilewidth = root.tilewidth
+	local maptileheight = root.tileheight
+	LG.translate(x*maptilewidth, y*maptileheight)
+end
+
+function transform.layer(node, parent, root)
+	transform_default(node, parent, root)
+	local maptileheight = root.tileheight
+	LG.translate(0, maptileheight)
+end
+
 function transform.object(node, parent, root)
 	transform_default(node, parent, root)
+	local rotation = node.rotation or 0
+	LG.rotate(rad(rotation))
 	local template = node.template
 	local maptiles = root.tiles
 	if template then
@@ -398,26 +462,29 @@ function draw.data(node, parent, root)
 	if type(node[1]) ~= "number" then
 		return
 	end
-	local maptiles = root.tiles
-	if not maptiles then
-		return
+	local spritebatch = node.spritebatch
+	if spritebatch then
+		LG.draw(spritebatch)
+		return true
 	end
-	local width = node.width or parent.width
-	local height = node.height or parent.height
+	local maptiles = root.tiles
 	local maptilewidth = root.tilewidth
 	local maptileheight = root.tileheight
+	local x = 0
+	local y = 0
+	local width = node.width or parent.width
+	local height = node.height or parent.height
 	local i = 1
-	local x = node.x or 0
-	local y = node.y or 0
 	for r = 1, height do
 		for c = 1, width do
 			local tile = maptiles[node[i]]
 			if tile then
 				local tileset = tile.tileset
+				local tileheight = tileset.tileheight or 0
 				local tileoffsetx = tileset.tileoffsetx or 0
 				local tileoffsety = tileset.tileoffsety or 0
 				LG.draw(tileset.image, tile.quad, x, y, 0, 1, 1,
-					-tileoffsetx, -tileoffsety)
+					-tileoffsetx, tileheight-tileoffsety)
 			end
 			i = i + 1
 			x = x + maptilewidth

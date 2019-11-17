@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset name="player" tilewidth="64" tileheight="64" tilecount="28" columns="4">
+<tileset version="1.2" tiledversion="1.3.0" name="player" tilewidth="64" tileheight="64" tilecount="28" columns="4">
  <tileoffset x="-32" y="32"/>
  <properties>
   <property name="commoncollision" type="int" value="0"/>
