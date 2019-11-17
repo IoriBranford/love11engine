@@ -132,10 +132,23 @@ function load.animation(node, parent, dir)
 	parent.animation = node
 end
 
+function load.terraintypes(node, parent, dir)
+	parent.terraintypes = node
+end
+
 function load.tile(node, parent, dir)
 	local gid = node.gid
 	if gid then
 		parent[#parent + 1] = gid
+	end
+	local terrain = node.terrain
+	if terrain then
+		terrain = { terrain:match("(%d*),(%d*),(%d*),(%d*)") }
+		for i = 1, 4 do
+			local t = tonumber(terrain[i])
+			terrain[i] = t and (t + 1) or false
+		end
+		node.terrain = terrain
 	end
 	return node
 end
