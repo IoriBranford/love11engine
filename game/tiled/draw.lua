@@ -95,7 +95,7 @@ function draw.layer(layer, map)
 				local tileset = tile.tileset
 				local f = tileanimationframes[i]
 				if f then
-					tile = tileset[tile.animation[f].tileid]
+					tile = tileset:getAnimationFrameTile(tile, f)
 				end
 				local tileheight = tileset.tileheight or 0
 				local tileoffsetx = tileset.tileoffsetx or 0

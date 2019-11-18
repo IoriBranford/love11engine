@@ -10,10 +10,10 @@ setmetatable(update, {
 })
 
 function update.map(map, _, _, dt)
-	for gid, animation in pairs(map.tileanimations) do
+	for gid, animation in pairs(map.layertileanimations) do
 		local f = animation.globalframe
 		local msecs = animation.globalmsecs
-		f, msecs = animation:getUpdate(f, msecs, dt)
+		f, msecs = animation:getNewFrameAndMsecs(f, msecs, dt)
 		animation.globalframechanged = f ~= animation.globalframe
 		animation.globalframe, animation.globalmsecs = f, msecs
 	end
@@ -42,7 +42,7 @@ function update.layer(layer, _, map, dt)
 		local tile = tiles[gid]
 		local animation = tile.animation
 		if animation.globalframechanged then
-			tile = tile.tileset[animation[f].tileid]
+			tile = tile.tileset:getAnimationFrameTile(tile, f)
 			local maptilewidth = map.tilewidth
 			local maptileheight = map.tileheight
 			local width = layer.width
@@ -70,7 +70,7 @@ function update.object(object, objectgroup, map, dt)
 	if animation then
 		local f = object.animationframe
 		local msecs = object.animationmsecs
-		f, msecs = animation:getUpdate(f, msecs, dt)
+		f, msecs = animation:getNewFrameAndMsecs(f, msecs, dt)
 		object.animationframe, object.animationmsecs = f, msecs
 	end
 	return true

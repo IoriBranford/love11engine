@@ -156,16 +156,14 @@ end
 local Animation = {}
 Animation.__index = Animation
 
-function Animation.getUpdate(animation, f, msecs, dt)
-	local deltamsecs = dt * 1000
-	msecs = msecs + deltamsecs
+function Animation.getNewFrameAndMsecs(animation, f, msecs, dt)
 	local duration = animation[f].duration
 	while msecs >= duration do
 		msecs = msecs - duration
 		f = (f == #animation) and 1 or (f + 1)
 		duration = animation[f].duration
 	end
-	return f, msecs
+	return f, msecs + dt*1000
 end
 
 function load.animation(animation, tile, dir)
@@ -227,6 +225,11 @@ function Tileset.areGidsInRange(tileset, mingid, maxgid)
 	local firstgid = tileset.firstgid
 	local tilecount = tileset.tilecount
 	return firstgid <= mingid and maxgid < firstgid + tilecount
+end
+
+function Tileset.getAnimationFrameTile(tileset, tile, f)
+	local animation = tile.animation
+	return animation and tileset[animation[f].tileid] or tile
 end
 
 function load.tileset(tileset, parent, dir)
@@ -365,19 +368,27 @@ function load.layer(layer, map, dir)
 	end
 
 	local tiles = map.tiles
-	local tileanimations = map.tileanimations or {}
-	map.tileanimations = tileanimations
+	local layertileanimations = map.layertileanimations or {}
+	map.layertileanimations = layertileanimations
 
 	local tileanimationframes = {}
 	layer.tileanimationframes = tileanimationframes
-	local tileset
 	for i = 1, #layer do
 		local gid = layer[i]
 		local tile = tiles[gid]
 		local animation = tile and tile.animation
 		if animation then
 			tileanimationframes[i] = 1
-			tileanimations[gid] = animation
+			if not layertileanimations[gid] then
+				local tileset = tile.tileset
+				for i = 1, #tileset do
+					local tile = tiles[gid]
+					local animation = tile and tile.animation
+					if animation then
+						layertileanimations[gid] = animation
+					end
+				end
+			end
 		end
 	end
 
@@ -470,11 +481,11 @@ function Map.setLayerGid(map, layer, c, r, gid)
 	local tiles = map.tiles
 	local tile = tiles[gid]
 	local animation = tile and tile.animation
-	map.tileanimations[gid] = animation
+	map.layertileanimations[gid] = animation
 	local f = animation and animation.globalframe
 	if f then
 		layer.tileanimationframes[i] = f
-		tile = animation[f].tile
+		tile = tileset:getAnimationFrameTile(tile, f)
 	end
 
 	local tileset = layer.tileset
