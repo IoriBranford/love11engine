@@ -265,9 +265,9 @@ function load.tile(tile, parent, dir)
 	return tile
 end
 
-function load.tileoffset(tileoffset, parent, dir)
-	parent.tileoffsetx = tileoffset.x
-	parent.tileoffsety = tileoffset.y
+function load.tileoffset(tileoffset, tileset, dir)
+	tileset.tileoffsetx = -tileoffset.x
+	tileset.tileoffsety = tileset.tileheight-tileoffset.y
 end
 
 function load.grid(grid, parent, dir)
@@ -321,6 +321,8 @@ function load.tileset(tileset, parent, dir)
 		local rows = floor(tilecount/columns)
 		local tilewidth = tileset.tilewidth
 		local tileheight = tileset.tileheight
+		tileset.tileoffsetx = tileset.tileoffsetx or 0
+		tileset.tileoffsety = tileset.tileoffsety or tileheight
 		local image = tileset.image
 		local imagewidth = image:getWidth()
 		local imageheight = image:getHeight()
@@ -490,10 +492,10 @@ function load.layer(layer, map, dir)
 	if not tileset then
 		return layer
 	end
-	local tileoffsetx = tileset.tileoffsetx or 0
-	local tileoffsety = tileset.tileoffsety or 0
 	local tilewidth = tileset.tilewidth
 	local tileheight = tileset.tileheight
+	local tileoffsetx = tileset.tileoffsetx
+	local tileoffsety = tileset.tileoffsety
 	local width = layer.width
 	local height = layer.height
 	local maptilewidth = map.tilewidth
@@ -513,8 +515,7 @@ function load.layer(layer, map, dir)
 				end
 
 				spritebatch:add(tile.quad, x, y, 0, 1, 1,
-					-tileoffsetx,
-					tileheight-tileoffsety)
+					tileoffsetx, tileoffsety)
 			else
 				spritebatch:add(0, 0, 0, 0, 0)
 			end
@@ -601,11 +602,11 @@ end
 function Map.setSpriteBatchTile(map, spritebatch, i, x, y, tile)
 	if tile then
 		local tileset = tile.tileset
-		local tileoffsetx = tileset.tileoffsetx or 0
-		local tileoffsety = tileset.tileoffsety or 0
 		local tileheight = tileset.tileheight
+		local tileoffsetx = tileset.tileoffsetx
+		local tileoffsety = tileset.tileoffsety
 		spritebatch:set(i, tile.quad, x, y, 0, 1, 1,
-			-tileoffsetx, tileheight-tileoffsety)
+			tileoffsetx, tileoffsety)
 	else
 		spritebatch:set(i, 0, 0, 0, 0, 0)
 	end

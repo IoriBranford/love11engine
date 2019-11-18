@@ -98,11 +98,10 @@ function draw.layer(layer, map)
 				if f then
 					tile = tileset:getAnimationFrameTile(tile, f)
 				end
-				local tileheight = tileset.tileheight or 0
-				local tileoffsetx = tileset.tileoffsetx or 0
-				local tileoffsety = tileset.tileoffsety or 0
+				local tileoffsetx = tileset.tileoffsetx
+				local tileoffsety = tileset.tileoffsety
 				LG.draw(tileset.image, tile.quad, x, y, 0, 1, 1,
-					-tileoffsetx, tileheight-tileoffsety)
+					tileoffsetx, tileoffsety)
 			end
 			i = i + 1
 			x = x + maptilewidth
@@ -143,11 +142,10 @@ function draw.object(object, objectgroup, map)
 	local tile = object.tile
 	if tile then
 		local tileset = tile.tileset
-		local tileheight = tileset.tileheight
-		local tileoffsetx = tileset.tileoffsetx or 0
-		local tileoffsety = tileset.tileoffsety or 0
+		local tileoffsetx = tileset.tileoffsetx
+		local tileoffsety = tileset.tileoffsety
 		LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
-			-tileoffsetx, tileheight - tileoffsety)
+			tileoffsetx, tileoffsety)
 		return true
 	end
 
