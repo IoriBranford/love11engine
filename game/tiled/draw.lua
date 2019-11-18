@@ -2,7 +2,7 @@ local rad = math.rad
 local LG = love.graphics
 
 local transform = {}
-local function transform_default(node, parent, root)
+local function transform_default(node, parent, map)
 	local x = node.x or 0
 	local y = node.y or 0
 	local offsetx = node.offsetx or 0
@@ -15,35 +15,35 @@ setmetatable(transform, {
 	end
 })
 
-function transform.chunk(node, parent, root)
-	local x = node.x or 0
-	local y = node.y or 0
-	local maptilewidth = root.tilewidth
-	local maptileheight = root.tileheight
+function transform.chunk(chunk, layer, map)
+	local x = chunk.x or 0
+	local y = chunk.y or 0
+	local maptilewidth = map.tilewidth
+	local maptileheight = map.tileheight
 	LG.translate(x*maptilewidth, y*maptileheight)
 end
 
-function transform.layer(node, parent, root)
-	transform_default(node, parent, root)
-	local maptileheight = root.tileheight
+function transform.layer(layer, map)
+	transform_default(layer, map)
+	local maptileheight = map.tileheight
 	LG.translate(0, maptileheight)
 end
 
-function transform.object(node, parent, root)
-	transform_default(node, parent, root)
-	local rotation = node.rotation or 0
+function transform.object(object, objectgroup, map)
+	transform_default(object, objectgroup, map)
+	local rotation = object.rotation or 0
 	LG.rotate(rad(rotation))
-	local template = node.template
-	local maptiles = root.tiles
+	local template = object.template
+	local maptiles = map.tiles
 	if template then
-		node = template
+		object = template
 		maptiles = template.tiles
 	end
-	local gid = node.gid
+	local gid = object.gid
 	local tile = gid and maptiles[gid]
 	if tile then
-		local width = node.width
-		local height = node.height
+		local width = object.width
+		local height = object.height
 		local tileset = tile.tileset
 		local tilewidth = tileset.tilewidth
 		local tileheight = tileset.tileheight
@@ -61,26 +61,26 @@ setmetatable(draw, {
 	end
 })
 
-function draw.data(node, parent, root)
-	if type(node[1]) ~= "number" then
+function draw.layer(layer, map)
+	if type(layer[1]) ~= "number" then
 		return
 	end
-	local spritebatch = node.spritebatch
+	local spritebatch = layer.spritebatch
 	if spritebatch then
 		LG.draw(spritebatch)
 		return true
 	end
-	local maptiles = root.tiles
-	local maptilewidth = root.tilewidth
-	local maptileheight = root.tileheight
+	local maptiles = map.tiles
+	local maptilewidth = map.tilewidth
+	local maptileheight = map.tileheight
 	local x = 0
 	local y = 0
-	local width = node.width or parent.width
-	local height = node.height or parent.height
+	local width = layer.width or map.width
+	local height = layer.height or map.height
 	local i = 1
 	for r = 1, height do
 		for c = 1, width do
-			local tile = maptiles[node[i]]
+			local tile = maptiles[layer[i]]
 			if tile then
 				local tileset = tile.tileset
 				local tileheight = tileset.tileheight or 0
@@ -97,18 +97,21 @@ function draw.data(node, parent, root)
 	end
 	return true
 end
-draw.chunk = draw.data
 
-function draw.text(node, parent, root)
-	local wrap = node.wrap
-	local width = parent.width
-	local halign = node.halign
-	local valign = node.valign
-	local font = node.font
+function draw.chunk(chunk, layer, map)
+	return draw.layer(chunk, map)
+end
+
+function draw.text(text, object, map)
+	local wrap = text.wrap
+	local width = object.width
+	local halign = text.halign
+	local valign = text.valign
+	local font = text.font
 	local y = 0
-	local str = node.string
+	local str = text.string
 	if valign then
-		local height = parent.height
+		local height = object.height
 		local _, lines = font:getWrap(str, wrap and width or 1048576)
 		local textheight = font:getHeight()*#lines
 		y = height - textheight
@@ -120,14 +123,14 @@ function draw.text(node, parent, root)
 	return true
 end
 
-function draw.object(node, parent, root)
-	local template = node.template
-	local maptiles = root.tiles
+function draw.object(object, objectgroup, map)
+	local template = object.template
+	local maptiles = map.tiles
 	if template then
-		node = template
+		object = template
 		maptiles = template.tiles
 	end
-	local gid = node.gid
+	local gid = object.gid
 	local tile = gid and maptiles[gid]
 	if tile then
 		local tileset = tile.tileset
@@ -138,36 +141,36 @@ function draw.object(node, parent, root)
 		LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
 			-tileoffsetx, tileheight - tileoffsety)
 		return true
-	elseif #node == 0 then
-		if node.ellipse then
-			local hwidth = node.width/2
-			local hheight = node.height/2
+	elseif #object == 0 then
+		if object.ellipse then
+			local hwidth = object.width/2
+			local hheight = object.height/2
 			LG.ellipse("line", hwidth, hheight, hwidth, hheight)
 			return true
-		elseif node.polygon then
-			LG.polygon("line", node.polygon)
-		elseif node.polyline then
-			LG.line(node.polyline)
+		elseif object.polygon then
+			LG.polygon("line", object.polygon)
+		elseif object.polyline then
+			LG.line(object.polyline)
 		else
-			local width = node.width or 0
-			local height = node.height or 0
+			local width = object.width or 0
+			local height = object.height or 0
 			LG.rectangle("line", 0, 0, width, height)
 			return true
 		end
 	end
 end
 
-local function drawRecursive(node, parent, root)
+local function drawRecursive(node, parent, map)
 	if node.visible == 0 then
 		return
 	end
-	root = root or node
+	map = map or node
 	local tag = node.tag
 	LG.push("transform")
-	transform[tag](node, parent, root)
-	if not draw[tag](node, parent, root) then
+	transform[tag](node, parent, map)
+	if not draw[tag](node, parent, map) then
 		for i = 1, #node do
-			drawRecursive(node[i], node, root)
+			drawRecursive(node[i], node, map)
 		end
 	end
 	LG.pop()

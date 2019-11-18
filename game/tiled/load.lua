@@ -27,9 +27,9 @@ setmetatable(load, {
 	end
 })
 
-function load.properties(node, parent, dir)
-	for i = 1, #node do
-		local property = node[i]
+function load.properties(properties, parent, dir)
+	for i = 1, #properties do
+		local property = properties[i]
 		local ptype = property.type
 		local value = property.value or property.default
 		if value and ptype == "file" then
@@ -39,29 +39,29 @@ function load.properties(node, parent, dir)
 	end
 end
 
-function load.objecttype(node, parent, dir)
-	load.properties(node, node, dir)
-	for i = #node, 1, -1 do
-		node[i] = nil
+function load.objecttype(objecttype, objecttypes, dir)
+	load.properties(objecttype, objecttype, dir)
+	for i = #objecttype, 1, -1 do
+		objecttype[i] = nil
 	end
-	return node
+	return objecttype
 end
 
-function load.objecttypes(node, parent, dir)
-	for i = #node, 1, -1 do
-		local objecttype = node[i]
-		node[objecttype.name] = objecttype
-		node[i] = nil
+function load.objecttypes(objecttypes, parent, dir)
+	for i = #objecttypes, 1, -1 do
+		local objecttype = objecttypes[i]
+		objecttypes[objecttype.name] = objecttype
+		objecttypes[i] = nil
 	end
-	return node
+	return objecttypes
 end
 
-function load.ellipse(node, parent, dir)
-	parent.ellipse = true
+function load.ellipse(ellipse, object, dir)
+	object.ellipse = true
 end
 
-function load.point(node, parent, dir)
-	parent.point = true
+function load.point(point, object, dir)
+	object.point = true
 end
 
 local function parsePoints(pointsstring)
@@ -74,29 +74,29 @@ local function parsePoints(pointsstring)
 	return points
 end
 
-function load.polygon(node, parent, dir)
-	parent.polygon = parsePoints(node.points)
+function load.polygon(polygon, object, dir)
+	object.polygon = parsePoints(polygon.points)
 end
 
-function load.polyline(node, parent, dir)
-	parent.polyline = parsePoints(node.points)
+function load.polyline(polyline, object, dir)
+	object.polyline = parsePoints(polyline.points)
 end
 
-function load.text(node, parent, dir)
-	node.string = node[1]
-	node[1] = nil
-	local fontfamily = node.fontfamily
+function load.text(text, object, dir)
+	text.string = text[1]
+	text[1] = nil
+	local fontfamily = text.fontfamily
 	local file = dir..fontfamily
-	if node.bold then
+	if text.bold then
 		file = file.."bold"
 	end
-	if node.italic then
+	if text.italic then
 		file = file.."italic"
 	end
-	if node.underline then
+	if text.underline then
 		file = file.."underline"
 	end
-	local pixelsize = node.pixelsize or 16
+	local pixelsize = text.pixelsize or 16
 	local ttfsize = file..".ttf"..pixelsize
 	local fnt = file..pixelsize..".fnt"
 	local font = loaded[fnt] or loaded[ttfsize]
@@ -119,66 +119,66 @@ function load.text(node, parent, dir)
 		loaded[defaultfont] = font
 	end
 	font:setFilter("nearest", "nearest")
-	node.font = font
-	return node
+	text.font = font
+	return text
 end
 
-function load.template(node, parent, dir)
-	load.map(node, parent, dir)
-	local object = node[#node]
-	object.tiles = node.tiles
+function load.template(template, object, dir)
+	load.map(template, object, dir)
+	local object = template[#template]
+	object.tiles = template.tiles
 	return object
 end
 
-function load.object(node, parent, dir)
-	local template = node.template
+function load.object(object, parent, dir)
+	local template = object.template
 	if template then
 		local file = dir..template
 		template = loaded[file] or Tiled.load(file)
 		loaded[file] = template
-		node.template = template
+		object.template = template
 	end
-	return node
+	return object
 end
 
-function load.animation(node, parent, dir)
-	parent.animation = node
+function load.animation(animation, parent, dir)
+	parent.animation = animation
 end
 
-function load.terraintypes(node, parent, dir)
-	parent.terraintypes = node
+function load.terraintypes(terraintypes, parent, dir)
+	parent.terraintypes = terraintypes
 end
 
-function load.tile(node, parent, dir)
-	local gid = node.gid
+function load.tile(tile, parent, dir)
+	local gid = tile.gid
 	if gid then
 		parent[#parent + 1] = gid
 	end
-	local terrain = node.terrain
+	local terrain = tile.terrain
 	if terrain then
 		terrain = { terrain:match("(%d*),(%d*),(%d*),(%d*)") }
 		for i = 1, 4 do
 			local t = tonumber(terrain[i])
 			terrain[i] = t and (t + 1) or false
 		end
-		node.terrain = terrain
+		tile.terrain = terrain
 	end
-	return node
+	return tile
 end
 
-function load.tileoffset(node, parent, dir)
-	parent.tileoffsetx = node.x
-	parent.tileoffsety = node.y
+function load.tileoffset(tileoffset, parent, dir)
+	parent.tileoffsetx = tileoffset.x
+	parent.tileoffsety = tileoffset.y
 end
 
-function load.grid(node, parent, dir)
-	parent.gridwidth = node.width
-	parent.gridheight = node.height
-	parent.gridorientation = node.orientation
+function load.grid(grid, parent, dir)
+	parent.gridwidth = grid.width
+	parent.gridheight = grid.height
+	parent.gridorientation = grid.orientation
 end
 
-function load.image(node, parent, dir)
-	local file = dir..node.source
+function load.image(image, parent, dir)
+	local file = dir..image.source
 	local image = loaded[file]
 	if not image then
 		image = LG.newImage(file)
@@ -190,8 +190,8 @@ function load.image(node, parent, dir)
 	parent.image = image
 end
 
-function load.tileset(node, parent, dir)
-	local source = node.source
+function load.tileset(tileset, parent, dir)
+	local source = tileset.source
 	if source then
 		local file = dir..source
 		local exttileset = loaded[file]
@@ -199,25 +199,25 @@ function load.tileset(node, parent, dir)
 			exttileset = Tiled.load(file)
 			loaded[file] = exttileset
 		end
-		tablex.update(node, exttileset)
+		tablex.update(tileset, exttileset)
 	end
 
-	local tilecount = node.tilecount or 0
-	local columns = node.columns or 0
+	local tilecount = tileset.tilecount or 0
+	local columns = tileset.columns or 0
 	local rows = floor(tilecount/columns)
-	local tilewidth = node.tilewidth
-	local tileheight = node.tileheight
-	local image = node.image
+	local tilewidth = tileset.tilewidth
+	local tileheight = tileset.tileheight
+	local image = tileset.image
 	local imagewidth = image:getWidth()
 	local imageheight = image:getHeight()
 	for i = tilecount-1, 0, -1 do
-		node[i+1] = node[i] or {}
+		tileset[i+1] = tileset[i] or {}
 	end
 	local i, x, y = 1, 0, 0
 	for r = 1, rows do
 		for c = 1, columns do
-			local tile = node[i]
-			tile.tileset = node
+			local tile = tileset[i]
+			tile.tileset = tileset
 			tile.quad = LG.newQuad(x, y, tilewidth, tileheight,
 						imagewidth, imageheight)
 			x = x + tilewidth
@@ -230,55 +230,72 @@ function load.tileset(node, parent, dir)
 	if parent then
 		local tilesets = parent.tilesets or {}
 		parent.tilesets = tilesets
-		tilesets[#tilesets + 1] = node
+		tilesets[#tilesets + 1] = tileset
 
 		local tiles = parent.tiles or {}
 		parent.tiles = tiles
-		for i = 1, #node do
-			tiles[#tiles + 1] = node[i]
+		for i = 1, #tileset do
+			tiles[#tiles + 1] = tileset[i]
 		end
 		return
 	end
 
-	return node
+	return tileset
 end
 
-function load.data(node, parent, dir)
-	local data = node[1]
-	if type(data) ~= "string" then
-		return node
-	end
-
-	node[1] = nil
-	local encoding = node.encoding or parent.encoding
-	local compression = node.compression or parent.compression
+local function decode(output, datastring, encoding, compression)
 	if encoding == "base64" then
-		data = LD.decode("data", encoding, data)
+		datastring = LD.decode("data", encoding, datastring)
 	end
 	if compression then
-		data = LD.decompress("data", compression, data)
+		datastring = LD.decompress("data", compression, datastring)
 	end
-	local pointer = ffi.cast("uint32_t*", data:getFFIPointer())
-	local n = floor(data:getSize() / ffi.sizeof("uint32_t"))
+	local pointer = ffi.cast("uint32_t*", datastring:getFFIPointer())
+	local n = floor(datastring:getSize() / ffi.sizeof("uint32_t"))
 	local mingid = huge
 	local maxgid = 0
 	for i = 0, n-1 do
 		local gid = pointer[i]
-		node[#node + 1] = gid
+		output[#output + 1] = gid
 		if gid ~= 0 then
 			mingid = min(gid, mingid)
 			maxgid = max(gid, maxgid)
 		end
 	end
-	node.mingid = mingid
-	node.maxgid = maxgid
-	return node
+	output.mingid = mingid
+	output.maxgid = maxgid
 end
-load.chunk = load.data
 
-local function dataMakeSpriteBatch(data, layer, map)
-	local mingid = data.mingid or layer.mingid
-	local maxgid = data.maxgid or layer.maxgid
+function load.chunk(chunk, data, dir)
+	local datastring = chunk[1]
+	chunk[1] = nil
+	decode(chunk, datastring, data.encoding, data.compression)
+	return chunk
+end
+
+function load.data(data, layer, dir)
+	local datastring = data[1]
+	if type(datastring) == "string" then
+		data[1] = nil
+		decode(layer, datastring, data.encoding, data.compression)
+	else
+		layer.chunks = data
+	end
+end
+
+function load.layer(layer, map, dir)
+	local chunks = layer.chunks
+	if chunks then
+		for i = 1, #chunks do
+			local chunk = chunks[i]
+			layer[#layer + 1] = chunk
+			load.layer(chunk, map, dir)
+		end
+		layer.chunks = nil
+		return layer
+	end
+	local mingid = layer.mingid
+	local maxgid = layer.maxgid
 	local tileset
 	local tilesets = map.tilesets
 	for i = 1, #tilesets do
@@ -295,8 +312,8 @@ local function dataMakeSpriteBatch(data, layer, map)
 		local tileoffsety = tileset.tileoffsety or 0
 		local tilewidth = tileset.tilewidth
 		local tileheight = tileset.tileheight
-		local width = data.width or layer.width
-		local height = data.height or layer.height
+		local width = layer.width
+		local height = layer.height
 		local tiles = map.tiles
 		local maptilewidth = map.tilewidth
 		local maptileheight = map.tileheight
@@ -306,14 +323,14 @@ local function dataMakeSpriteBatch(data, layer, map)
 		local i, x, y = 1, 0, 0
 		for r = 1, height do
 			for c = 1, width do
-				local gid = data[i]
+				local gid = layer[i]
 				local tile = gid and tiles[gid]
 				if tile then
 					spritebatch:add(tile.quad, x, y, 0, 1, 1,
 							-tileoffsetx,
 							tileheight-tileoffsety)
 				else
-					spritebatch:add(x, y, 0, 0)
+					spritebatch:add(0, 0, 0, 0, 0)
 				end
 				i = i + 1
 				x = x + maptilewidth
@@ -321,22 +338,9 @@ local function dataMakeSpriteBatch(data, layer, map)
 			x = 0
 			y = y + maptileheight
 		end
-		data.spritebatch = spritebatch
+		layer.spritebatch = spritebatch
 	end
-end
-
-function load.layer(node, parent, dir)
-	for d = 1, #node do
-		local data = node[d]
-		if type(data[1])=="number" then
-			dataMakeSpriteBatch(data, node, parent)
-			break
-		end
-		for c = 1, #data do
-			dataMakeSpriteBatch(data[c], node, parent)
-		end
-	end
-	return node
+	return layer
 end
 
 local function loadRecursive(doc, parent, dir)
