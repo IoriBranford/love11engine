@@ -18,6 +18,10 @@ local function transform_default(node, parent, map, lerp)
 		end
 		LG.translate(x + offsetx, y + offsety)
 	end
+	local rotation = node.rotation or 0
+	if rotation then
+		LG.rotate(rad(rotation))
+	end
 end
 setmetatable(transform, {
 	__index = function()
@@ -41,17 +45,9 @@ end
 
 function transform.object(object, objectgroup, map, lerp)
 	transform_default(object, objectgroup, map, lerp)
-	local rotation = object.rotation or 0
-	LG.rotate(rad(rotation))
-	local template = object.template
-	local tiles = map.tiles
+	local tiles = object.tileset or map.tiles
 	local gid = object.gid
-	if template then
-		object = template
-		gid = gid or template.gid
-		tiles = template.tileset
-	end
-	local tile = tiles and tiles[gid]
+	local tile = tiles[gid]
 	if tile then
 		local width = object.width
 		local height = object.height
@@ -146,14 +142,9 @@ function draw.text(text, object, map)
 end
 
 function draw.object(object, objectgroup, map)
-	local template = object.template
-	local tiles = map.tiles
+	local tiles = object.tileset or map.tiles
 	local gid = object.gid
-	if template then
-		gid = gid or template.gid
-		tiles = template.tileset
-	end
-	local tile = tiles and tiles[gid]
+	local tile = tiles[gid]
 	if tile then
 		local tileset = tile.tileset
 		local tileheight = tileset.tileheight
@@ -161,7 +152,7 @@ function draw.object(object, objectgroup, map)
 		local tileoffsety = tileset.tileoffsety or 0
 		local f = object.animationframe
 		if f then
-			tile = tileset[tile.animation[f].tileid]
+			tile = tileset:getAnimationFrameTile(tile, f)
 		end
 
 		LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,

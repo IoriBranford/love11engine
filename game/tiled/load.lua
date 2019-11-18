@@ -196,8 +196,10 @@ end
 
 function load.template(template, _, dir)
 	local object = template[#template]
-	object.tileset = template.tileset
-	Map.setObjectGid(template, object, object.gid)
+	local tilesets = template.tilesets
+	if tilesets then
+		object.tileset = tilesets[1]
+	end
 	return object
 end
 
@@ -207,7 +209,7 @@ function load.object(object, parent, dir)
 		local file = dir..template
 		template = loaded[file] or Tiled.load(file)
 		loaded[file] = template
-		object.template = template
+		tablex.update(object, template)
 	end
 	return object
 end
@@ -364,19 +366,15 @@ function load.tileset(tileset, parent, dir)
 	end
 
 	if parent then
-		if parent.tag == "map" then
-			local tilesets = parent.tilesets or {}
-			parent.tilesets = tilesets
-			tilesets[#tilesets + 1] = tileset
+		local tilesets = parent.tilesets or {}
+		parent.tilesets = tilesets
+		tilesets[#tilesets + 1] = tileset
 
-			local tiles = parent.tiles or {}
-			parent.tiles = tiles
-			for i = 1, #tileset do
-				local tile = tileset[i]
-				tiles[#tiles + 1] = tile
-			end
-		elseif parent.tag == "template" then
-			parent.tileset = tileset
+		local tiles = parent.tiles or {}
+		parent.tiles = tiles
+		for i = 1, #tileset do
+			local tile = tileset[i]
+			tiles[#tiles + 1] = tile
 		end
 		return
 	end
@@ -531,13 +529,8 @@ function load.layer(layer, map, dir)
 end
 
 function Map.setObjectGid(map, object, gid)
-	local tiles = map.tiles
-	local template = object.template
-	if template then
-		gid = gid or template.gid
-		tiles = template.tileset
-	end
-	local tile = tiles and tiles[gid]
+	local tiles = object.tileset or map.tiles
+	local tile = tiles[gid]
 	local animationframe, animationmsecs
 	if tile then
 		local animation = tile.animation
@@ -571,10 +564,8 @@ function Map.setLayerGid(map, layer, c, r, gid)
 	local f = animation and animation.globalframe
 	if f then
 		layer.tileanimationframes[i] = f
-		tile = tileset:getAnimationFrameTile(tile, f)
 	end
 
-	local tileset = layer.tileset
 	local mingid = layer.mingid
 	local maxgid = layer.maxgid
 	if gid < mingid then
@@ -585,6 +576,7 @@ function Map.setLayerGid(map, layer, c, r, gid)
 		maxgid = gid
 		layer.maxgid = maxgid
 	end
+	local tileset = layer.tileset
 	if not tileset:areGidsInRange(mingid, maxgid) then
 		layer.spritebatch = nil
 	end
@@ -592,6 +584,10 @@ function Map.setLayerGid(map, layer, c, r, gid)
 	local spritebatch = layer.spritebatch
 	if not spritebatch then
 		return
+	end
+
+	if f then
+		tile = tileset:getAnimationFrameTile(tile, f)
 	end
 
 	local maptilewidth = map.tilewidth

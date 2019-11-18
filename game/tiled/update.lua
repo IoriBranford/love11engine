@@ -58,14 +58,9 @@ end
 update.chunk = update.layer
 
 function update.object(object, objectgroup, map, dt)
+	local tiles = object.tileset or map.tiles
 	local gid = object.gid
-	local tiles = map.tiles
-	local template = object.template
-	if template then
-		gid = gid or template.gid
-		tiles = template.tileset
-	end
-	local tile = tiles and tiles[gid]
+	local tile = tiles[gid]
 	local animation = tile and tile.animation
 	if animation then
 		local f = object.animationframe
