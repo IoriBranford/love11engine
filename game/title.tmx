@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.2" tiledversion="1.3.0" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="24" height="32" tilewidth="10" tileheight="10" infinite="1" nextlayerid="20" nextobjectid="57">
+<map version="1.2" tiledversion="1.3.0" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="24" height="32" tilewidth="10" tileheight="10" infinite="1" backgroundcolor="#a27fbe" nextlayerid="20" nextobjectid="57">
  <properties>
   <property name="cameraid" type="int" value="11"/>
   <property name="nextmap" type="file" value="mainmenu.lua"/>
@@ -10,7 +10,7 @@
  <tileset firstgid="26" source="img/title_demonization.tsx"/>
  <tileset firstgid="42" source="img/title.tsx"/>
  <tileset firstgid="43" source="img/player.tsx"/>
- <layer id="8" name="Tile Layer 1" width="24" height="32">
+ <layer id="8" name="Tile Layer 1" width="24" height="32" visible="0">
   <properties>
    <property name="script" value="InfiniteScrollLayer"/>
    <property name="scrolling" type="bool" value="true"/>
@@ -84,6 +84,8 @@ ioribranford.itch.io</text>
   <object id="26" name="start" type="UIButton" x="30" y="180" width="180" height="40">
    <properties>
     <property name="action" value="playerExit"/>
+    <property name="fillcolor" type="color" value="#80292042"/>
+    <property name="linecolor" type="color" value="#ff523c84"/>
     <property name="presssound" type="file" value=""/>
    </properties>
    <text fontfamily="Unifont" wrap="1" color="#ffffff" halign="center" valign="center">PRESS ENTER OR BUTTON</text>

@@ -292,7 +292,6 @@ function love.load()
 	newObject(Level)
 
 	map = tiled.load("title.tmx")
-	LFS.write("title.tmx.lua", pretty.write(map))
 end
 
 local stats = {}
@@ -301,7 +300,7 @@ function love.draw(alpha)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
 	LG.scale(2)
-	tiled.draw(map)
+	tiled.draw(map, alpha)
 	engine.debugDrawBoundingBoxes(alpha)
 
 	local font = LG.getFont()

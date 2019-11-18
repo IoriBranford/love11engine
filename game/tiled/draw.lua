@@ -1,20 +1,23 @@
 local pretty = require "pl.pretty"
+local type = type
 local rad = math.rad
 local LG = love.graphics
 
 local transform = {}
 local function transform_default(node, parent, map, lerp)
-	local x = node.x or 0
-	local y = node.y or 0
-	local offsetx = node.offsetx or 0
-	local offsety = node.offsety or 0
-	local body = node.body
-	if body then
-		local vx, vy = body:getLinearVelocity()
-		x = x + (vx*lerp)
-		y = y + (vy*lerp)
+	local x = node.x
+	local y = node.y
+	if x and y then
+		local offsetx = node.offsetx or 0
+		local offsety = node.offsety or 0
+		local body = node.body
+		if body then
+			local vx, vy = body:getLinearVelocity()
+			x = x + (vx*lerp)
+			y = y + (vy*lerp)
+		end
+		LG.translate(x + offsetx, y + offsety)
 	end
-	LG.translate(x + offsetx, y + offsety)
 end
 setmetatable(transform, {
 	__index = function()
@@ -69,6 +72,10 @@ setmetatable(draw, {
 	end
 })
 
+function draw.map(map)
+	LG.clear(map.backgroundcolor)
+end
+
 function draw.layer(layer, map)
 	if type(layer[1]) ~= "number" then
 		return
@@ -111,9 +118,10 @@ function draw.layer(layer, map)
 	end
 	return true
 end
+local draw_layer = draw.layer
 
 function draw.chunk(chunk, layer, map)
-	return draw.layer(chunk, map)
+	return draw_layer(chunk, map)
 end
 
 function draw.text(text, object, map)
@@ -163,23 +171,45 @@ function draw.object(object, objectgroup, map)
 
 	local fillcolor = object.fillcolor
 	local linecolor = object.linecolor
-	object = template or object
-	if fillcolor or linecolor then
-		if object.ellipse then
-			local hwidth = object.width/2
-			local hheight = object.height/2
-			LG.ellipse("line", hwidth, hheight, hwidth, hheight)
-		elseif object.polygon then
-			LG.polygon("line", object.polygon)
-		elseif object.polyline then
-			LG.line(object.polyline)
-		else
-			local width = object.width or 0
-			local height = object.height or 0
-			LG.rectangle("line", 0, 0, width, height)
-		end
-		return true
+	if not fillcolor and not linecolor then
+		return
 	end
+
+	local width = object.width or 0
+	local height = object.height or 0
+	local hwidth = width/2
+	local hheight = height/2
+	local ellipse = object.ellipse
+	local polygon = object.polygon
+	local polyline = object.polyline
+
+	if fillcolor then
+		LG.setColor(fillcolor)
+	end
+
+	if ellipse then
+		LG.ellipse("fill", hwidth, hheight, hwidth, hheight)
+	elseif polygon then
+		LG.polygon("fill", polygon)
+	else
+		LG.rectangle("fill", 0, 0, width, height)
+	end
+
+	if linecolor then
+		LG.setColor(linecolor)
+	end
+
+	if ellipse then
+		LG.ellipse("line", hwidth, hheight, hwidth, hheight)
+	elseif polygon then
+		LG.polygon("line", polygon)
+	elseif polyline then
+		LG.line(polyline)
+	else
+		LG.rectangle("line", 0, 0, width, height)
+	end
+
+	LG.setColor(1,1,1)
 end
 
 local function drawRecursive(node, parent, map, lerp)
@@ -198,4 +228,6 @@ local function drawRecursive(node, parent, map, lerp)
 	LG.pop()
 end
 
-return drawRecursive
+return function(map, lerp)
+	drawRecursive(map, nil, map, lerp)
+end

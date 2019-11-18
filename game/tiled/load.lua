@@ -1,3 +1,7 @@
+-- TODO:
+-- wangsets
+-- iso, hex, staggered orientation
+
 local pretty = require "pl.pretty"
 local xml = require "pl.xml"
 local tablex = require "pl.tablex"
@@ -29,6 +33,19 @@ setmetatable(load, {
 	end
 })
 
+local function parseColor(colorstring)
+	local a, r, g, b
+	if #colorstring == 9 then
+		a, r, g, b = colorstring:match("#(..)(..)(..)(..)")
+	elseif #colorstring == 7 then
+		r, g, b = colorstring:match("#(..)(..)(..)")
+	end
+	return  (1+tonumber(r, 16))/256,
+		(1+tonumber(g, 16))/256,
+		(1+tonumber(b, 16))/256,
+		a and (1+tonumber(a, 16))/256
+end
+
 ---
 -- Before:
 -- <PARENT>
@@ -49,12 +66,18 @@ setmetatable(load, {
 function load.properties(properties, parent, dir)
 	for i = 1, #properties do
 		local property = properties[i]
-		local ptype = property.type
 		local value = property.value or property.default
-		if value and ptype == "file" then
-			value = dir..value
+		if value then
+			local ptype = property.type
+			local pname = property.name
+			if ptype == "file" then
+				value = dir..value
+			elseif ptype == "color" then
+				parent[pname] = { parseColor(value) }
+			else
+				parent[pname] = value
+			end
 		end
-		parent[property.name] = value
 	end
 end
 
@@ -592,6 +615,8 @@ end
 
 function load.map(map, _, dir)
 	tablex.update(map, Map)
+	local backgroundcolor = map.backgroundcolor
+	map.backgroundcolor = backgroundcolor and { parseColor(backgroundcolor) }
 	return map
 end
 

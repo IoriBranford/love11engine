@@ -198,7 +198,6 @@ function love.run()
 
 		if LG and LG.isActive() then
 			LG.origin()
-			LG.clear(LG.getBackgroundColor())
 			if love.draw then love.draw(timeaccum*Engine.worldfps) end
 			LG.present()
 		end
