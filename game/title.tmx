@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.2" tiledversion="1.3.0" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="25" height="32" tilewidth="10" tileheight="10" infinite="1" nextlayerid="20" nextobjectid="56">
+<map version="1.2" tiledversion="1.3.0" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="24" height="32" tilewidth="10" tileheight="10" infinite="1" nextlayerid="20" nextobjectid="57">
  <properties>
   <property name="cameraid" type="int" value="11"/>
   <property name="nextmap" type="file" value="mainmenu.lua"/>
@@ -10,7 +10,7 @@
  <tileset firstgid="26" source="img/title_demonization.tsx"/>
  <tileset firstgid="42" source="img/title.tsx"/>
  <tileset firstgid="43" source="img/player.tsx"/>
- <layer id="8" name="Tile Layer 1" width="25" height="32">
+ <layer id="8" name="Tile Layer 1" width="24" height="32">
   <properties>
    <property name="script" value="InfiniteScrollLayer"/>
    <property name="scrolling" type="bool" value="true"/>
@@ -33,21 +33,21 @@
   </chunk>
   </data>
  </layer>
- <layer id="17" name="Tile Layer 2" width="25" height="32">
+ <layer id="17" name="Tile Layer 2" width="24" height="32">
   <data encoding="base64" compression="gzip">
    <chunk x="0" y="0" width="16" height="16">
    H4sIAAAAAAAEA9NmGAWjITAaAiM1BACRa4BcAAQAAA==
   </chunk>
   </data>
  </layer>
- <layer id="18" name="Tile Layer 3" width="25" height="32">
+ <layer id="18" name="Tile Layer 3" width="24" height="32">
   <data encoding="base64" compression="gzip">
    <chunk x="0" y="0" width="16" height="16">
    H4sIAAAAAAAEA2NgGAWjITAaAgMdAloD5AAAGp+80wAEAAA=
   </chunk>
   </data>
  </layer>
- <layer id="19" name="Tile Layer 4" width="25" height="32">
+ <layer id="19" name="Tile Layer 4" width="24" height="32">
   <data encoding="base64" compression="gzip">
    <chunk x="0" y="16" width="16" height="16">
    H4sIAAAAAAAEA+3Qtw0AMAgFUeZwzmH/BX0buEec9DoavoilcQHHUx4BEQkZBRW/GgcdAxMLGwcXlo4FHpl4NdwABAAA
@@ -113,7 +113,12 @@ ioribranford.itch.io</text>
   <properties>
    <property name="script" value="PlayerTeam"/>
   </properties>
-  <object id="55" template="player.tx" x="115" y="165"/>
+  <object id="55" template="player.tx" x="70" y="165"/>
+  <object id="56" gid="43" x="170" y="165" width="64" height="64">
+   <properties>
+    <property name="coroutine" value="waitCoroutine"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="16" name="curtain">
   <properties>

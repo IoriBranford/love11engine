@@ -16,6 +16,8 @@ local LG = love.graphics
 
 local Tiled = {}
 
+local Map = {}
+
 local loaded = {}
 
 local load = {}
@@ -123,10 +125,10 @@ function load.text(text, object, dir)
 	return text
 end
 
-function load.template(template, object, dir)
-	load.map(template, object, dir)
+function load.template(template, _, dir)
 	local object = template[#template]
-	object.tiles = template.tiles
+	object.tileset = template.tileset
+	Map.setObjectGid(template, object, object.gid)
 	return object
 end
 
@@ -141,8 +143,36 @@ function load.object(object, parent, dir)
 	return object
 end
 
-function load.animation(animation, parent, dir)
-	parent.animation = animation
+function load.objectgroup(objectgroup, parent, dir)
+	if parent.tag == "map" then
+		for i = 1, #objectgroup do
+			local object = objectgroup[i]
+			Map.setObjectGid(parent, object, object.gid)
+		end
+	end
+	return objectgroup
+end
+
+local Animation = {}
+Animation.__index = Animation
+
+function Animation.getUpdate(animation, f, msecs, dt)
+	local deltamsecs = dt * 1000
+	msecs = msecs + deltamsecs
+	local duration = animation[f].duration
+	while msecs >= duration do
+		msecs = msecs - duration
+		f = (f == #animation) and 1 or (f + 1)
+		duration = animation[f].duration
+	end
+	return f, msecs
+end
+
+function load.animation(animation, tile, dir)
+	setmetatable(animation, Animation)
+	tile.animation = animation
+	animation.globalmsecs = 0
+	animation.globalframe = 1
 end
 
 function load.terraintypes(terraintypes, parent, dir)
@@ -190,7 +220,18 @@ function load.image(image, parent, dir)
 	parent.image = image
 end
 
+local Tileset = {}
+Tileset.__index = Tileset
+
+function Tileset.areGidsInRange(tileset, mingid, maxgid)
+	local firstgid = tileset.firstgid
+	local tilecount = tileset.tilecount
+	return firstgid <= mingid and maxgid < firstgid + tilecount
+end
+
 function load.tileset(tileset, parent, dir)
+	setmetatable(tileset, Tileset)
+
 	local source = tileset.source
 	if source then
 		local file = dir..source
@@ -200,42 +241,70 @@ function load.tileset(tileset, parent, dir)
 			loaded[file] = exttileset
 		end
 		tablex.update(tileset, exttileset)
-	end
-
-	local tilecount = tileset.tilecount or 0
-	local columns = tileset.columns or 0
-	local rows = floor(tilecount/columns)
-	local tilewidth = tileset.tilewidth
-	local tileheight = tileset.tileheight
-	local image = tileset.image
-	local imagewidth = image:getWidth()
-	local imageheight = image:getHeight()
-	for i = tilecount-1, 0, -1 do
-		tileset[i+1] = tileset[i] or {}
-	end
-	local i, x, y = 1, 0, 0
-	for r = 1, rows do
-		for c = 1, columns do
+	else
+		local tilecount = tileset.tilecount or 0
+		local columns = tileset.columns or 0
+		local rows = floor(tilecount/columns)
+		local tilewidth = tileset.tilewidth
+		local tileheight = tileset.tileheight
+		local image = tileset.image
+		local imagewidth = image:getWidth()
+		local imageheight = image:getHeight()
+		for i = #tileset, 1, -1 do
 			local tile = tileset[i]
-			tile.tileset = tileset
-			tile.quad = LG.newQuad(x, y, tilewidth, tileheight,
-						imagewidth, imageheight)
-			x = x + tilewidth
-			i = i + 1
+			local tileid = tile.id + 1
+			tile.id = tileid
+			if tileid ~= i then
+				tileset[tileid] = tile
+				tileset[i] = nil
+			end
 		end
-		x = 0
-		y = y + tileheight
+		local i, x, y = 1, 0, 0
+		for r = 1, rows do
+			for c = 1, columns do
+				local tile = tileset[i] or {}
+				tileset[i] = tile
+				tile.id = i
+				tile.tileset = tileset
+				tile.quad = LG.newQuad(x, y, tilewidth, tileheight,
+					imagewidth, imageheight)
+				x = x + tilewidth
+				i = i + 1
+			end
+			x = 0
+			y = y + tileheight
+		end
+
+		for t = 1, #tileset do
+			local tile = tileset[t]
+			local animation = tile.animation
+			if animation then
+				local duration = 0
+				for i = 1, #animation do
+					local frame = animation[i]
+					local tileid = frame.tileid + 1
+					frame.tileid = tileid
+					duration = duration + frame.duration
+				end
+				animation.duration = duration
+			end
+		end
 	end
 
 	if parent then
-		local tilesets = parent.tilesets or {}
-		parent.tilesets = tilesets
-		tilesets[#tilesets + 1] = tileset
+		if parent.tag == "map" then
+			local tilesets = parent.tilesets or {}
+			parent.tilesets = tilesets
+			tilesets[#tilesets + 1] = tileset
 
-		local tiles = parent.tiles or {}
-		parent.tiles = tiles
-		for i = 1, #tileset do
-			tiles[#tiles + 1] = tileset[i]
+			local tiles = parent.tiles or {}
+			parent.tiles = tiles
+			for i = 1, #tileset do
+				local tile = tileset[i]
+				tiles[#tiles + 1] = tile
+			end
+		elseif parent.tag == "template" then
+			parent.tileset = tileset
 		end
 		return
 	end
@@ -276,8 +345,8 @@ end
 function load.data(data, layer, dir)
 	local datastring = data[1]
 	if type(datastring) == "string" then
-		data[1] = nil
 		decode(layer, datastring, data.encoding, data.compression)
+		return layer[1]
 	else
 		layer.chunks = data
 	end
@@ -294,75 +363,186 @@ function load.layer(layer, map, dir)
 		layer.chunks = nil
 		return layer
 	end
+
+	local tiles = map.tiles
+	local tileanimations = map.tileanimations or {}
+	map.tileanimations = tileanimations
+
+	local tileanimationframes = {}
+	layer.tileanimationframes = tileanimationframes
+	local tileset
+	for i = 1, #layer do
+		local gid = layer[i]
+		local tile = tiles[gid]
+		local animation = tile and tile.animation
+		if animation then
+			tileanimationframes[i] = 1
+			tileanimations[gid] = animation
+		end
+	end
+
 	local mingid = layer.mingid
 	local maxgid = layer.maxgid
 	local tileset
 	local tilesets = map.tilesets
 	for i = 1, #tilesets do
 		local ts = tilesets[i]
-		local firstgid = ts.firstgid
-		local tilecount = ts.tilecount
-		if firstgid <= mingid and maxgid < firstgid + tilecount then
+		if Tileset.areGidsInRange(ts, mingid, maxgid) then
 			tileset = ts
 			break
 		end
 	end
-	if tileset then
+	if not tileset then
+		return layer
+	end
+	local tileoffsetx = tileset.tileoffsetx or 0
+	local tileoffsety = tileset.tileoffsety or 0
+	local tilewidth = tileset.tilewidth
+	local tileheight = tileset.tileheight
+	local width = layer.width
+	local height = layer.height
+	local maptilewidth = map.tilewidth
+	local maptileheight = map.tileheight
+	local spritebatchusage = layer.spritebatchusage or "dynamic"
+	local spritebatch = LG.newSpriteBatch(tileset.image,
+		width * height, spritebatchusage)
+	local i, x, y = 1, 0, 0
+	for r = 1, height do
+		for c = 1, width do
+			local gid = layer[i]
+			local tile = tiles[gid]
+			if tile then
+				local animation = tile.animation
+				if animation then
+					tile = tileset[animation[1].tileid]
+				end
+
+				spritebatch:add(tile.quad, x, y, 0, 1, 1,
+					-tileoffsetx,
+					tileheight-tileoffsety)
+			else
+				spritebatch:add(0, 0, 0, 0, 0)
+			end
+			i = i + 1
+			x = x + maptilewidth
+		end
+		x = 0
+		y = y + maptileheight
+	end
+	layer.spritebatch = spritebatch
+	return layer
+end
+
+function Map.setObjectGid(map, object, gid)
+	local tiles = map.tiles
+	local template = object.template
+	if template then
+		gid = gid or template.gid
+		tiles = template.tileset
+	end
+	local tile = tiles and tiles[gid]
+	local animationframe, animationmsecs
+	if tile then
+		local animation = tile.animation
+		if animation then
+			object.animationmsecs = 0
+			object.animationframe = 1
+		end
+	end
+	object.gid = gid
+end
+
+function Map.changeObjectGid(map, object, gid)
+	if object.gid ~= gid then
+		Map.setObjectGid(map, object, gid)
+	end
+end
+
+function Map.setLayerGid(map, layer, c, r, gid)
+	if type(layer[1]) ~= "number" then
+		-- TODO: find chunk and change its tile
+	end
+
+	local width = layer.width
+	local i = 1 + c + width*r
+	layer[i] = gid
+
+	local tiles = map.tiles
+	local tile = tiles[gid]
+	local animation = tile and tile.animation
+	map.tileanimations[gid] = animation
+	local f = animation and animation.globalframe
+	if f then
+		layer.tileanimationframes[i] = f
+		tile = animation[f].tile
+	end
+
+	local tileset = layer.tileset
+	local mingid = layer.mingid
+	local maxgid = layer.maxgid
+	if gid < mingid then
+		mingid = gid
+		layer.mingid = mingid
+	end
+	if mingid > maxgid then
+		maxgid = gid
+		layer.maxgid = maxgid
+	end
+	if not tileset:areGidsInRange(mingid, maxgid) then
+		layer.spritebatch = nil
+	end
+
+	local spritebatch = layer.spritebatch
+	if not spritebatch then
+		return
+	end
+
+	local maptilewidth = map.tilewidth
+	local maptileheight = map.tileheight
+	local x, y = x*maptilewidth, y*maptileheight
+	Map.setSpriteBatchTile(map, spritebatch, i, x, y, tile)
+end
+
+function Map.setSpriteBatchTile(map, spritebatch, i, x, y, tile)
+	if tile then
+		local tileset = tile.tileset
 		local tileoffsetx = tileset.tileoffsetx or 0
 		local tileoffsety = tileset.tileoffsety or 0
-		local tilewidth = tileset.tilewidth
 		local tileheight = tileset.tileheight
-		local width = layer.width
-		local height = layer.height
-		local tiles = map.tiles
-		local maptilewidth = map.tilewidth
-		local maptileheight = map.tileheight
-		local spritebatchusage = layer.spritebatchusage or "dynamic"
-		local spritebatch = LG.newSpriteBatch(tileset.image,
-					width * height, spritebatchusage)
-		local i, x, y = 1, 0, 0
-		for r = 1, height do
-			for c = 1, width do
-				local gid = layer[i]
-				local tile = gid and tiles[gid]
-				if tile then
-					spritebatch:add(tile.quad, x, y, 0, 1, 1,
-							-tileoffsetx,
-							tileheight-tileoffsety)
-				else
-					spritebatch:add(0, 0, 0, 0, 0)
-				end
-				i = i + 1
-				x = x + maptilewidth
-			end
-			x = 0
-			y = y + maptileheight
-		end
-		layer.spritebatch = spritebatch
+		spritebatch:set(i, tile.quad, x, y, 0, 1, 1,
+			-tileoffsetx, tileheight-tileoffsety)
+	else
+		spritebatch:set(i, 0, 0, 0, 0, 0)
 	end
-	return layer
+end
+
+function load.map(map, _, dir)
+	tablex.update(map, Map)
+	return map
 end
 
 local function loadRecursive(doc, parent, dir)
 	if type(doc) == "string" then
 		return doc
 	end
-	local node = {}
-	local tag = doc.tag
-	node.tag = tag
-	local attr = doc.attr
-	for k,v in pairs(attr) do
+	local node = doc.attr
+	tablex.transform(function(v)
 		local number = tonumber(v)
 		if number then
-			v = number
+			return number
 		elseif v == "" then
-			v = nil
+			return nil
 		elseif v == "false" then
-			v = false
+			return false
 		elseif v == "true" then
-			v = true
+			return true
 		end
-		node[k] = v
+		return v
+	end, node)
+	local tag = doc.tag
+	node.tag = tag
+	if node.visible == 0 then
+		node.visible = false
 	end
 	local n = #doc
 	for i = 1, n do

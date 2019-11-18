@@ -250,6 +250,7 @@ function Enemy:think()
 	end
 end
 
+local map
 function Level:think()
 	local nextenemytime = self.nextenemytime
 	nextenemytime = nextenemytime - 1
@@ -260,6 +261,7 @@ function Level:think()
 		enemy.y = 0
 	end
 	self.nextenemytime = nextenemytime
+	tiled.update(map, 1/engine.worldfps)
 end
 
 function Level:init()
@@ -274,7 +276,7 @@ function Level:init()
 	Level.instance = self
 	self.playerid = player.id
 end
-local map
+
 function love.load()
 	local gamepadfile = "gamecontrollerdb.txt"
 	if LFS.getInfo(gamepadfile) then

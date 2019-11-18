@@ -1,12 +1,19 @@
+local pretty = require "pl.pretty"
 local rad = math.rad
 local LG = love.graphics
 
 local transform = {}
-local function transform_default(node, parent, map)
+local function transform_default(node, parent, map, lerp)
 	local x = node.x or 0
 	local y = node.y or 0
 	local offsetx = node.offsetx or 0
 	local offsety = node.offsety or 0
+	local body = node.body
+	if body then
+		local vx, vy = body:getLinearVelocity()
+		x = x + (vx*lerp)
+		y = y + (vy*lerp)
+	end
 	LG.translate(x + offsetx, y + offsety)
 end
 setmetatable(transform, {
@@ -23,24 +30,25 @@ function transform.chunk(chunk, layer, map)
 	LG.translate(x*maptilewidth, y*maptileheight)
 end
 
-function transform.layer(layer, map)
-	transform_default(layer, map)
+function transform.layer(layer, map, _, lerp)
+	transform_default(layer, map, _, lerp)
 	local maptileheight = map.tileheight
 	LG.translate(0, maptileheight)
 end
 
-function transform.object(object, objectgroup, map)
-	transform_default(object, objectgroup, map)
+function transform.object(object, objectgroup, map, lerp)
+	transform_default(object, objectgroup, map, lerp)
 	local rotation = object.rotation or 0
 	LG.rotate(rad(rotation))
 	local template = object.template
-	local maptiles = map.tiles
+	local tiles = map.tiles
+	local gid = object.gid
 	if template then
 		object = template
-		maptiles = template.tiles
+		gid = gid or template.gid
+		tiles = template.tileset
 	end
-	local gid = object.gid
-	local tile = gid and maptiles[gid]
+	local tile = tiles and tiles[gid]
 	if tile then
 		local width = object.width
 		local height = object.height
@@ -70,7 +78,7 @@ function draw.layer(layer, map)
 		LG.draw(spritebatch)
 		return true
 	end
-	local maptiles = map.tiles
+	local tiles = map.tiles
 	local maptilewidth = map.tilewidth
 	local maptileheight = map.tileheight
 	local x = 0
@@ -78,11 +86,17 @@ function draw.layer(layer, map)
 	local width = layer.width or map.width
 	local height = layer.height or map.height
 	local i = 1
+	local tileanimationframes = layer.tileanimationframes
 	for r = 1, height do
 		for c = 1, width do
-			local tile = maptiles[layer[i]]
+			local tile = tiles[layer[i]]
+
 			if tile then
 				local tileset = tile.tileset
+				local f = tileanimationframes[i]
+				if f then
+					tile = tileset[tile.animation[f].tileid]
+				end
 				local tileheight = tileset.tileheight or 0
 				local tileoffsetx = tileset.tileoffsetx or 0
 				local tileoffsety = tileset.tileoffsety or 0
@@ -125,28 +139,36 @@ end
 
 function draw.object(object, objectgroup, map)
 	local template = object.template
-	local maptiles = map.tiles
-	if template then
-		object = template
-		maptiles = template.tiles
-	end
+	local tiles = map.tiles
 	local gid = object.gid
-	local tile = gid and maptiles[gid]
+	if template then
+		gid = gid or template.gid
+		tiles = template.tileset
+	end
+	local tile = tiles and tiles[gid]
 	if tile then
 		local tileset = tile.tileset
 		local tileheight = tileset.tileheight
 		local tileoffsetx = tileset.tileoffsetx or 0
 		local tileoffsety = tileset.tileoffsety or 0
+		local f = object.animationframe
+		if f then
+			tile = tileset[tile.animation[f].tileid]
+		end
 
 		LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
 			-tileoffsetx, tileheight - tileoffsety)
 		return true
-	elseif #object == 0 then
+	end
+
+	local fillcolor = object.fillcolor
+	local linecolor = object.linecolor
+	object = template or object
+	if fillcolor or linecolor then
 		if object.ellipse then
 			local hwidth = object.width/2
 			local hheight = object.height/2
 			LG.ellipse("line", hwidth, hheight, hwidth, hheight)
-			return true
 		elseif object.polygon then
 			LG.polygon("line", object.polygon)
 		elseif object.polyline then
@@ -155,22 +177,22 @@ function draw.object(object, objectgroup, map)
 			local width = object.width or 0
 			local height = object.height or 0
 			LG.rectangle("line", 0, 0, width, height)
-			return true
 		end
+		return true
 	end
 end
 
-local function drawRecursive(node, parent, map)
-	if node.visible == 0 then
+local function drawRecursive(node, parent, map, lerp)
+	if node.visible == false then
 		return
 	end
 	map = map or node
 	local tag = node.tag
 	LG.push("transform")
-	transform[tag](node, parent, map)
+	transform[tag](node, parent, map, lerp)
 	if not draw[tag](node, parent, map) then
 		for i = 1, #node do
-			drawRecursive(node[i], node, map)
+			drawRecursive(node[i], node, map, lerp)
 		end
 	end
 	LG.pop()
