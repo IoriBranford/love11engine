@@ -6,6 +6,8 @@ local floor = math.floor
 local max = math.max
 local min = math.min
 local huge = math.huge
+local type = type
+local pairs = pairs
 local tonumber = tonumber
 local love = love
 local LD = love.data
@@ -164,37 +166,6 @@ function load.tile(node, parent, dir)
 	return node
 end
 
-function load.data(node, parent, dir)
-	local data = node[1]
-	if type(data) == "string" then
-		node[1] = nil
-		local encoding = node.encoding or parent.encoding
-		local compression = node.compression or parent.compression
-		if encoding == "base64" then
-			data = LD.decode("data", encoding, data)
-		end
-		if compression then
-			data = LD.decompress("data", compression, data)
-		end
-		local pointer = ffi.cast("uint32_t*", data:getFFIPointer())
-		local n = floor(data:getSize() / ffi.sizeof("uint32_t"))
-		local mingid = huge
-		local maxgid = 0
-		for i = 0, n-1 do
-			local gid = pointer[i]
-			node[#node + 1] = gid
-			if gid ~= 0 then
-				mingid = min(gid, mingid)
-				maxgid = max(gid, maxgid)
-			end
-		end
-		node.mingid = mingid
-		node.maxgid = maxgid
-	end
-	return node
-end
-load.chunk = load.data
-
 function load.tileoffset(node, parent, dir)
 	parent.tileoffsetx = node.x
 	parent.tileoffsety = node.y
@@ -239,11 +210,13 @@ function load.tileset(node, parent, dir)
 	local image = node.image
 	local imagewidth = image:getWidth()
 	local imageheight = image:getHeight()
-	local i, x, y = 0, 0, 0
+	for i = tilecount-1, 0, -1 do
+		node[i+1] = node[i] or {}
+	end
+	local i, x, y = 1, 0, 0
 	for r = 1, rows do
 		for c = 1, columns do
-			local tile = node[i] or {}
-			node[i] = tile
+			local tile = node[i]
 			tile.tileset = node
 			tile.quad = LG.newQuad(x, y, tilewidth, tileheight,
 						imagewidth, imageheight)
@@ -258,13 +231,52 @@ function load.tileset(node, parent, dir)
 		local tilesets = parent.tilesets or {}
 		parent.tilesets = tilesets
 		tilesets[#tilesets + 1] = node
+
+		local tiles = parent.tiles or {}
+		parent.tiles = tiles
+		for i = 1, #node do
+			tiles[#tiles + 1] = node[i]
+		end
 		return
 	end
 
 	return node
 end
 
-local function layerSpriteBatch(data, layer, map)
+function load.data(node, parent, dir)
+	local data = node[1]
+	if type(data) ~= "string" then
+		return node
+	end
+
+	node[1] = nil
+	local encoding = node.encoding or parent.encoding
+	local compression = node.compression or parent.compression
+	if encoding == "base64" then
+		data = LD.decode("data", encoding, data)
+	end
+	if compression then
+		data = LD.decompress("data", compression, data)
+	end
+	local pointer = ffi.cast("uint32_t*", data:getFFIPointer())
+	local n = floor(data:getSize() / ffi.sizeof("uint32_t"))
+	local mingid = huge
+	local maxgid = 0
+	for i = 0, n-1 do
+		local gid = pointer[i]
+		node[#node + 1] = gid
+		if gid ~= 0 then
+			mingid = min(gid, mingid)
+			maxgid = max(gid, maxgid)
+		end
+	end
+	node.mingid = mingid
+	node.maxgid = maxgid
+	return node
+end
+load.chunk = load.data
+
+local function dataMakeSpriteBatch(data, layer, map)
 	local mingid = data.mingid or layer.mingid
 	local maxgid = data.maxgid or layer.maxgid
 	local tileset
@@ -313,37 +325,15 @@ local function layerSpriteBatch(data, layer, map)
 	end
 end
 
-function load.map(node, parent, dir)
-	local tilesets = node.tilesets or {}
-	local tiles = {}
-	node.tiles = tiles
-	for i = 1, #tilesets do
-		local tileset = tilesets[i]
-		local gid = tileset.firstgid
-		local tile = tileset[0]
-		if tile then
-			tiles[gid] = tile
-			gid = gid + 1
+function load.layer(node, parent, dir)
+	for d = 1, #node do
+		local data = node[d]
+		if type(data[1])=="number" then
+			dataMakeSpriteBatch(data, node, parent)
+			break
 		end
-		for t = 1, #tileset do
-			local tile = tileset[t]
-			tiles[gid] = tile
-			gid = gid + 1
-		end
-	end
-	for i = 1, #node do
-		local layer = node[i]
-		if layer.tag == "layer" then
-			for d = 1, #layer do
-				local data = layer[d]
-				if type(data[1])=="number" then
-					layerSpriteBatch(data, layer, node)
-					break
-				end
-				for c = 1, #data do
-					layerSpriteBatch(data[c], layer, node)
-				end
-			end
+		for c = 1, #data do
+			dataMakeSpriteBatch(data[c], node, parent)
 		end
 	end
 	return node
