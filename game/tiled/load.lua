@@ -29,6 +29,23 @@ setmetatable(load, {
 	end
 })
 
+---
+-- Before:
+-- <PARENT>
+--  <properties>
+--   <property name="NAME1" type="TYPE1" value="VALUE1"/>
+--   <property name="NAME2" type="TYPE2" value="VALUE2"/>
+--   ...
+--  </properties>
+-- </PARENT>
+--
+-- After:
+-- {
+--  tag = PARENT,
+--  NAME1 = "VALUE1",
+--  NAME2 = "VALUE2",
+--  ...
+-- }
 function load.properties(properties, parent, dir)
 	for i = 1, #properties do
 		local property = properties[i]
@@ -41,21 +58,28 @@ function load.properties(properties, parent, dir)
 	end
 end
 
+---
+-- Before:
+--  <objecttype>
+--   <property name="NAME1" type="TYPE1" default="VALUE1"/>
+--   <property name="NAME2" type="TYPE2" default="VALUE2"/>
+--   ...
+--  </objecttype>
+--
+-- After:
+-- {
+--  tag = objecttype,
+--  NAME1 = "VALUE1",
+--  NAME2 = "VALUE2",
+--  ...
+-- }
 function load.objecttype(objecttype, objecttypes, dir)
 	load.properties(objecttype, objecttype, dir)
 	for i = #objecttype, 1, -1 do
+		objecttypes[objecttype.name] = objecttype
 		objecttype[i] = nil
 	end
-	return objecttype
-end
-
-function load.objecttypes(objecttypes, parent, dir)
-	for i = #objecttypes, 1, -1 do
-		local objecttype = objecttypes[i]
-		objecttypes[objecttype.name] = objecttype
-		objecttypes[i] = nil
-	end
-	return objecttypes
+	objecttype.name = nil
 end
 
 function load.ellipse(ellipse, object, dir)
@@ -76,10 +100,32 @@ local function parsePoints(pointsstring)
 	return points
 end
 
+---
+-- Before:
+-- <object>
+--  <polygon points="1,2 3,4"\>
+-- </object>
+--
+-- After:
+-- {
+--  tag = "object",
+--  polygon = { 1, 2, 3, 4 }
+-- }
 function load.polygon(polygon, object, dir)
 	object.polygon = parsePoints(polygon.points)
 end
 
+---
+-- Before:
+-- <object>
+--  <polyline points="1,2 3,4"\>
+-- </object>
+--
+-- After:
+-- {
+--  tag = "object",
+--  polyline = { 1, 2, 3, 4 }
+-- }
 function load.polyline(polyline, object, dir)
 	object.polyline = parsePoints(polyline.points)
 end
@@ -355,6 +401,23 @@ function load.data(data, layer, dir)
 	end
 end
 
+---
+-- Before:
+--
+-- <layer>
+--  <data encoding=ENCODING compression=COMPRESSION>
+--   DATA STRING
+--  </data>
+-- </layer>
+--
+-- After:
+-- {
+--  tag = "layer",
+--  [1],[2]... = DATA,
+--  mingid,
+--  maxgid,
+--  spritebatch
+-- }
 function load.layer(layer, map, dir)
 	local chunks = layer.chunks
 	if chunks then
