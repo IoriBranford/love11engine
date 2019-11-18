@@ -45,9 +45,7 @@ end
 
 function transform.object(object, objectgroup, map, lerp)
 	transform_default(object, objectgroup, map, lerp)
-	local tiles = object.tileset or map.tiles
-	local gid = object.gid
-	local tile = tiles[gid]
+	local tile = object.tile
 	if tile then
 		local width = object.width
 		local height = object.height
@@ -142,19 +140,12 @@ function draw.text(text, object, map)
 end
 
 function draw.object(object, objectgroup, map)
-	local tiles = object.tileset or map.tiles
-	local gid = object.gid
-	local tile = tiles[gid]
+	local tile = object.tile
 	if tile then
 		local tileset = tile.tileset
 		local tileheight = tileset.tileheight
 		local tileoffsetx = tileset.tileoffsetx or 0
 		local tileoffsety = tileset.tileoffsety or 0
-		local f = object.animationframe
-		if f then
-			tile = tileset:getAnimationFrameTile(tile, f)
-		end
-
 		LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
 			-tileoffsetx, tileheight - tileoffsety)
 		return true
@@ -166,38 +157,38 @@ function draw.object(object, objectgroup, map)
 		return
 	end
 
-	local width = object.width or 0
-	local height = object.height or 0
+	local width = object.width or 2
+	local height = object.height or 2
 	local hwidth = width/2
 	local hheight = height/2
-	local ellipse = object.ellipse
+	local ellipse = object.ellipse or object.point
 	local polygon = object.polygon
 	local polyline = object.polyline
 
 	if fillcolor then
 		LG.setColor(fillcolor)
-	end
 
-	if ellipse then
-		LG.ellipse("fill", hwidth, hheight, hwidth, hheight)
-	elseif polygon then
-		LG.polygon("fill", polygon)
-	else
-		LG.rectangle("fill", 0, 0, width, height)
+		if ellipse then
+			LG.ellipse("fill", hwidth, hheight, hwidth, hheight)
+		elseif polygon then
+			LG.polygon("fill", polygon)
+		else
+			LG.rectangle("fill", 0, 0, width, height)
+		end
 	end
 
 	if linecolor then
 		LG.setColor(linecolor)
-	end
 
-	if ellipse then
-		LG.ellipse("line", hwidth, hheight, hwidth, hheight)
-	elseif polygon then
-		LG.polygon("line", polygon)
-	elseif polyline then
-		LG.line(polyline)
-	else
-		LG.rectangle("line", 0, 0, width, height)
+		if ellipse then
+			LG.ellipse("line", hwidth, hheight, hwidth, hheight)
+		elseif polygon then
+			LG.polygon("line", polygon)
+		elseif polyline then
+			LG.line(polyline)
+		else
+			LG.rectangle("line", 0, 0, width, height)
+		end
 	end
 
 	LG.setColor(1,1,1)

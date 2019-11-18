@@ -60,12 +60,18 @@ update.chunk = update.layer
 function update.object(object, objectgroup, map, dt)
 	local tiles = object.tileset or map.tiles
 	local gid = object.gid
-	local tile = tiles[gid]
-	local animation = tile and tile.animation
+	local animatedtile = tiles[gid]
+	local animation = animatedtile and animatedtile.animation
 	if animation then
 		local f = object.animationframe
 		local msecs = object.animationmsecs
-		f, msecs = animation:getNewFrameAndMsecs(f, msecs, dt)
+		local f2
+		f2, msecs = animation:getNewFrameAndMsecs(f, msecs, dt)
+		if f ~= f2 then
+			f = f2
+			local tileset = animatedtile.tileset
+			object.tile = tileset:getAnimationFrameTile(animatedtile, f)
+		end
 		object.animationframe, object.animationmsecs = f, msecs
 	end
 	return true

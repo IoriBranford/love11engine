@@ -298,9 +298,9 @@ function Tileset.areGidsInRange(tileset, mingid, maxgid)
 	return firstgid <= mingid and maxgid < firstgid + tilecount
 end
 
-function Tileset.getAnimationFrameTile(tileset, tile, f)
-	local animation = tile.animation
-	return animation and tileset[animation[f].tileid] or tile
+function Tileset.getAnimationFrameTile(tileset, animatedtile, f)
+	local animation = animatedtile.animation
+	return animation and tileset[animation[f].tileid] or animatedtile
 end
 
 function load.tileset(tileset, parent, dir)
@@ -537,8 +537,10 @@ function Map.setObjectGid(map, object, gid)
 		if animation then
 			object.animationmsecs = 0
 			object.animationframe = 1
+			tile = tile.tileset:getAnimationFrameTile(tile, 1)
 		end
 	end
+	object.tile = tile
 	object.gid = gid
 end
 
