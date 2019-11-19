@@ -9,17 +9,17 @@ setmetatable(update, {
 	end
 })
 
-function update.map(map, _, _, dt)
+function update.map(map, _, _, dmsecs)
 	for gid, animation in pairs(map.layertileanimations) do
 		local f = animation.globalframe
 		local msecs = animation.globalmsecs
-		f, msecs = animation:getNewFrameAndMsecs(f, msecs, dt)
+		f, msecs = animation:getNewFrameAndMsecs(f, msecs, dmsecs)
 		animation.globalframechanged = f ~= animation.globalframe
 		animation.globalframe, animation.globalmsecs = f, msecs
 	end
 end
 
-function update.layer(layer, _, map, dt)
+function update.layer(layer, _, map, dmsecs)
 	if type(layer[1]) ~= "number" then
 		return
 	end
@@ -57,7 +57,7 @@ function update.layer(layer, _, map, dt)
 end
 update.chunk = update.layer
 
-function update.object(object, objectgroup, map, dt)
+function update.object(object, objectgroup, map, dmsecs)
 	local tiles = object.tileset or map.tiles
 	local gid = object.gid
 	local animatedtile = tiles[gid]
@@ -66,7 +66,7 @@ function update.object(object, objectgroup, map, dt)
 		local f = object.animationframe
 		local msecs = object.animationmsecs
 		local f2
-		f2, msecs = animation:getNewFrameAndMsecs(f, msecs, dt)
+		f2, msecs = animation:getNewFrameAndMsecs(f, msecs, dmsecs)
 		if f ~= f2 then
 			f = f2
 			local tileset = animatedtile.tileset
@@ -77,14 +77,14 @@ function update.object(object, objectgroup, map, dt)
 	return true
 end
 
-local function updateRecursive(node, parent, map, dt)
-	if not update[node.tag](node, parent, map, dt) then
+local function updateRecursive(node, parent, map, dmsecs)
+	if not update[node.tag](node, parent, map, dmsecs) then
 		for i = 1, #node do
-			updateRecursive(node[i], node, map, dt)
+			updateRecursive(node[i], node, map, dmsecs)
 		end
 	end
 end
 
-return function(map, dt)
-	updateRecursive(map, nil, map, dt)
+return function(map, dmsecs)
+	updateRecursive(map, nil, map, dmsecs)
 end

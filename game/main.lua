@@ -261,7 +261,7 @@ function Level:think()
 		enemy.y = 0
 	end
 	self.nextenemytime = nextenemytime
-	tiled.update(map, 1/engine.worldfps)
+	tiled.update(map, 1000/engine.worldfps)
 end
 
 function Level:init()
@@ -270,15 +270,13 @@ function Level:init()
 	local fixture = LP.newFixture(body, shape)
 	fixture:setFriction(0)
 
-
 	local player = newObject(Player)
 	player.x, player.y = 120, 304
-	Level.instance = self
 	self.playerid = player.id
 end
 
 function love.keypressed()
-	if not Level.instance.playerid then
+	if Level.instance and not Level.instance.playerid then
 		engine.reload()
 	end
 end
@@ -299,7 +297,7 @@ end
 
 function love.reload()
 	tiled.load.clearCache()
-	newObject(Level)
+	Level.instance = newObject(Level)
 	map = tiled.load("kenney-iso/Sample.tmx")
 end
 

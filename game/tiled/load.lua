@@ -227,14 +227,14 @@ end
 local Animation = {}
 Animation.__index = Animation
 
-function Animation.getNewFrameAndMsecs(animation, f, msecs, dt)
+function Animation.getNewFrameAndMsecs(animation, f, msecs, dmsecs)
 	local duration = animation[f].duration
 	while msecs >= duration do
 		msecs = msecs - duration
 		f = (f == #animation) and 1 or (f + 1)
 		duration = animation[f].duration
 	end
-	return f, msecs + dt*1000
+	return f, msecs + dmsecs
 end
 
 function load.animation(animation, tile, dir)
