@@ -556,21 +556,18 @@ function Map.forEachLayerTile(map, layer, func, ...)
 	local y = 0
 	local cdx, cdy
 	local rdx, rdy
-	local sdx0, sdy0 = 1, 1
+	local srdx, srdy = 1, 1
 	local orientation = map.orientation
 	if orientation == "orthogonal" then
 		cdx, cdy = maptilewidth, 0
-		rdx, rdy = -width * maptilewidth, maptileheight
+		rdx, rdy = 0, maptileheight
 	elseif orientation == "staggered" then
 		cdx, cdy = maptilewidth, 0
-		rdx, rdy = (0.5-width) * maptilewidth, maptileheight / 2
-		sdx0 = -1
+		rdx, rdy = maptilewidth/2, maptileheight/2
+		srdx = -1
 	elseif orientation == "isometric" then
-		x = height*maptilewidth/2
-		cdx = maptilewidth/2
-		cdy = maptileheight/2
-		rdx = (-1-width) * maptilewidth/2
-		rdy = (1-width) * maptileheight/2
+		cdx, cdy = maptilewidth/2, maptileheight/2
+		rdx, rdy = -maptilewidth/2, maptileheight/2
 	end
 
 	for r = 1, height do
@@ -581,10 +578,10 @@ function Map.forEachLayerTile(map, layer, func, ...)
 			x = x + cdx
 			y = y + cdy
 		end
-		x = x + rdx + dx0
-		y = y + rdy + dy0
-		dx0 = dx0 * sdx0
-		dy0 = dy0 * sdy0
+		x = x - width*cdx + rdx
+		y = y - width*cdy + rdy
+		rdx = rdx*srdx
+		rdy = rdy*srdy
 	end
 end
 
