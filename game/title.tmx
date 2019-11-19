@@ -10,7 +10,7 @@
  <tileset firstgid="26" source="img/title_demonization.tsx"/>
  <tileset firstgid="42" source="img/title.tsx"/>
  <tileset firstgid="43" source="img/player.tsx"/>
- <layer id="8" name="Tile Layer 1" width="24" height="32" visible="0">
+ <layer id="8" name="Tile Layer 1" width="24" height="32">
   <properties>
    <property name="script" value="InfiniteScrollLayer"/>
    <property name="scrolling" type="bool" value="true"/>

@@ -17,6 +17,7 @@ local freeobjects = {}
 local objectstofree = {}
 local objectsthink = {}
 local nextid = 1
+local reload = true
 
 local Object = {}
 
@@ -78,6 +79,10 @@ function Engine.getObject(id)
 	return objects[id]
 end
 
+function Engine.reload()
+	reload = true
+end
+
 local function beginContact(f1, f2, contact)
 	local b1 = f1:getBody()
 	local b2 = f2:getBody()
@@ -131,7 +136,7 @@ end
 
 local function clearObjects()
 	for id, _ in pairs(objects) do
-		object:markFree()
+		objects[id]:setFree()
 	end
 	freeObjects()
 
@@ -162,11 +167,7 @@ function Engine.debugDrawBoundingBoxes(alpha)
 end
 
 function love.run()
-	clearObjects()
-
 	if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
-
-	-- We don't want the first frame's dt to include time taken by love.load.
 	if LT then LT.step() end
 
 	local dt = 0
@@ -174,6 +175,14 @@ function love.run()
 
 	-- Main loop time.
 	return function()
+		if reload then
+			clearObjects()
+			if love.reload then love.reload() end
+			collectgarbage()
+			reload = false
+			if LT then LT.step() end
+		end
+
 		-- Process events.
 		if LE then
 			LE.pump()

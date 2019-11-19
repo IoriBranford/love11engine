@@ -277,6 +277,12 @@ function Level:init()
 	self.playerid = player.id
 end
 
+function love.keypressed()
+	if not Level.instance.playerid then
+		engine.reload()
+	end
+end
+
 function love.load()
 	local gamepadfile = "gamecontrollerdb.txt"
 	if LFS.getInfo(gamepadfile) then
@@ -289,8 +295,11 @@ function love.load()
 		vsync = false
 	}
 	LW.setMode(window_width, window_height, window_flags)
-	newObject(Level)
+end
 
+function love.reload()
+	tiled.load.clearCache()
+	newObject(Level)
 	map = tiled.load("title.tmx")
 end
 
