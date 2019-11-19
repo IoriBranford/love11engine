@@ -544,44 +544,101 @@ function load.layer(layer, map, dir)
 	return layer
 end
 
+local Staggers = {
+	x = {
+		odd = {
+			x = 0, y = 0,
+			cdx = .5, cdy = .5,
+			rdx = 0, rdy = 1,
+			scalecdx = 1, scalecdy = -1,
+			scalerdx = 1, scalerdy = 1
+		},
+		even = {
+			x = 0, y = .5,
+			cdx = .5, cdy = -.5,
+			rdx = 0, rdy = 1,
+			scalecdx = 1, scalecdy = -1,
+			scalerdx = 1, scalerdy = 1
+		}
+	},
+	y = {
+		odd = {
+			x = 0, y = 0,
+			cdx = 1, cdy = 0,
+			rdx = .5, rdy = .5,
+			scalecdx = 1, scalecdy = 1,
+			scalerdx = -1, scalerdy = 1
+		},
+		even = {
+			x = .5, y = 0,
+			cdx = 1, cdy = 0,
+			rdx = -.5, rdy = .5,
+			scalecdx = 1, scalecdy = 1,
+			scalerdx = -1, scalerdy = 1
+		}
+	}
+}
+
 function Map.forEachLayerTile(map, layer, func, ...)
-	local tiles = map.tiles
 	local maptilewidth = map.tilewidth
 	local maptileheight = map.tileheight
-	local width = layer.width or map.width
-	local height = layer.height or map.height
+	local hmaptilewidth = maptilewidth/2
+	local hmaptileheight = maptileheight/2
 
 	local i = 1
 	local x = 0
 	local y = 0
-	local cdx, cdy
-	local rdx, rdy
-	local srdx, srdy = 1, 1
+	local cdx, cdy = maptilewidth, 0
+	local rdx, rdy = 0, maptileheight
+	local scalecdx, scalecdy = 1, 1
+	local scalerdx, scalerdy = 1, 1
+
+	local width = layer.width or map.width
+	local height = layer.height or map.height
+
 	local orientation = map.orientation
-	if orientation == "orthogonal" then
-		cdx, cdy = maptilewidth, 0
-		rdx, rdy = 0, maptileheight
-	elseif orientation == "staggered" then
-		cdx, cdy = maptilewidth, 0
-		rdx, rdy = maptilewidth/2, maptileheight/2
-		srdx = -1
-	elseif orientation == "isometric" then
-		cdx, cdy = maptilewidth/2, maptileheight/2
-		rdx, rdy = -maptilewidth/2, maptileheight/2
+	if orientation == "isometric" then
+		x = (height - 1) * hmaptilewidth
+		cdx, cdy = hmaptilewidth, hmaptileheight
+		rdx, rdy = -hmaptilewidth, hmaptileheight
+	elseif orientation ~= "orthogonal" then
+		local staggeraxis = map.staggeraxis
+		local staggerindex = map.staggerindex
+		local stagger = Staggers[staggeraxis]
+		stagger = stagger and stagger[staggerindex]
+		if stagger then
+			x = stagger.x * maptilewidth
+			y = stagger.y * maptileheight
+			cdx = stagger.cdx * maptilewidth
+			cdy = stagger.cdy * maptileheight
+			rdx = stagger.rdx * maptilewidth
+			rdy = stagger.rdy * maptileheight
+			scalecdx = stagger.scalecdx
+			scalecdy = stagger.scalecdy
+			scalerdx = stagger.scalerdx
+			scalerdy = stagger.scalerdy
+		end
 	end
 
+	local tiles = map.tiles
 	for r = 1, height do
+		local totalcdx = 0
+		local totalcdy = 0
 		for c = 1, width do
 			local tile = tiles[layer[i]]
 			func(layer, tile, x, y, i, ...)
 			i = i + 1
 			x = x + cdx
 			y = y + cdy
+			totalcdx = totalcdx + cdx
+			totalcdy = totalcdy + cdy
+			cdx = cdx*scalecdx
+			cdy = cdy*scalecdy
 		end
-		x = x - width*cdx + rdx
-		y = y - width*cdy + rdy
-		rdx = rdx*srdx
-		rdy = rdy*srdy
+		x = x - totalcdx + rdx
+		y = y - totalcdy + rdy
+		rdx = rdx*scalerdx
+		rdy = rdy*scalerdy
 	end
 end
 
