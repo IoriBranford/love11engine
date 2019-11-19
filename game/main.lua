@@ -30,61 +30,24 @@ local tiled = require("tiled")
 local engine = require "engine"
 local newObject = engine.newObject
 local getObject = engine.getObject
+local map
 
-local Level = {
-	instance = nil,
-	nextenemytime = 120
+local MapViewer = {
+	x = 0,
+	y = 0,
+	rotation = 0
 }
 
-local Bullet = {
-	bodytype = "dynamic",
-	lifetime = 20,
-	width = 8,
-	height = 16,
-	velx = 0,
-	vely = -16
-}
-
-function Bullet:init()
-	local body = self:newBody()
-	local shape = LP.newRectangleShape(self.width, self.height)
-	local fixture = LP.newFixture(body, shape)
-	fixture:setSensor(true)
-end
-
-function Bullet:think()
-	local lifetime = self.lifetime
-	lifetime = lifetime - 1
-	if lifetime <= 0 then
-		self:setFree()
-	end
-	self.lifetime = lifetime
-end
-
-function Bullet:beginContact(other)
-	if self.team == other.team then
-	else
-		self:setFree()
-	end
-end
-
-
-local Player = {
-	width = 16,
-	height = 16,
-	bodytype = "dynamic",
-	firewait = 0
-}
-
-function Player:think()
-	local body = self.body
-
-	local keyUp = "up"
-	local keyDown = "down"
-	local keyLeft = "left"
-	local keyRight = "right"
+function MapViewer:think()
+	local keyUp = "w"
+	local keyDown = "s"
+	local keyLeft = "a"
+	local keyRight = "d"
 	local keyFire = "z"
 	local keySlow = "lshift"
+	local keyRotLeft = "q"
+	local keyRotRight = "e"
+
 	local joyX = 1
 	local joyY = 2
 	local joyHat = 1
@@ -96,35 +59,35 @@ function Player:think()
 	local padDown = "dpdown"
 	local padLeft = "dpleft"
 	local padRight = "dpright"
+	local padRotLeft = "leftshoulder"
+	local padRotRight = "rightshoulder"
 	local padFire = "x"
 	local padSlow = "a"
 	local deadzonesq = 1/16
-	local speedNormal = 3
+	local speedNormal = 4
 	local speedSlow = 2
 
-	local firing = LK.isDown(keyFire)
-	local slowed = LK.isDown(keySlow)
-
 	local inx, iny = 0, 0
+	local inr = 0
+	inr = inr - (LK.isDown('q')	and 1 or 0)
+	inr = inr + (LK.isDown('e') 	and 1 or 0)
 	inx = inx - (LK.isDown(keyLeft)	and 1 or 0)
 	inx = inx + (LK.isDown(keyRight)and 1 or 0)
 	iny = iny - (LK.isDown(keyUp)	and 1 or 0)
 	iny = iny + (LK.isDown(keyDown)	and 1 or 0)
 	for _, joystick in pairs(LJ.getJoysticks()) do
 		local ax, ay = 0, 0
-		local bl, br, bu, bd
+		local bl, br, bu, bd, brl, brr
 		if joystick:isGamepad() then
-			firing = firing or joystick:isGamepadDown(padFire)
-			slowed = slowed or joystick:isGamepadDown(padSlow)
 			ax = joystick:getGamepadAxis(padX)
 			ay = joystick:getGamepadAxis(padY)
 			bl = joystick:isGamepadDown(padLeft)
 			br = joystick:isGamepadDown(padRight)
+			brl = joystick:isGamepadDown(padRotLeft)
+			brr = joystick:isGamepadDown(padRotRight)
 			bu = joystick:isGamepadDown(padUp)
 			bd = joystick:isGamepadDown(padDown)
 		else
-			firing = firing or joystick:isDown(joyFire)
-			slowed = slowed or joystick:isDown(joySlow)
 			ax = joystick:getAxis(joyX)
 			ay = joystick:getAxis(joyY)
 			local hat = joystick:getHat(joyHat)
@@ -137,6 +100,8 @@ function Player:think()
 			inx = inx + ax
 			iny = iny + ay
 		end
+		inr = inr - (brl and 1 or 0)
+		inr = inr + (brr and 1 or 0)
 		inx = inx - (bl and 1 or 0)
 		inx = inx + (br and 1 or 0)
 		iny = iny - (bu and 1 or 0)
@@ -149,134 +114,13 @@ function Player:think()
 		iny = iny / inmag
 	end
 
-	local speed = slowed and speedSlow or speedNormal
-	body:setLinearVelocity(inx*speed, iny*speed)
-
-	if firing then
-		local firewait = self.firewait
-		if firewait <= 0 then
-			local bullet = newObject(Bullet)
-			bullet.x, bullet.y = body:getPosition()
-			self.firewait = 6
-		else
-			self.firewait = firewait - 1
-		end
-	else
-		self.firewait = 0
-	end
+	self.x = self.x - inx*speedNormal
+	self.y = self.y - iny*speedNormal
+	self.rotation = self.rotation + inr
 end
 
-function Player:init()
-	local body = self:newBody()
-	local shape = LP.newRectangleShape(self.width, self.height)
-	local fixture = LP.newFixture(body, shape)
-end
-
-function Player:beginContact(other)
-	if self.team == other.team then
-	else
-		self:setFree()
-		Level.instance.playerid = nil
-	end
-end
-
-local Enemy = {
-	width = 32,
-	height = 16,
-	bodytype = "dynamic",
-	team = "Enemy",
-	health = 5,
-	firewait = 30,
-	lifetime = 600
-}
-
-function Enemy:beginContact(other)
-	if self.team == other.team then
-	else
-		local health = self.health
-		health = health - 1
-		self.health = health
-		if health <= 0 then
-			self:setFree()
-		end
-	end
-end
-
-function Enemy:init()
-	local body = self:newBody()
-	local shape = LP.newRectangleShape(self.width, self.height)
-	local fixture = LP.newFixture(body, shape)
-	fixture:setSensor(true)
-end
-
-function Enemy:think()
-	local time = self.time or 0
-
-	local velx
-	if self.x > 120 then
-		velx = -sin(pi*time/engine.worldfps)
-	else
-		velx = sin(pi*time/engine.worldfps)
-	end
-	self.body:setLinearVelocity(velx, 2)
-
-	time = time + 1
-	self.time = time
-	if time >= self.lifetime then
-		self:setFree()
-	end
-
-	local firewait = self.firewait
-	local playerid = Level.instance.playerid
-	if firewait <= 0 and playerid then
-		local player = getObject(playerid)
-		local x, y = self.body:getPosition()
-		local px, py = player.body:getPosition()
-		local dx, dy = px - x, py - y
-		local d = sqrt(dx*dx + dy*dy)
-
-		local bullet = newObject(Bullet)
-		bullet.x, bullet.y = self.body:getPosition()
-		bullet.team = "Enemy"
-		bullet.width = 4
-		bullet.height = 4
-		bullet.velx = 4*dx/d
-		bullet.vely = 4*dy/d
-		bullet.lifetime = 120
-
-		self.firewait = Enemy.firewait
-	else
-		self.firewait = firewait - 1
-	end
-end
-
-local map
-function Level:think()
-	local nextenemytime = self.nextenemytime
-	nextenemytime = nextenemytime - 1
-	if nextenemytime <= 0 then
-		nextenemytime = nextenemytime + Level.nextenemytime
-		local enemy = newObject(Enemy)
-		enemy.x = LM.random(2) == 1 and 3*engine.worldfps or engine.worldfps
-		enemy.y = 0
-	end
-	self.nextenemytime = nextenemytime
-	tiled.update(map, 1000/engine.worldfps)
-end
-
-function Level:init()
-	local body = self:newBody()
-	local shape = LP.newChainShape(true, 0, 0, 0, 320, 240, 320, 240, 0)
-	local fixture = LP.newFixture(body, shape)
-	fixture:setFriction(0)
-
-	local player = newObject(Player)
-	player.x, player.y = 120, 304
-	self.playerid = player.id
-end
-
-function love.keypressed()
-	if Level.instance and not Level.instance.playerid then
+function love.keypressed(key)
+	if key == "f2" then
 		engine.reload()
 	end
 end
@@ -290,15 +134,14 @@ function love.load()
 	local window_width = 1280
 	local window_height = 720
 	local window_flags = {
-		vsync = false
+		vsync = true
 	}
 	LW.setMode(window_width, window_height, window_flags)
 end
 
 function love.reload()
 	tiled.load.clearCache()
-	Level.instance = newObject(Level)
-	map = tiled.load("kenney-iso/Sample.tmx")
+	map = newObject(tiled.load("kenney-iso/Sample.tmx"), MapViewer)
 end
 
 local stats = {}
