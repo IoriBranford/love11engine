@@ -289,8 +289,8 @@ function love.load()
 		LJ.loadGamepadMappings(gamepadfile)
 	end
 
-	local window_width = 480
-	local window_height = 640
+	local window_width = 1280
+	local window_height = 720
 	local window_flags = {
 		vsync = false
 	}
@@ -300,7 +300,7 @@ end
 function love.reload()
 	tiled.load.clearCache()
 	newObject(Level)
-	map = tiled.load("title.tmx")
+	map = tiled.load("kenney-iso/Sample.tmx")
 end
 
 local stats = {}
@@ -308,7 +308,7 @@ local stats = {}
 function love.draw(alpha)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
-	LG.scale(2)
+	--LG.scale(2)
 	tiled.draw(map, alpha)
 	engine.debugDrawBoundingBoxes(alpha)
 

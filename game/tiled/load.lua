@@ -323,9 +323,13 @@ function load.tileset(tileset, parent, dir)
 		local tileheight = tileset.tileheight
 		tileset.tileoffsetx = tileset.tileoffsetx or 0
 		tileset.tileoffsety = tileset.tileoffsety or tileheight
+		local imagewidth = tilewidth
+		local imageheight = tileheight
 		local image = tileset.image
-		local imagewidth = image:getWidth()
-		local imageheight = image:getHeight()
+		if image then
+			imagewidth = image:getWidth()
+			imageheight = image:getHeight()
+		end
 		for i = #tileset, 1, -1 do
 			local tile = tileset[i]
 			local tileid = tile.id + 1
@@ -342,7 +346,8 @@ function load.tileset(tileset, parent, dir)
 				tileset[i] = tile
 				tile.id = i
 				tile.tileset = tileset
-				tile.quad = LG.newQuad(x, y, tilewidth, tileheight,
+				tile.quad = image and LG.newQuad(x, y,
+					tilewidth, tileheight,
 					imagewidth, imageheight)
 				x = x + tilewidth
 				i = i + 1
@@ -384,12 +389,30 @@ function load.tileset(tileset, parent, dir)
 	return tileset
 end
 
-local function decode(output, datastring, encoding, compression)
-	if encoding == "base64" then
-		datastring = LD.decode("data", encoding, datastring)
+local function decode_csv(output, datastring)
+	local mingid = huge
+	local maxgid = 0
+	for gid in datastring:gmatch("%d+") do
+		output[#output+1] = tonumber(gid)
+		if gid ~= 0 then
+			mingid = min(gid, mingid)
+			maxgid = max(gid, maxgid)
+		end
 	end
-	if compression then
-		datastring = LD.decompress("data", compression, datastring)
+	output.mingid = mingid
+	output.maxgid = maxgid
+end
+
+local function decode(output, datastring, encoding, compression)
+	if encoding == "csv" then
+		decode_csv(output, datastring)
+		return
+	elseif encoding == "base64" then
+		datastring = LD.decode("data", encoding, datastring)
+		if compression then
+			datastring = LD.decompress("data", compression,
+							datastring)
+		end
 	end
 	local pointer = ffi.cast("uint32_t*", datastring:getFFIPointer())
 	local n = floor(datastring:getSize() / ffi.sizeof("uint32_t"))
@@ -405,6 +428,7 @@ local function decode(output, datastring, encoding, compression)
 	end
 	output.mingid = mingid
 	output.maxgid = maxgid
+	return output
 end
 
 function load.chunk(chunk, data, dir)
@@ -441,6 +465,24 @@ end
 --  maxgid,
 --  spritebatch
 -- }
+
+local function addLayerTileSprite(layer, tile, x, y, i, spritebatch)
+	if tile then
+		local animation = tile.animation
+		local tileset = tile.tileset
+		if animation then
+			tile = tileset:getAnimationFrameTile(tile, 1)
+		end
+
+		local tileoffsetx = tileset.tileoffsetx
+		local tileoffsety = tileset.tileoffsety
+		spritebatch:add(tile.quad, x, y, 0, 1, 1,
+			tileoffsetx, tileoffsety)
+	else
+		spritebatch:add(0, 0, 0, 0, 0)
+	end
+end
+
 function load.layer(layer, map, dir)
 	local chunks = layer.chunks
 	if chunks then
@@ -489,44 +531,61 @@ function load.layer(layer, map, dir)
 			break
 		end
 	end
-	if not tileset then
+	if not tileset or not tileset.image then
 		return layer
 	end
-	local tilewidth = tileset.tilewidth
-	local tileheight = tileset.tileheight
-	local tileoffsetx = tileset.tileoffsetx
-	local tileoffsety = tileset.tileoffsety
 	local width = layer.width
 	local height = layer.height
-	local maptilewidth = map.tilewidth
-	local maptileheight = map.tileheight
 	local spritebatchusage = layer.spritebatchusage or "dynamic"
 	local spritebatch = LG.newSpriteBatch(tileset.image,
 		width * height, spritebatchusage)
-	local i, x, y = 1, 0, 0
+	layer.spritebatch = spritebatch
+	Map.forEachLayerTile(map, layer, addLayerTileSprite, spritebatch)
+	return layer
+end
+
+function Map.forEachLayerTile(map, layer, func, ...)
+	local tiles = map.tiles
+	local maptilewidth = map.tilewidth
+	local maptileheight = map.tileheight
+	local width = layer.width or map.width
+	local height = layer.height or map.height
+
+	local i = 1
+	local x = 0
+	local y = 0
+	local cdx, cdy
+	local rdx, rdy
+	local sdx0, sdy0 = 1, 1
+	local orientation = map.orientation
+	if orientation == "orthogonal" then
+		cdx, cdy = maptilewidth, 0
+		rdx, rdy = -width * maptilewidth, maptileheight
+	elseif orientation == "staggered" then
+		cdx, cdy = maptilewidth, 0
+		rdx, rdy = (0.5-width) * maptilewidth, maptileheight / 2
+		sdx0 = -1
+	elseif orientation == "isometric" then
+		x = height*maptilewidth/2
+		cdx = maptilewidth/2
+		cdy = maptileheight/2
+		rdx = (-1-width) * maptilewidth/2
+		rdy = (1-width) * maptileheight/2
+	end
+
 	for r = 1, height do
 		for c = 1, width do
-			local gid = layer[i]
-			local tile = tiles[gid]
-			if tile then
-				local animation = tile.animation
-				if animation then
-					tile = tileset[animation[1].tileid]
-				end
-
-				spritebatch:add(tile.quad, x, y, 0, 1, 1,
-					tileoffsetx, tileoffsety)
-			else
-				spritebatch:add(0, 0, 0, 0, 0)
-			end
+			local tile = tiles[layer[i]]
+			func(layer, tile, x, y, i, ...)
 			i = i + 1
-			x = x + maptilewidth
+			x = x + cdx
+			y = y + cdy
 		end
-		x = 0
-		y = y + maptileheight
+		x = x + rdx + dx0
+		y = y + rdy + dy0
+		dx0 = dx0 * sdx0
+		dy0 = dy0 * sdy0
 	end
-	layer.spritebatch = spritebatch
-	return layer
 end
 
 function Map.setObjectGid(map, object, gid)
@@ -646,8 +705,7 @@ local function loadRecursive(doc, parent, dir)
 	for i = 1, n do
 		node[#node + 1] = loadRecursive(doc[i], node, dir)
 	end
-	node = load[tag](node, parent, dir)
-	return node
+	return load[tag](node, parent, dir)
 end
 
 function Tiled.load(file)

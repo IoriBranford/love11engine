@@ -70,6 +70,26 @@ function draw.map(map)
 	LG.clear(map.backgroundcolor)
 end
 
+local function drawLayerTile(layer, tile, x, y, i)
+	if not tile then
+		return
+	end
+	local tileset = tile.tileset
+	local f = layer.tileanimationframes[i]
+	if f then
+		tile = tileset:getAnimationFrameTile(tile, f)
+	end
+	local tileoffsetx = tileset.tileoffsetx
+	local tileoffsety = tileset.tileoffsety
+	local image = tile.image or tileset.image
+	local quad = tile.quad
+	if quad then
+		LG.draw(image, quad, x, y, 0, 1, 1, tileoffsetx, tileoffsety)
+	else
+		LG.draw(image, x, y, 0, 1, 1, tileoffsetx, tileoffsety)
+	end
+end
+
 function draw.layer(layer, map)
 	if type(layer[1]) ~= "number" then
 		return
@@ -77,37 +97,8 @@ function draw.layer(layer, map)
 	local spritebatch = layer.spritebatch
 	if spritebatch then
 		LG.draw(spritebatch)
-		return true
-	end
-	local tiles = map.tiles
-	local maptilewidth = map.tilewidth
-	local maptileheight = map.tileheight
-	local x = 0
-	local y = 0
-	local width = layer.width or map.width
-	local height = layer.height or map.height
-	local i = 1
-	local tileanimationframes = layer.tileanimationframes
-	for r = 1, height do
-		for c = 1, width do
-			local tile = tiles[layer[i]]
-
-			if tile then
-				local tileset = tile.tileset
-				local f = tileanimationframes[i]
-				if f then
-					tile = tileset:getAnimationFrameTile(tile, f)
-				end
-				local tileoffsetx = tileset.tileoffsetx
-				local tileoffsety = tileset.tileoffsety
-				LG.draw(tileset.image, tile.quad, x, y, 0, 1, 1,
-					tileoffsetx, tileoffsety)
-			end
-			i = i + 1
-			x = x + maptilewidth
-		end
-		x = 0
-		y = y + maptileheight
+	else
+		map:forEachLayerTile(layer, drawLayerTile)
 	end
 	return true
 end
@@ -144,8 +135,15 @@ function draw.object(object, objectgroup, map)
 		local tileset = tile.tileset
 		local tileoffsetx = tileset.tileoffsetx
 		local tileoffsety = tileset.tileoffsety
-		LG.draw(tileset.image, tile.quad, 0, 0, 0, 1, 1,
-			tileoffsetx, tileoffsety)
+		local image = tile.image or tileset.image
+		local quad = tile.quad
+		if quad then
+			LG.draw(image, quad, 0, 0, 0, 1, 1,
+				tileoffsetx, tileoffsety)
+		else
+			LG.draw(image, 0, 0, 0, 1, 1,
+				tileoffsetx, tileoffsety)
+		end
 		return true
 	end
 
