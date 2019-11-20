@@ -12,20 +12,23 @@ local function transform_default(node, parent, map, lerp)
 	if x and y then
 		local offsetx = node.offsetx or 0
 		local offsety = node.offsety or 0
-		local body = node.body
-		if body then
-			local vx, vy = body:getLinearVelocity()
-			x = x + (vx*lerp)
-			y = y + (vy*lerp)
-		end
-		LG.translate(x + offsetx, y + offsety)
+		local dx = node.dx or 0
+		local dy = node.dy or 0
+		x = x + offsetx + dx*lerp
+		y = y + offsety + dy*lerp
+		LG.translate(x, y)
 	end
 	local rotation = node.rotation
 	if rotation then
+		rotation = rotation + (node.drotation or 0)*lerp
 		LG.rotate(rotation)
 	end
 	local scalex, scaley = node.scalex, node.scaley
 	if scalex and scaley then
+		local dscalex = node.dscalex or 0
+		local dscaley = node.dscaley or 0
+		scalex = scalex + dscalex*lerp
+		scaley = scaley + dscaley*lerp
 		LG.scale(scalex, scaley)
 	end
 end
@@ -43,6 +46,7 @@ function transform.map(node, parent, map, lerp)
 	end
 	local rotation = node.rotation
 	if rotation then
+		rotation = rotation + (node.drotation or 0)*lerp
 		LG.rotate(rotation)
 	end
 	local x = node.x
@@ -50,13 +54,11 @@ function transform.map(node, parent, map, lerp)
 	if x and y then
 		local offsetx = node.offsetx or 0
 		local offsety = node.offsety or 0
-		local body = node.body
-		if body then
-			local vx, vy = body:getLinearVelocity()
-			x = x + (vx*lerp)
-			y = y + (vy*lerp)
-		end
-		LG.translate(x + offsetx, y + offsety)
+		local dx = node.dx or 0
+		local dy = node.dy or 0
+		x = x + offsetx + dx*lerp
+		y = y + offsety + dy*lerp
+		LG.translate(x, y)
 	end
 end
 
