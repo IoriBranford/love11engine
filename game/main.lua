@@ -11,8 +11,11 @@ local LW = love.window
 
 local floor = math.floor
 local sqrt = math.sqrt
+local abs = math.abs
 local sin = math.sin
 local cos = math.cos
+local max = math.max
+local min = math.min
 local pi = math.pi
 
 local pretty = require "pl.pretty"
@@ -28,11 +31,6 @@ local MapViewer = {
 	scalex = 1, scaley = 1,
 	dscalex = 0, dscaley = 0
 }
-
-function MapViewer:init()
-	self.bodytype = "dynamic"
-	self:newBody()
-end
 
 function MapViewer:update(dt)
 	local keyUp = "w"
@@ -126,13 +124,16 @@ function MapViewer:update(dt)
 	local downx = iny*sinr
 	local downy = iny*cosr
 
-	self.body:setLinearVelocity(-(rightx + downx)*speedNormal,
-				-(righty + downy)*speedNormal)
-	self.body:setAngularVelocity(-inr*pi)
+	self.dx = -(rightx + downx)*speedNormal
+	self.dy = -(righty + downy)*speedNormal
+	self.drotation = -inr*pi
 	tiled.update(map, dt)
 end
 
 function MapViewer:fixedUpdate(fixeddt)
+	self.x = self.x + self.dx * fixeddt
+	self.y = self.y + self.dy * fixeddt
+	self.rotation = self.rotation + self.drotation * fixeddt
 	self.scalex = self.scalex + self.dscalex * fixeddt
 	self.scaley = self.scaley + self.dscaley * fixeddt
 end
@@ -174,33 +175,43 @@ end
 function love.reload()
 	tiled.load.clearCache()
 	map = newObject(tiled.load("title.tmx"), MapViewer)
+	LG.setLineStyle("rough")
+	LG.getFont():setFilter("nearest", "nearest")
 end
 
 local stats = {}
 function love.draw(alpha)
-	LG.setLineStyle("rough")
-	LG.getFont():setFilter("nearest", "nearest")
+	local lgw = LG.getWidth()
+	local lgh = LG.getHeight()
+	local hlgw = lgw/2
+	local hlgh = lgh/2
+	local rotation = 1.5*pi
+
+	-- projection matrix
+	LG.translate(hlgw, hlgh)
+	LG.rotate(rotation)
+
 	tiled.draw(map, alpha)
-	engine.debugDrawBoundingBoxes(alpha)
 
 	local font = LG.getFont()
 	local h = font:getHeight()
-	local lgw = LG.getWidth()
 	local mem = floor(collectgarbage("count"))
-	LG.origin()
 
-	local y = 0
+	local asinr = abs(sin(rotation))
+	local hdiff = asinr*(hlgw - hlgh)
+	local y = -hlgh - hdiff
+	local w = hlgw - hdiff
 	local dt = LT.getDelta()
 
-	local fps = 1/dt
-	LG.printf(dt.." dt", 0, y, lgw, "right")
+	local fps = floor(1/dt)
+	LG.printf(dt.." dt", 0, y, w, "right")
 	y = y + h
-	LG.printf(floor(fps).." fps", 0, y, lgw, "right")
+	LG.printf(floor(fps).." fps", 0, y, w, "right")
 	y = y + h
-	LG.printf(mem.." kb", 0, y, lgw, "right")
+	LG.printf(mem.." kb", 0, y, w, "right")
 	y = y + h
 	for k, v in pairs(LG.getStats(stats)) do
-		LG.printf(v.." "..k, 0, y, lgw, "right")
+		LG.printf(v.." "..k, 0, y, w, "right")
 		y = y + h
 	end
 end

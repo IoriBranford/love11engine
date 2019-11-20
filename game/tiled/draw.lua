@@ -39,16 +39,18 @@ setmetatable(transform, {
 })
 
 function transform.map(node, parent, map, lerp)
-	LG.translate(LG.getWidth()/2, LG.getHeight()/2)
-	local scalex, scaley = node.scalex, node.scaley
-	if scalex and scaley then
-		LG.scale(scalex, scaley)
-	end
+	-- view matrix
 	local rotation = node.rotation
 	if rotation then
 		rotation = rotation + (node.drotation or 0)*lerp
 		LG.rotate(rotation)
 	end
+	local scalex, scaley = node.scalex, node.scaley
+	if scalex and scaley then
+		LG.scale(scalex, scaley)
+	end
+
+	-- model matrix
 	local x = node.x
 	local y = node.y
 	if x and y then
