@@ -1,4 +1,5 @@
 local love = love
+local LE = love.event
 local LFS = love.filesystem
 local LG = love.graphics
 local LJ = love.joystick
@@ -136,10 +137,23 @@ function MapViewer:fixedUpdate(fixeddt)
 	self.scaley = self.scaley + self.dscaley * fixeddt
 end
 
-function love.keypressed(key)
-	if key == "f2" then
-		engine.reload()
+local keypressed = {}
+local function nop() end
+setmetatable(keypressed, {
+	__index = function()
+		return nop
 	end
+})
+
+function keypressed.f2()
+	engine.reload()
+end
+function keypressed.escape()
+	LE.quit()
+end
+
+function love.keypressed(key)
+	keypressed[key]()
 end
 
 function love.load()
