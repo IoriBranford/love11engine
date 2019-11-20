@@ -5,6 +5,7 @@ local select = select
 local unpack = unpack
 local collectgarbage = collectgarbage
 local love = love
+local min = math.min
 local LE = love.event
 local LT = love.timer
 local LP = love.physics
@@ -15,16 +16,17 @@ local objects = {}
 local newobjects = {}
 local freeobjects = {}
 local objectstofree = {}
-local objectsthink = {}
+local objectsupdate = {}
+local objectsfixedUpdate = {}
 local nextid = 1
 local reload = true
 
 local Object = {}
 
 local Engine = {
-	worldfps = 60
+	fixedfps = 60
 }
-Engine.worlddt = 1/Engine.worldfps
+Engine.fixeddt = 1/Engine.fixedfps
 
 function Object:init()
 end
@@ -102,10 +104,14 @@ local function initNewObjects()
 		objects[id] = object
 		object:init()
 
-		local think = object.think
-		if think then
-			objectsthink[id] = true
-			think(object)
+		local update = object.update
+		if update then
+			objectsupdate[id] = true
+		end
+
+		local fixedUpdate = object.fixedUpdate
+		if fixedUpdate then
+			objectsfixedUpdate[id] = true
 		end
 
 		i = i + 1
@@ -127,7 +133,8 @@ local function freeObjects()
 			body:destroy()
 		end
 
-		objectsthink[id] = nil
+		objectsupdate[id] = nil
+		objectsfixedUpdate[id] = nil
 		objects[id] = nil
 		objectstofree[id] = nil
 		freeobjects[#freeobjects + 1] = object
@@ -144,12 +151,18 @@ local function clearObjects()
 	world:setCallbacks(beginContact)
 end
 
-local function update()
-	for id, _ in pairs(objectsthink) do
-		objects[id]:think()
+local function update(dt)
+	for id, _ in pairs(objectsupdate) do
+		objects[id]:update(dt)
+	end
+end
+
+local function fixedUpdate(fixeddt)
+	for id, _ in pairs(objectsfixedUpdate) do
+		objects[id]:fixedUpdate(fixeddt)
 	end
 	initNewObjects()
-	world:update(1)
+	world:update(fixeddt)
 	freeObjects()
 end
 
@@ -198,16 +211,18 @@ function love.run()
 
 		if LT then dt = LT.step() end
 
+		update(dt)
+
 		timeaccum = timeaccum + dt
-		local worlddt = Engine.worlddt
-		while timeaccum >= worlddt do
-			update()
-			timeaccum = timeaccum - worlddt
+		local fixeddt = Engine.fixeddt
+		while timeaccum >= fixeddt do
+			fixedUpdate(fixeddt)
+			timeaccum = timeaccum - fixeddt
 		end
 
 		if LG and LG.isActive() then
 			LG.origin()
-			if love.draw then love.draw(timeaccum*Engine.worldfps) end
+			if love.draw then love.draw(timeaccum) end
 			LG.present()
 		end
 

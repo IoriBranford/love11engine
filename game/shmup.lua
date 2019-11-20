@@ -1,12 +1,22 @@
+--- Shmup object
+--@field team
+--@field health
+--@field x
+--@field y
+--@field bodytype
+--@field init
+--@field update
+--@field beginContact
+--@table ShmupObject
 
 local Level = {
 	instance = nil,
-	nextenemytime = 120
+	nextenemytime = 2
 }
 
 local Bullet = {
 	bodytype = "dynamic",
-	lifetime = 20,
+	lifetime = 1/3,
 	width = 8,
 	height = 16,
 	velx = 0,
@@ -20,9 +30,9 @@ function Bullet:init()
 	fixture:setSensor(true)
 end
 
-function Bullet:think()
+function Bullet:fixedUpdate(fixeddt)
 	local lifetime = self.lifetime
-	lifetime = lifetime - 1
+	lifetime = lifetime - fixeddt
 	if lifetime <= 0 then
 		self:setFree()
 	end
@@ -43,7 +53,7 @@ local Player = {
 	firewait = 0
 }
 
-function Player:think()
+function Player:update()
 	local body = self.body
 
 	local keyUp = "up"
@@ -66,8 +76,8 @@ function Player:think()
 	local padFire = "x"
 	local padSlow = "a"
 	local deadzonesq = 1/16
-	local speedNormal = 3
-	local speedSlow = 2
+	local speedNormal = 180
+	local speedSlow = 120
 
 	local firing = LK.isDown(keyFire)
 	local slowed = LK.isDown(keySlow)
@@ -119,14 +129,18 @@ function Player:think()
 	local speed = slowed and speedSlow or speedNormal
 	body:setLinearVelocity(inx*speed, iny*speed)
 
-	if firing then
+	self.firing = firing
+end
+
+function Player:fixedUpdate(fixeddt)
+	if self.firing then
 		local firewait = self.firewait
 		if firewait <= 0 then
 			local bullet = newObject(Bullet)
 			bullet.x, bullet.y = body:getPosition()
-			self.firewait = 6
+			self.firewait = 1/10
 		else
-			self.firewait = firewait - 1
+			self.firewait = firewait - fixeddt
 		end
 	else
 		self.firewait = 0
@@ -153,8 +167,8 @@ local Enemy = {
 	bodytype = "dynamic",
 	team = "Enemy",
 	health = 5,
-	firewait = 30,
-	lifetime = 600
+	firewait = .5,
+	lifetime = 10
 }
 
 function Enemy:beginContact(other)
@@ -176,18 +190,18 @@ function Enemy:init()
 	fixture:setSensor(true)
 end
 
-function Enemy:think()
+function Enemy:fixedUpdate(fixeddt)
 	local time = self.time or 0
 
 	local velx
 	if self.x > 120 then
-		velx = -sin(pi*time/engine.worldfps)
+		velx = -sin(pi*time)
 	else
-		velx = sin(pi*time/engine.worldfps)
+		velx = sin(pi*time)
 	end
-	self.body:setLinearVelocity(velx, 2)
+	self.body:setLinearVelocity(velx, 120)
 
-	time = time + 1
+	time = time + fixeddt
 	self.time = time
 	if time >= self.lifetime then
 		self:setFree()
@@ -209,25 +223,25 @@ function Enemy:think()
 		bullet.height = 4
 		bullet.velx = 4*dx/d
 		bullet.vely = 4*dy/d
-		bullet.lifetime = 120
+		bullet.lifetime = 2
 
 		self.firewait = Enemy.firewait
 	else
-		self.firewait = firewait - 1
+		self.firewait = firewait - fixeddt
 	end
 end
 
-function Level:think()
+function Level:fixedUpdate(fixeddt)
 	local nextenemytime = self.nextenemytime
-	nextenemytime = nextenemytime - 1
+	nextenemytime = nextenemytime - fixeddt
 	if nextenemytime <= 0 then
 		nextenemytime = nextenemytime + Level.nextenemytime
 		local enemy = newObject(Enemy)
-		enemy.x = LM.random(2) == 1 and 3*engine.worldfps or engine.worldfps
+		enemy.x = LM.random(2) == 1 and 180 or 60
 		enemy.y = 0
 	end
 	self.nextenemytime = nextenemytime
-	tiled.update(map, 1000/engine.worldfps)
+	tiled.update(map, fixeddt)
 end
 
 function Level:init()

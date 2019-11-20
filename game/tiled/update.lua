@@ -2,24 +2,35 @@ local pairs = pairs
 local floor = math.floor
 
 local update = {}
+local function update_default(node, parent, root, dt)
+	local body = node.body
+	if body then
+		node.x, node.y = body:getPosition()
+		node.rotation = body:getAngle()
+		node.dx, node.dy = body:getLinearVelocity()
+		node.drotation = body:getAngularVelocity()
+		node.drotation = node.drotation
+	end
+end
 setmetatable(update, {
 	__index = function()
-		return function()
-		end
+		return update_default
 	end
 })
 
-function update.map(map, _, _, dmsecs)
+function update.map(map, _, _, dt)
+	update_default(map, _, _, dt)
 	for gid, animation in pairs(map.layertileanimations) do
 		local f = animation.globalframe
 		local msecs = animation.globalmsecs
-		f, msecs = animation:getNewFrameAndMsecs(f, msecs, dmsecs)
+		f, msecs = animation:getNewFrameAndMsecs(f, msecs, dt*1000)
 		animation.globalframechanged = f ~= animation.globalframe
 		animation.globalframe, animation.globalmsecs = f, msecs
 	end
 end
 
-function update.layer(layer, _, map, dmsecs)
+function update.layer(layer, _, map, dt)
+	update_default(layer, _, map, dt)
 	if type(layer[1]) ~= "number" then
 		return
 	end
@@ -57,7 +68,8 @@ function update.layer(layer, _, map, dmsecs)
 end
 update.chunk = update.layer
 
-function update.object(object, objectgroup, map, dmsecs)
+function update.object(object, objectgroup, map, dt)
+	update_default(object, objectgroup, map, dt)
 	local tiles = object.tileset or map.tiles
 	local gid = object.gid
 	local animatedtile = tiles[gid]
@@ -66,7 +78,7 @@ function update.object(object, objectgroup, map, dmsecs)
 		local f = object.animationframe
 		local msecs = object.animationmsecs
 		local f2
-		f2, msecs = animation:getNewFrameAndMsecs(f, msecs, dmsecs)
+		f2, msecs = animation:getNewFrameAndMsecs(f, msecs, dt*1000)
 		if f ~= f2 then
 			f = f2
 			local tileset = animatedtile.tileset
@@ -77,14 +89,14 @@ function update.object(object, objectgroup, map, dmsecs)
 	return true
 end
 
-local function updateRecursive(node, parent, map, dmsecs)
-	if not update[node.tag](node, parent, map, dmsecs) then
+local function updateRecursive(node, parent, map, dt)
+	if not update[node.tag](node, parent, map, dt) then
 		for i = 1, #node do
-			updateRecursive(node[i], node, map, dmsecs)
+			updateRecursive(node[i], node, map, dt)
 		end
 	end
 end
 
-return function(map, dmsecs)
-	updateRecursive(map, nil, map, dmsecs)
+return function(map, dt)
+	updateRecursive(map, nil, map, dt)
 end

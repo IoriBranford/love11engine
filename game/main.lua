@@ -1,14 +1,3 @@
---- Shmup object
---@field team
---@field health
---@field x
---@field y
---@field bodytype
---@field init
---@field think
---@field beginContact
---@table ShmupObject
-
 local love = love
 local LFS = love.filesystem
 local LG = love.graphics
@@ -33,10 +22,18 @@ local getObject = engine.getObject
 local map
 
 local MapViewer = {
-	x = 0, y = 0, rotation = 0, scalex = 1, scaley = 1
+	x = 0, y = 0, rotation = 0,
+	dx = 0, dy = 0, drotation = 0,
+	scalex = 1, scaley = 1,
+	dscalex = 0, dscaley = 0
 }
 
-function MapViewer:think()
+function MapViewer:init()
+	self.bodytype = "dynamic"
+	self:newBody()
+end
+
+function MapViewer:update(dt)
 	local keyUp = "w"
 	local keyDown = "s"
 	local keyLeft = "a"
@@ -64,8 +61,8 @@ function MapViewer:think()
 	local padFire = "x"
 	local padSlow = "a"
 	local deadzonesq = 1/16
-	local speedNormal = 4
-	local speedSlow = 2
+	local speedNormal = 240
+	local speedSlow = 120
 
 	local inx, iny = 0, 0
 	local inr = 0
@@ -117,21 +114,26 @@ function MapViewer:think()
 		iny = iny / inmag
 	end
 
-	inz = inz/64
-	self.scalex = self.scalex + inz
-	self.scaley = self.scaley + inz
-	inr = inr*pi/120
-	self.rotation = self.rotation - inr
+	inz = inz*2
+	self.dscalex = inz
+	self.dscaley = inz
+
 	local cosr = cos(self.rotation)
 	local sinr = sin(self.rotation)
 	local rightx = inx*cosr
 	local righty = inx*-sinr
 	local downx = iny*sinr
 	local downy = iny*cosr
-	self.x = self.x - (rightx + downx)*speedNormal
-	self.y = self.y - (righty + downy)*speedNormal
 
-	tiled.update(map, 1000/engine.worldfps)
+	self.body:setLinearVelocity(-(rightx + downx)*speedNormal,
+				-(righty + downy)*speedNormal)
+	self.body:setAngularVelocity(-inr*pi)
+	tiled.update(map, dt)
+end
+
+function MapViewer:fixedUpdate(fixeddt)
+	self.scalex = self.scalex + self.dscalex * fixeddt
+	self.scaley = self.scaley + self.dscaley * fixeddt
 end
 
 function love.keypressed(key)
@@ -149,9 +151,10 @@ function love.load()
 	local window_width = 1280
 	local window_height = 720
 	local window_flags = {
-		vsync = true
+		vsync = -1
 	}
 	LW.setMode(window_width, window_height, window_flags)
+	local _, _, flags = LW.getMode()
 end
 
 function love.reload()
@@ -160,23 +163,25 @@ function love.reload()
 end
 
 local stats = {}
-
 function love.draw(alpha)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
-	--LG.scale(2)
 	tiled.draw(map, alpha)
 	engine.debugDrawBoundingBoxes(alpha)
 
 	local font = LG.getFont()
 	local h = font:getHeight()
-	local fps = LT.getFPS()
 	local lgw = LG.getWidth()
 	local mem = floor(collectgarbage("count"))
 	LG.origin()
 
 	local y = 0
-	LG.printf(fps.." fps", 0, y, lgw, "right")
+	local dt = LT.getDelta()
+
+	local fps = 1/dt
+	LG.printf(dt.." dt", 0, y, lgw, "right")
+	y = y + h
+	LG.printf(floor(fps).." fps", 0, y, lgw, "right")
 	y = y + h
 	LG.printf(mem.." kb", 0, y, lgw, "right")
 	y = y + h
