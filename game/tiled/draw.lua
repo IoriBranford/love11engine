@@ -1,7 +1,9 @@
 local pretty = require "pl.pretty"
 local type = type
-local rad = math.rad
+local cos = math.cos
+local sin = math.sin
 local LG = love.graphics
+local LM = love.math
 
 local transform = {}
 local function transform_default(node, parent, map, lerp)
@@ -18,9 +20,13 @@ local function transform_default(node, parent, map, lerp)
 		end
 		LG.translate(x + offsetx, y + offsety)
 	end
-	local rotation = node.rotation or 0
+	local rotation = node.rotation
 	if rotation then
-		LG.rotate(rad(rotation))
+		LG.rotate(rotation)
+	end
+	local scalex, scaley = node.scalex, node.scaley
+	if scalex and scaley then
+		LG.scale(scalex, scaley)
 	end
 end
 setmetatable(transform, {
@@ -29,22 +35,32 @@ setmetatable(transform, {
 	end
 })
 
-function transform.chunk(chunk, layer, map)
-	local x = chunk.x or 0
-	local y = chunk.y or 0
-	local maptilewidth = map.tilewidth
-	local maptileheight = map.tileheight
-	LG.translate(x*maptilewidth, y*maptileheight)
-end
-
-function transform.layer(layer, map, _, lerp)
-	transform_default(layer, map, _, lerp)
-	local maptileheight = map.tileheight
-	LG.translate(0, maptileheight)
+function transform.map(node, parent, map, lerp)
+	LG.translate(LG.getWidth()/2, LG.getHeight()/2)
+	local scalex, scaley = node.scalex, node.scaley
+	if scalex and scaley then
+		LG.scale(scalex, scaley)
+	end
+	local rotation = node.rotation
+	if rotation then
+		LG.rotate(rotation)
+	end
+	local x = node.x
+	local y = node.y
+	if x and y then
+		local offsetx = node.offsetx or 0
+		local offsety = node.offsety or 0
+		local body = node.body
+		if body then
+			local vx, vy = body:getLinearVelocity()
+			x = x + (vx*lerp)
+			y = y + (vy*lerp)
+		end
+		LG.translate(x + offsetx, y + offsety)
+	end
 end
 
 function transform.object(object, objectgroup, map, lerp)
-	transform_default(object, objectgroup, map, lerp)
 	local tile = object.tile
 	if tile then
 		local width = object.width
@@ -52,9 +68,9 @@ function transform.object(object, objectgroup, map, lerp)
 		local tileset = tile.tileset
 		local tilewidth = tileset.tilewidth
 		local tileheight = tileset.tileheight
-		local sx, sy = width/tilewidth, height/tileheight
-		LG.scale(sx, sy)
+		object.scalex, object.scaley = width/tilewidth, height/tileheight
 	end
+	transform_default(object, objectgroup, map, lerp)
 end
 
 local draw = {}

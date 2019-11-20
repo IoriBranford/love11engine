@@ -33,9 +33,7 @@ local getObject = engine.getObject
 local map
 
 local MapViewer = {
-	x = 0,
-	y = 0,
-	rotation = 0
+	x = 0, y = 0, rotation = 0, scalex = 1, scaley = 1
 }
 
 function MapViewer:think()
@@ -47,6 +45,8 @@ function MapViewer:think()
 	local keySlow = "lshift"
 	local keyRotLeft = "q"
 	local keyRotRight = "e"
+	local keyZoomIn = "c"
+	local keyZoomOut = "z"
 
 	local joyX = 1
 	local joyY = 2
@@ -69,8 +69,11 @@ function MapViewer:think()
 
 	local inx, iny = 0, 0
 	local inr = 0
-	inr = inr - (LK.isDown('q')	and 1 or 0)
-	inr = inr + (LK.isDown('e') 	and 1 or 0)
+	local inz = 0
+	inr = inr - (LK.isDown(keyRotLeft)	and 1 or 0)
+	inr = inr + (LK.isDown(keyRotRight) 	and 1 or 0)
+	inz = inz - (LK.isDown(keyZoomOut)	and 1 or 0)
+	inz = inz + (LK.isDown(keyZoomIn) 	and 1 or 0)
 	inx = inx - (LK.isDown(keyLeft)	and 1 or 0)
 	inx = inx + (LK.isDown(keyRight)and 1 or 0)
 	iny = iny - (LK.isDown(keyUp)	and 1 or 0)
@@ -114,9 +117,21 @@ function MapViewer:think()
 		iny = iny / inmag
 	end
 
-	self.x = self.x - inx*speedNormal
-	self.y = self.y - iny*speedNormal
-	self.rotation = self.rotation + inr
+	inz = inz/64
+	self.scalex = self.scalex + inz
+	self.scaley = self.scaley + inz
+	inr = inr*pi/120
+	self.rotation = self.rotation - inr
+	local cosr = cos(self.rotation)
+	local sinr = sin(self.rotation)
+	local rightx = inx*cosr
+	local righty = inx*-sinr
+	local downx = iny*sinr
+	local downy = iny*cosr
+	self.x = self.x - (rightx + downx)*speedNormal
+	self.y = self.y - (righty + downy)*speedNormal
+
+	tiled.update(map, 1000/engine.worldfps)
 end
 
 function love.keypressed(key)
@@ -141,7 +156,7 @@ end
 
 function love.reload()
 	tiled.load.clearCache()
-	map = newObject(tiled.load("kenney-iso/Sample.tmx"), MapViewer)
+	map = newObject(tiled.load("title.tmx"), MapViewer)
 end
 
 local stats = {}

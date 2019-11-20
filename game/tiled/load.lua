@@ -9,6 +9,7 @@ local ffi = require "ffi"
 local floor = math.floor
 local max = math.max
 local min = math.min
+local rad = math.rad
 local huge = math.huge
 local type = type
 local pairs = pairs
@@ -485,15 +486,20 @@ end
 
 function load.layer(layer, map, dir)
 	local chunks = layer.chunks
+	local maptilewidth = map.tilewidth
+	local maptileheight = map.tileheight
 	if chunks then
 		for i = 1, #chunks do
 			local chunk = chunks[i]
 			layer[#layer + 1] = chunk
 			load.layer(chunk, map, dir)
+			chunk.x = chunk.x * maptilewidth
+			chunk.y = chunk.y * maptileheight
 		end
 		layer.chunks = nil
 		return layer
 	end
+	layer.offsety = maptileheight
 
 	local tiles = map.tiles
 	local layertileanimations = map.layertileanimations or {}
@@ -754,6 +760,9 @@ local function loadRecursive(doc, parent, dir)
 	node.tag = tag
 	if node.visible == 0 then
 		node.visible = false
+	end
+	if node.rotation then
+		node.rotation = rad(node.rotation)
 	end
 	local n = #doc
 	for i = 1, n do
