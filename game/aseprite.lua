@@ -1,5 +1,6 @@
 local LFS = love.filesystem
 local LG = love.graphics
+local pretty = require "pl.pretty"
 local json = require "json"
 
 local Aseprite = {}
@@ -13,7 +14,7 @@ function Aseprite:newSpriteBatch(animation)
 	end
 
 	if self.animations[animation] then
-		self:startSpriteBatchAnimation(animation)
+		self:startSpriteBatchAnimation(spritebatch, animation)
 	else
 		self:setSpriteBatchFrame(spritebatch, 1)
 	end
