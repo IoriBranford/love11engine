@@ -9,7 +9,6 @@ local function update_default(node, parent, root, dt)
 		node.rotation = body:getAngle()
 		node.dx, node.dy = body:getLinearVelocity()
 		node.drotation = body:getAngularVelocity()
-		node.drotation = node.drotation
 	end
 end
 setmetatable(update, {

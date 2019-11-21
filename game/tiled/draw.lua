@@ -210,6 +210,14 @@ function draw.object(object, objectgroup, map)
 	LG.setColor(1,1,1)
 end
 
+function draw.objectgroup(objectgroup, map, _, lerp)
+	local spritebatch = objectgroup.spritebatch
+	if spritebatch then
+		LG.draw(spritebatch)
+		return true
+	end
+end
+
 local function drawRecursive(node, parent, map, lerp)
 	if node.visible == false then
 		return
