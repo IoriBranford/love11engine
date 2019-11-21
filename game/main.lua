@@ -178,7 +178,6 @@ function love.reload()
 	map = newObject(tiled.load("title.tmx"), MapViewer)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
-	local playersprite = aseprite.load("player.json", .5, 1)
 end
 
 local stats = {}
