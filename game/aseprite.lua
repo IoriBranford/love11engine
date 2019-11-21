@@ -61,6 +61,11 @@ function Aseprite:animateSpriteBatch(spritebatch, animation, aniframe, msecs, dm
 	return af, msecs
 end
 
+function Aseprite:setAnchor(anchorx, anchory)
+	self.offsetx = anchorx*self.width
+	self.offsety = anchory*self.height
+end
+
 local function load_cel(cel, filename, aseprite, layers, image)
 	local layername, framei = filename:match("(.+):(%d+)")
 	local layeri = layers[layername]
@@ -163,12 +168,10 @@ local function loadAseprite(file, anchorx, anchory)
 	aseprite.layers = layers
 	aseprite.animations = animations
 	
-	anchorx = anchorx or 0
-	anchory = anchory or 0
-	aseprite.offsetx = anchorx*aseprite.width
-	aseprite.offsety = anchory*aseprite.height
-
 	setmetatable(aseprite, Aseprite)
+	if anchorx and anchory then
+		aseprite:setAnchor(anchorx, anchory)
+	end
 	return aseprite
 end
 
