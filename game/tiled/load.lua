@@ -6,6 +6,7 @@ local pretty = require "pl.pretty"
 local xml = require "pl.xml"
 local tablex = require "pl.tablex"
 local ffi = require "ffi"
+local Aseprite = require "aseprite"
 local floor = math.floor
 local max = math.max
 local min = math.min
@@ -72,7 +73,7 @@ function load.properties(properties, parent, dir)
 			local ptype = property.type
 			local pname = property.name
 			if ptype == "file" then
-				value = dir..value
+				parent[pname] = dir..value
 			elseif ptype == "color" then
 				parent[pname] = { parseColor(value) }
 			else
@@ -211,6 +212,19 @@ function load.object(object, parent, dir)
 		template = loaded[file] or Tiled.load(file)
 		loaded[file] = template
 		tablex.update(object, template)
+	end
+	local aseprite = object.aseprite
+	if aseprite then
+		local file = aseprite -- custom property, dir was already prepended
+		aseprite = loaded[file] or Aseprite.load(file)
+		loaded[file] = aseprite
+		object.aseprite = aseprite
+		local anchorx = object.anchorx or 0
+		local anchory = object.anchory or 0
+		aseprite:setAnchor(anchorx, anchory)
+		object.spritebatch = aseprite:newSpriteBatch(object.animation)
+		object.animationmsecs = 0
+		object.animationframe = 1
 	end
 	return object
 end

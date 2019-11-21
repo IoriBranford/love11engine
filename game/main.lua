@@ -179,19 +179,6 @@ function love.reload()
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
 	local playersprite = aseprite.load("player.json", .5, 1)
-	map[#map + 1] = {
-		{
-			aseprite = playersprite,
-			animation = "run",
-			animationframe = 1,
-			animationmsecs = 0,
-			spritebatch = playersprite:newSpriteBatch("run"),
-			x = 64,
-			y = 64,
-			tag = "object",
-		},
-		tag = "objectgroup",
-	}
 end
 
 local stats = {}

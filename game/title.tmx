@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.2" tiledversion="1.3.0" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="24" height="32" tilewidth="10" tileheight="10" infinite="1" backgroundcolor="#a27fbe" nextlayerid="20" nextobjectid="57">
+<map version="1.2" tiledversion="1.3.0" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="24" height="32" tilewidth="10" tileheight="10" infinite="1" backgroundcolor="#a27fbe" nextlayerid="20" nextobjectid="59">
  <properties>
   <property name="cameraid" type="int" value="11"/>
   <property name="nextmap" type="file" value="mainmenu.lua"/>
@@ -20,37 +20,37 @@
   </properties>
   <data encoding="base64" compression="gzip">
    <chunk x="0" y="0" width="16" height="16">
-   H4sIAAAAAAAEA+3SNxKAQAwEQR0c7vAe/v9R5gEK2IiEoJMtRVMKZpYhR0SBgLdbyW2FGg0SlK3lvkOPASOUbeJ+xoIVG5Rt5/7AiQs3lE1p5TVVWnmdlVZeZ6WV11lp5XX++337fw+0AaSHAAQAAA==
+   H4sIAAAAAAAECu3SNxKAQAwEQR0c7vAe/v9R5gEK2IiEoJMtRVMKZpYhR0SBgLdbyW2FGg0SlK3lvkOPASOUbeJ+xoIVG5Rt5/7AiQs3lE1p5TVVWnmdlVZeZ6WV11lp5XX++337fw+0AaSHAAQAAA==
   </chunk>
    <chunk x="16" y="0" width="16" height="16">
-   H4sIAAAAAAAEA+3Syw6CQAwF0OGlICi+UPn/H+VsSLrq3oSbnGR6u2umLqU0tHRU1OydZ5qzbc/AhROxM6aZbK/cmBmJnTHNw/bJizd3YmdM87H98mNlIXbGNPFWx/2O+/3b/9sAHmu9TQAEAAA=
+   H4sIAAAAAAAECu3Syw6CQAwF0OGlICi+UPn/H+VsSLrq3oSbnGR6u2umLqU0tHRU1OydZ5qzbc/AhROxM6aZbK/cmBmJnTHNw/bJizd3YmdM87H98mNlIXbGNPFWx/2O+/3b/9sAHmu9TQAEAAA=
   </chunk>
    <chunk x="0" y="16" width="16" height="16">
-   H4sIAAAAAAAEA+3SuRGAQAwEQQHHAcf/Q/6JMgHIYC0cjHa2ZE0pmlmFGg0SIt5uLbcdegwYoWwT9zMWrNigbDv3B05cuKFsGfc5CgSUUDallddUaeV1Vlp5nZVWXmelldf57/ft/z0XiXZ+AAQAAA==
+   H4sIAAAAAAAECu3SuRGAQAwEQQHHAcf/Q/6JMgHIYC0cjHa2ZE0pmlmFGg0SIt5uLbcdegwYoWwT9zMWrNigbDv3B05cuKFsGfc5CgSUUDallddUaeV1Vlp5nZVWXmelldf57/ft/z0XiXZ+AAQAAA==
   </chunk>
    <chunk x="16" y="16" width="16" height="16">
-   H4sIAAAAAAAEA+3Syw6CQAwF0AHloSAoPsD//1HPxqSr7km4yUmmt7tmulJKz4UrLR3/zjPNaHtjYmYgdsY0D9uFJy/uxM6Y5mO7svHlTeyMaWrbE2caKmJnTBNvddzvuN/e/t8P3FhFeAAEAAA=
+   H4sIAAAAAAAECu3Syw6CQAwF0AHloSAoPsD//1HPxqSr7km4yUmmt7tmulJKz4UrLR3/zjPNaHtjYmYgdsY0D9uFJy/uxM6Y5mO7svHlTeyMaWrbE2caKmJnTBNvddzvuN/e/t8P3FhFeAAEAAA=
   </chunk>
   </data>
  </layer>
  <layer id="17" name="Tile Layer 2" width="24" height="32">
   <data encoding="base64" compression="gzip">
    <chunk x="0" y="0" width="16" height="16">
-   H4sIAAAAAAAEA9NmGAWjITAaAiM1BACRa4BcAAQAAA==
+   H4sIAAAAAAAECtNmGAWjITAaAiM1BACRa4BcAAQAAA==
   </chunk>
   </data>
  </layer>
  <layer id="18" name="Tile Layer 3" width="24" height="32">
   <data encoding="base64" compression="gzip">
    <chunk x="0" y="0" width="16" height="16">
-   H4sIAAAAAAAEA2NgGAWjITAaAgMdAloD5AAAGp+80wAEAAA=
+   H4sIAAAAAAAECmNgGAWjITAaAgMdAloD5AAAGp+80wAEAAA=
   </chunk>
   </data>
  </layer>
  <layer id="19" name="Tile Layer 4" width="24" height="32">
   <data encoding="base64" compression="gzip">
    <chunk x="0" y="16" width="16" height="16">
-   H4sIAAAAAAAEA+3Qtw0AMAgFUeZwzmH/BX0buEec9DoavoilcQHHUx4BEQkZBRW/GgcdAxMLGwcXlo4FHpl4NdwABAAA
+   H4sIAAAAAAAECu3Qtw0AMAgFUeZwzmH/BX0buEec9DoavoilcQHHUx4BEQkZBRW/GgcdAxMLGwcXlo4FHpl4NdwABAAA
   </chunk>
   </data>
  </layer>
@@ -120,6 +120,15 @@ ioribranford.itch.io</text>
    <properties>
     <property name="coroutine" value="waitCoroutine"/>
    </properties>
+  </object>
+  <object id="57" x="115" y="0">
+   <properties>
+    <property name="anchorx" type="float" value="0.5"/>
+    <property name="anchory" type="float" value="1"/>
+    <property name="animation" value="run"/>
+    <property name="aseprite" type="file" value="player.json"/>
+   </properties>
+   <point/>
   </object>
  </objectgroup>
  <objectgroup id="16" name="curtain">
