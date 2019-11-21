@@ -66,24 +66,44 @@ function update.layer(layer, _, map, dt)
 	return true
 end
 update.chunk = update.layer
-
+--[[
+function update.asepritebatch(asepritebatch, parent, map, dt)
+	local animation = asepritebatch.animation
+	local aseprite = asepritebatch.aseprite
+	local spritebatch = asepritebatch.spritebatch
+	if animation then
+		local f = asepritebatch.animationframe
+		local msecs = asepritebatch.animationmsecs
+		f, msecs = aseprite:animateSpriteBatch(spritebatch,
+				animation, f, msecs, dt*1000)
+		asepritebatch.animationframe = f
+		asepritebatch.animationmsecs = msecs
+	end
+end
+]]
 function update.object(object, objectgroup, map, dt)
 	update_default(object, objectgroup, map, dt)
 	local tiles = object.tileset or map.tiles
 	local gid = object.gid
 	local animatedtile = tiles[gid]
-	local animation = animatedtile and animatedtile.animation
+	local animation = object.animation or animatedtile and animatedtile.animation
 	if animation then
 		local f = object.animationframe
 		local msecs = object.animationmsecs
-		local f2
-		f2, msecs = animation:getNewFrameAndMsecs(f, msecs, dt*1000)
-		if f ~= f2 then
-			f = f2
-			local tileset = animatedtile.tileset
-			object.tile = tileset:getAnimationFrameTile(animatedtile, f)
+
+		local aseprite = object.aseprite
+		if aseprite then
+			local spritebatch = object.spritebatch
+			f, msecs = aseprite:animateSpriteBatch(spritebatch,
+				animation, f, msecs, dt*1000)
+		else
+			local tile
+			tile, f, msecs = animation:animateTile(animatedtile, f,
+							msecs, dt*1000)
+			object.tile = tile
 		end
-		object.animationframe, object.animationmsecs = f, msecs
+		object.animationframe = f
+		object.animationmsecs = msecs
 	end
 	return true
 end

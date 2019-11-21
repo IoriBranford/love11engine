@@ -26,10 +26,6 @@ local newObject = engine.newObject
 local getObject = engine.getObject
 
 local map
-local playerspritebatch
-local playersprite
-local playeranimation
-local playerf, playert
 
 local MapViewer = {
 	x = 0, y = 0, rotation = 0,
@@ -136,8 +132,6 @@ function MapViewer:update(dt)
 end
 
 function MapViewer:fixedUpdate(fixeddt)
-	playerf, playert = playersprite:animateSpriteBatch(playerspritebatch,
-			playeranimation, playerf, playert, fixeddt*1000)
 	self.x = self.x + self.dx * fixeddt
 	self.y = self.y + self.dy * fixeddt
 	self.rotation = self.rotation + self.drotation * fixeddt
@@ -184,11 +178,20 @@ function love.reload()
 	map = newObject(tiled.load("title.tmx"), MapViewer)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
-	playersprite = aseprite.load("player.json", .5, 1)
-	playeranimation = "run"
-	playerf = 1
-	playert = 0
-	playerspritebatch = playersprite:newSpriteBatch(playeranimation)
+	local playersprite = aseprite.load("player.json", .5, 1)
+	map[#map + 1] = {
+		{
+			aseprite = playersprite,
+			animation = "run",
+			animationframe = 1,
+			animationmsecs = 0,
+			spritebatch = playersprite:newSpriteBatch("run"),
+			x = 64,
+			y = 64,
+			tag = "object",
+		},
+		tag = "objectgroup",
+	}
 end
 
 local stats = {}
@@ -204,7 +207,6 @@ function love.draw(alpha)
 	LG.rotate(rotation)
 
 	tiled.draw(map, alpha)
-	LG.draw(playerspritebatch)
 
 	local font = LG.getFont()
 	local h = font:getHeight()

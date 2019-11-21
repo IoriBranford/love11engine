@@ -238,6 +238,12 @@ function Animation.getNewFrameAndMsecs(animation, f, msecs, dmsecs)
 	return f, msecs + dmsecs
 end
 
+function Animation.animateTile(animation, animatedtile, f, msecs, dmsecs)
+	f, msecs = animation:getNewFrameAndMsecs(f, msecs, dmsecs)
+	local tileset = animatedtile.tileset
+	return tileset:getAnimationFrameTile(animatedtile, f), f, msecs
+end
+
 function load.animation(animation, tile, dir)
 	setmetatable(animation, Animation)
 	tile.animation = animation

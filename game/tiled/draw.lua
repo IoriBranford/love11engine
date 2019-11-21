@@ -148,8 +148,24 @@ function draw.text(text, object, map)
 	LG.printf(str, font, 0, y, wrap and width, halign)
 	return true
 end
-
+--[[
+function draw.asepritebatch(asepritebatch, parent, map)
+	local spritebatch = object.spritebatch
+	if spritebatch then
+		LG.draw(spritebatch)
+	end
+end
+]]
 function draw.object(object, objectgroup, map)
+	local spritebatch = object.spritebatch
+	if spritebatch then
+		if not object.spritei then
+			LG.draw(spritebatch)
+			return true
+		end
+		return
+	end
+
 	local tile = object.tile
 	if tile then
 		local tileset = tile.tileset
