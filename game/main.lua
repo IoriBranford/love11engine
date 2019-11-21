@@ -19,11 +19,17 @@ local min = math.min
 local pi = math.pi
 
 local pretty = require "pl.pretty"
-local tiled = require("tiled")
+local tiled = require "tiled"
+local aseprite = require "aseprite"
 local engine = require "engine"
 local newObject = engine.newObject
 local getObject = engine.getObject
+
 local map
+local playerspritebatch
+local playersprite
+local playeranimation
+local playerf, playert
 
 local MapViewer = {
 	x = 0, y = 0, rotation = 0,
@@ -127,15 +133,17 @@ function MapViewer:update(dt)
 	self.dx = -(rightx + downx)*speedNormal
 	self.dy = -(righty + downy)*speedNormal
 	self.drotation = -inr*pi
-	tiled.update(map, dt)
 end
 
 function MapViewer:fixedUpdate(fixeddt)
+	playerf, playert = playersprite:animateSpriteBatch(playerspritebatch,
+			playeranimation, playerf, playert, fixeddt*1000)
 	self.x = self.x + self.dx * fixeddt
 	self.y = self.y + self.dy * fixeddt
 	self.rotation = self.rotation + self.drotation * fixeddt
 	self.scalex = self.scalex + self.dscalex * fixeddt
 	self.scaley = self.scaley + self.dscaley * fixeddt
+	tiled.update(map, fixeddt)
 end
 
 local keypressed = {}
@@ -169,7 +177,6 @@ function love.load()
 		vsync = -1
 	}
 	LW.setMode(window_width, window_height, window_flags)
-	local _, _, flags = LW.getMode()
 end
 
 function love.reload()
@@ -177,6 +184,11 @@ function love.reload()
 	map = newObject(tiled.load("title.tmx"), MapViewer)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
+	playersprite = aseprite.load("player.json", .5, 1)
+	playeranimation = "run"
+	playerf = 1
+	playert = 0
+	playerspritebatch = playersprite:newSpriteBatch(playeranimation)
 end
 
 local stats = {}
@@ -185,13 +197,14 @@ function love.draw(alpha)
 	local lgh = LG.getHeight()
 	local hlgw = lgw/2
 	local hlgh = lgh/2
-	local rotation = 1.5*pi
+	local rotation = 0*pi
 
 	-- projection matrix
 	LG.translate(hlgw, hlgh)
 	LG.rotate(rotation)
 
 	tiled.draw(map, alpha)
+	LG.draw(playerspritebatch)
 
 	local font = LG.getFont()
 	local h = font:getHeight()
