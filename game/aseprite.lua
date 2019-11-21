@@ -169,9 +169,9 @@ local function loadAseprite(file, anchorx, anchory)
 	aseprite.animations = animations
 	
 	setmetatable(aseprite, Aseprite)
-	if anchorx and anchory then
-		aseprite:setAnchor(anchorx, anchory)
-	end
+	anchorx = anchorx or 0
+	anchory = anchory or 0
+	aseprite:setAnchor(anchorx, anchory)
 	return aseprite
 end
 
