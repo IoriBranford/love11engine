@@ -113,6 +113,7 @@ local function loadAseprite(file, anchorx, anchory)
 	local meta = doc.meta
 	local image = meta.image
 	image = LG.newImage(image)
+	image:setFilter("nearest", "nearest")
 
 	local layers = meta.layers
 	if not cels[1] and not layers then
