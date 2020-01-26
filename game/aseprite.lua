@@ -1,3 +1,11 @@
+--- Aseprite export settings
+-- Output
+--  JSON Data = true
+--   Meta:
+--    Layers = true if data format = Hash
+--    Tags = true for animations
+--   Item filename = {layer}:{frame1}
+
 local LFS = love.filesystem
 local LG = love.graphics
 local pretty = require "pl.pretty"
@@ -67,7 +75,7 @@ function Aseprite:setAnchor(anchorx, anchory)
 end
 
 local function load_cel(cel, filename, aseprite, layers, image)
-	local layername, framei = filename:match("(.+):(%d+)")
+	local layername, framei = filename:match("(.-):(%d+)")
 	local layeri = layers[layername]
 	if not layeri then
 		layers[#layers+1] = { name = layername }
