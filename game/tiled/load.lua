@@ -61,9 +61,12 @@ end
 -- After:
 -- {
 --  tag = PARENT,
---  NAME1 = "VALUE1",
---  NAME2 = "VALUE2",
---  ...
+--  properties = {
+--   tag = "properties",
+--   NAME1 = "VALUE1",
+--   NAME2 = "VALUE2",
+--   ...
+--  }
 -- }
 function load.properties(properties, parent, dir)
 	for i = 1, #properties do
@@ -73,13 +76,19 @@ function load.properties(properties, parent, dir)
 			local ptype = property.type
 			local pname = property.name
 			if ptype == "file" then
-				parent[pname] = dir..value
+				properties[pname] = dir..value
 			elseif ptype == "color" then
-				parent[pname] = { parseColor(value) }
+				properties[pname] = { parseColor(value) }
 			else
-				parent[pname] = value
+				properties[pname] = value
 			end
 		end
+	end
+	for i = #properties, 1, -1 do
+		properties[i] = nil
+	end
+	if parent then
+		parent.properties = properties
 	end
 end
 
@@ -99,11 +108,8 @@ end
 --  ...
 -- }
 function load.objecttype(objecttype, objecttypes, dir)
-	load.properties(objecttype, objecttype, dir)
-	for i = #objecttype, 1, -1 do
-		objecttypes[objecttype.name] = objecttype
-		objecttype[i] = nil
-	end
+	load.properties(objecttype, nil, dir)
+	objecttypes[objecttype.name] = objecttype
 	objecttype.name = nil
 end
 
@@ -213,18 +219,25 @@ function load.object(object, parent, dir)
 		loaded[file] = template
 		tablex.update(object, template)
 	end
-	local aseprite = object.aseprite
+	local properties = object.properties
+	local aseprite = properties and properties.aseprite
 	if aseprite then
+		local anchorx = properties.anchorx or 0
+		local anchory = properties.anchory or 0
+		local animation = properties.animation
 		local file = aseprite -- custom property, dir was already prepended
 		aseprite = loaded[file] or Aseprite.load(file)
 		loaded[file] = aseprite
 		object.aseprite = aseprite
-		local anchorx = object.anchorx or 0
-		local anchory = object.anchory or 0
+		object.animation = animation
 		aseprite:setAnchor(anchorx, anchory)
-		object.spritebatch = aseprite:newSpriteBatch(object.animation)
+		object.spritebatch = aseprite:newSpriteBatch(animation)
 		object.animationmsecs = 0
 		object.animationframe = 1
+		object.properties.aseprite = nil
+		object.properties.anchorx = nil
+		object.properties.anchory = nil
+		object.properties.animation = nil
 	end
 	return object
 end
