@@ -69,10 +69,12 @@ function transform.object(object, objectgroup, map, lerp)
 	if tile then
 		local width = object.width
 		local height = object.height
+		local flipx = object.flipx or 1
+		local flipy = object.flipy or 1
 		local tileset = tile.tileset
 		local tilewidth = tileset.tilewidth
 		local tileheight = tileset.tileheight
-		object.scalex, object.scaley = width/tilewidth, height/tileheight
+		object.scalex, object.scaley = flipx*width/tilewidth, flipy*height/tileheight
 	end
 	transform_default(object, objectgroup, map, lerp)
 end
@@ -90,7 +92,7 @@ function draw.map(map)
 	LG.clear(map.backgroundcolor)
 end
 
-local function drawLayerTile(layer, tile, x, y, i)
+local function drawLayerTile(layer, i, tile, x, y, sx, sy, r)
 	if not tile then
 		return
 	end
@@ -104,9 +106,9 @@ local function drawLayerTile(layer, tile, x, y, i)
 	local image = tile.image or tileset.image
 	local quad = tile.quad
 	if quad then
-		LG.draw(image, quad, x, y, 0, 1, 1, tileoffsetx, tileoffsety)
+		LG.draw(image, quad, x, y, r, sx, sy, tileoffsetx, tileoffsety)
 	else
-		LG.draw(image, x, y, 0, 1, 1, tileoffsetx, tileoffsety)
+		LG.draw(image, x, y, r, sx, sy, tileoffsetx, tileoffsety)
 	end
 end
 

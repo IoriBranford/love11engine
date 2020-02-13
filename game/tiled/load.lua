@@ -18,9 +18,7 @@ local love = love
 local LD = love.data
 local LG = love.graphics
 
-local Tiled = {}
-
-local Map = {}
+local Map = require "tiled.map"
 
 local load = {}
 setmetatable(load, {
@@ -195,7 +193,18 @@ function load.object(object, parent, dir)
 	if template then
 		local file = dir..template
 		template = assets.get(file)
+
+		local gid = object.gid or 0
 		tablex.update(object, template)
+
+		-- template instance's gid may override the template's gid
+		-- with different flip flags
+		-- (Tiled bug: if template's tileset is not also in the map,
+		-- overriding gid is 0)
+		if gid > 0 then
+			object.gid = gid
+			object.tileset = nil
+		end
 	end
 	local properties = object.properties
 	local aseprite = properties and properties.aseprite
@@ -223,7 +232,10 @@ function load.objectgroup(objectgroup, parent, dir)
 	if parent.tag == "map" then
 		for i = 1, #objectgroup do
 			local object = objectgroup[i]
-			Map.setObjectGid(parent, object, object.gid)
+			local gid = object.gid
+			if gid then
+				Map.setObjectGid(parent, object, gid)
+			end
 		end
 	end
 	return objectgroup
@@ -469,7 +481,7 @@ end
 --  spritebatch
 -- }
 
-local function addLayerTileSprite(layer, tile, x, y, i, spritebatch)
+local function addLayerTileSprite(layer, i, tile, x, y, sx, sy, r, spritebatch)
 	if tile then
 		local animation = tile.animation
 		local tileset = tile.tileset
@@ -479,7 +491,7 @@ local function addLayerTileSprite(layer, tile, x, y, i, spritebatch)
 
 		local tileoffsetx = tileset.tileoffsetx
 		local tileoffsety = tileset.tileoffsety
-		spritebatch:add(tile.quad, x, y, 0, 1, 1,
+		spritebatch:add(tile.quad, x, y, r, sx, sy,
 			tileoffsetx, tileoffsety)
 	else
 		spritebatch:add(0, 0, 0, 0, 0)
@@ -511,20 +523,11 @@ function load.layer(layer, map, dir)
 	layer.tileanimationframes = tileanimationframes
 	for i = 1, #layer do
 		local gid = layer[i]
-		local tile = tiles[gid]
+		local tile = Map.getTileByGid(map, gid)
 		local animation = tile and tile.animation
 		if animation then
 			tileanimationframes[i] = 1
-			if not layertileanimations[gid] then
-				local tileset = tile.tileset
-				for i = 1, #tileset do
-					local tile = tiles[gid]
-					local animation = tile and tile.animation
-					if animation then
-						layertileanimations[gid] = animation
-					end
-				end
-			end
+			layertileanimations[gid] = animation
 		end
 	end
 
@@ -550,187 +553,6 @@ function load.layer(layer, map, dir)
 	layer.spritebatch = spritebatch
 	Map.forEachLayerTile(map, layer, addLayerTileSprite, spritebatch)
 	return layer
-end
-
-local Staggers = {
-	x = {
-		odd = {
-			x = 0, y = 0,
-			cdx = .5, cdy = .5,
-			rdx = 0, rdy = 1,
-			scalecdx = 1, scalecdy = -1,
-			scalerdx = 1, scalerdy = 1
-		},
-		even = {
-			x = 0, y = .5,
-			cdx = .5, cdy = -.5,
-			rdx = 0, rdy = 1,
-			scalecdx = 1, scalecdy = -1,
-			scalerdx = 1, scalerdy = 1
-		}
-	},
-	y = {
-		odd = {
-			x = 0, y = 0,
-			cdx = 1, cdy = 0,
-			rdx = .5, rdy = .5,
-			scalecdx = 1, scalecdy = 1,
-			scalerdx = -1, scalerdy = 1
-		},
-		even = {
-			x = .5, y = 0,
-			cdx = 1, cdy = 0,
-			rdx = -.5, rdy = .5,
-			scalecdx = 1, scalecdy = 1,
-			scalerdx = -1, scalerdy = 1
-		}
-	}
-}
-
-function Map.forEachLayerTile(map, layer, func, ...)
-	local maptilewidth = map.tilewidth
-	local maptileheight = map.tileheight
-	local hmaptilewidth = maptilewidth/2
-	local hmaptileheight = maptileheight/2
-
-	local i = 1
-	local x = 0
-	local y = 0
-	local cdx, cdy = maptilewidth, 0
-	local rdx, rdy = 0, maptileheight
-	local scalecdx, scalecdy = 1, 1
-	local scalerdx, scalerdy = 1, 1
-
-	local width = layer.width or map.width
-	local height = layer.height or map.height
-
-	local orientation = map.orientation
-	if orientation == "isometric" then
-		x = (height - 1) * hmaptilewidth
-		cdx, cdy = hmaptilewidth, hmaptileheight
-		rdx, rdy = -hmaptilewidth, hmaptileheight
-	elseif orientation ~= "orthogonal" then
-		local staggeraxis = map.staggeraxis
-		local staggerindex = map.staggerindex
-		local stagger = Staggers[staggeraxis]
-		stagger = stagger and stagger[staggerindex]
-		if stagger then
-			x = stagger.x * maptilewidth
-			y = stagger.y * maptileheight
-			cdx = stagger.cdx * maptilewidth
-			cdy = stagger.cdy * maptileheight
-			rdx = stagger.rdx * maptilewidth
-			rdy = stagger.rdy * maptileheight
-			scalecdx = stagger.scalecdx
-			scalecdy = stagger.scalecdy
-			scalerdx = stagger.scalerdx
-			scalerdy = stagger.scalerdy
-		end
-	end
-
-	local tiles = map.tiles
-	for r = 1, height do
-		local totalcdx = 0
-		local totalcdy = 0
-		for c = 1, width do
-			local tile = tiles[layer[i]]
-			func(layer, tile, x, y, i, ...)
-			i = i + 1
-			x = x + cdx
-			y = y + cdy
-			totalcdx = totalcdx + cdx
-			totalcdy = totalcdy + cdy
-			cdx = cdx*scalecdx
-			cdy = cdy*scalecdy
-		end
-		x = x - totalcdx + rdx
-		y = y - totalcdy + rdy
-		rdx = rdx*scalerdx
-		rdy = rdy*scalerdy
-	end
-end
-
-function Map.setObjectGid(map, object, gid)
-	local tiles = object.tileset or map.tiles
-	local tile = tiles[gid]
-	local animationframe, animationmsecs
-	if tile then
-		local animation = tile.animation
-		if animation then
-			object.animationmsecs = 0
-			object.animationframe = 1
-			tile = tile.tileset:getAnimationFrameTile(tile, 1)
-		end
-	end
-	object.tile = tile
-	object.gid = gid
-end
-
-function Map.changeObjectGid(map, object, gid)
-	if object.gid ~= gid then
-		Map.setObjectGid(map, object, gid)
-	end
-end
-
-function Map.setLayerGid(map, layer, c, r, gid)
-	if type(layer[1]) ~= "number" then
-		-- TODO: find chunk and change its tile
-	end
-
-	local width = layer.width
-	local i = 1 + c + width*r
-	layer[i] = gid
-
-	local tiles = map.tiles
-	local tile = tiles[gid]
-	local animation = tile and tile.animation
-	map.layertileanimations[gid] = animation
-	local f = animation and animation.globalframe
-	if f then
-		layer.tileanimationframes[i] = f
-	end
-
-	local mingid = layer.mingid
-	local maxgid = layer.maxgid
-	if gid < mingid then
-		mingid = gid
-		layer.mingid = mingid
-	end
-	if mingid > maxgid then
-		maxgid = gid
-		layer.maxgid = maxgid
-	end
-	local tileset = layer.tileset
-	if not tileset:areGidsInRange(mingid, maxgid) then
-		layer.spritebatch = nil
-	end
-
-	local spritebatch = layer.spritebatch
-	if not spritebatch then
-		return
-	end
-
-	if f then
-		tile = tileset:getAnimationFrameTile(tile, f)
-	end
-
-	local maptilewidth = map.tilewidth
-	local maptileheight = map.tileheight
-	local x, y = x*maptilewidth, y*maptileheight
-	Map.setSpriteBatchTile(map, spritebatch, i, x, y, tile)
-end
-
-function Map.setSpriteBatchTile(map, spritebatch, i, x, y, tile)
-	if tile then
-		local tileset = tile.tileset
-		local tileheight = tileset.tileheight
-		local tileoffsetx = tileset.tileoffsetx
-		local tileoffsety = tileset.tileoffsety
-		spritebatch:set(i, tile.quad, x, y, 0, 1, 1,
-			tileoffsetx, tileoffsety)
-	else
-		spritebatch:set(i, 0, 0, 0, 0, 0)
-	end
 end
 
 function load.map(map, filename, dir)

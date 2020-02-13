@@ -49,7 +49,7 @@ function update.layer(layer, _, map, dt)
 
 	for i, f in pairs(tileanimationframes) do
 		local gid = layer[i]
-		local tile = tiles[gid]
+		local tile, sx, sy, r = map:getTileByGid(gid)
 		local animation = tile.animation
 		if animation.globalframechanged then
 			tile = tile.tileset:getAnimationFrameTile(tile, f)
@@ -60,7 +60,7 @@ function update.layer(layer, _, map, dt)
 			local x = i0 % width
 			local y = floor(i0 / width)
 			x, y = x*maptilewidth, y*maptileheight
-			map:setSpriteBatchTile(spritebatch, i, x, y, tile)
+			map:setSpriteBatchTile(spritebatch, i, tile, x, y, sx, sy, r)
 		end
 	end
 	return true
@@ -84,7 +84,7 @@ end
 function update.object(object, objectgroup, map, dt)
 	update_default(object, objectgroup, map, dt)
 	local tiles = object.tileset or map.tiles
-	local gid = object.gid
+	local gid = map.getGidFlip(object.gid)
 	local animatedtile = tiles[gid]
 	local animation = object.animation or animatedtile and animatedtile.animation
 	if animation then
