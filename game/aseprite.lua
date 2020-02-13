@@ -6,10 +6,9 @@
 --    Tags = true for animations
 --   Item filename = {layer}:{frame1}
 
-local LFS = love.filesystem
+local Assets = require "assets"
 local LG = love.graphics
 local pretty = require "pl.pretty"
-local json = require "json"
 
 local Aseprite = {}
 Aseprite.__index = Aseprite
@@ -74,7 +73,7 @@ function Aseprite:setAnchor(anchorx, anchory)
 	self.offsety = anchory*self.height
 end
 
-local function load_cel(cel, filename, aseprite, layers, image)
+local function load_cel(cel, filename, ase, layers, image)
 	local layername, framei = filename:match("(.-):(%d+)")
 	local layeri = layers[layername]
 	if not layeri then
@@ -84,10 +83,10 @@ local function load_cel(cel, filename, aseprite, layers, image)
 	end
 
 	framei = tonumber(framei)
-	local frame = aseprite[framei]
+	local frame = ase[framei]
 	if not frame then
 		frame = { duration = cel.duration }
-		aseprite[framei] = frame
+		ase[framei] = frame
 	end
 
 	local rect = cel.frame
@@ -100,33 +99,20 @@ local function load_cel(cel, filename, aseprite, layers, image)
 	}
 
 	local size = cel.sourceSize
-	aseprite.width = size.w
-	aseprite.height = size.h
+	ase.width = size.w
+	ase.height = size.h
 end
 
-local function loadAseprite(file, anchorx, anchory)
-	local text, ok, doc, err
-	text, err = LFS.read(file)
-	if not text then
-		print(err)
-		return
-	end
-	ok, doc = pcall(json.decode, text)
-	if not ok then
-		print(doc)
-		return
-	end
-
+local function loadAseprite(doc, anchorx, anchory)
 	local cels = doc.frames
 	local meta = doc.meta
 	local image = meta.image
-	image = LG.newImage(image)
+	image = Assets.get(image)
 	image:setFilter("nearest", "nearest")
 
 	local layers = meta.layers
 	if not cels[1] and not layers then
-		print(file.." was exported with hash frames and no layer list. There is no way to ensure the correct layer order.")
-		return
+		return nil, "Aseprite "..image.." was exported with hash frames and no layer list. There is no way to ensure the correct layer order."
 	end
 
 	layers = layers or {}
@@ -135,15 +121,15 @@ local function loadAseprite(file, anchorx, anchory)
 		layers[layers[i].name] = i
 	end
 
-	local aseprite = {}
+	local ase = {}
 	if cels[1] then
 		for i = 1, #cels do
 			local cel = cels[i]
-			load_cel(cel, cel.filename, aseprite, layers, image)
+			load_cel(cel, cel.filename, ase, layers, image)
 		end
 	else
 		for k,v in pairs(cels) do
-			load_cel(v, k, aseprite, layers, image)
+			load_cel(v, k, ase, layers, image)
 		end
 	end
 
@@ -173,15 +159,15 @@ local function loadAseprite(file, anchorx, anchory)
 		animations[i] = nil
 	end
 
-	aseprite.image = image
-	aseprite.layers = layers
-	aseprite.animations = animations
+	ase.image = image
+	ase.layers = layers
+	ase.animations = animations
 	
-	setmetatable(aseprite, Aseprite)
+	setmetatable(ase, Aseprite)
 	anchorx = anchorx or 0
 	anchory = anchory or 0
-	aseprite:setAnchor(anchorx, anchory)
-	return aseprite
+	ase:setAnchor(anchorx, anchory)
+	return ase
 end
 
 return {

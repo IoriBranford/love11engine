@@ -20,7 +20,7 @@ local pi = math.pi
 
 local pretty = require "pl.pretty"
 local tiled = require "tiled"
-local aseprite = require "aseprite"
+local assets = require "assets"
 local engine = require "engine"
 local newObject = engine.newObject
 local getObject = engine.getObject
@@ -174,8 +174,9 @@ function love.load()
 end
 
 function love.reload()
-	tiled.load.clearCache()
-	map = newObject(tiled.load("title.tmx"), MapViewer)
+	assets.clear()
+	map = assets.get("title.tmx")
+	map = newObject(map, MapViewer)
 	LG.setLineStyle("rough")
 	LG.getFont():setFilter("nearest", "nearest")
 end

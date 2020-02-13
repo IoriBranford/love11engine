@@ -2,11 +2,10 @@
 -- wangsets
 -- iso, hex, staggered orientation
 
+local assets = require "assets"
 local pretty = require "pl.pretty"
-local xml = require "pl.xml"
 local tablex = require "pl.tablex"
 local ffi = require "ffi"
-local Aseprite = require "aseprite"
 local floor = math.floor
 local max = math.max
 local min = math.min
@@ -17,14 +16,11 @@ local pairs = pairs
 local tonumber = tonumber
 local love = love
 local LD = love.data
-local LFS = love.filesystem
 local LG = love.graphics
 
 local Tiled = {}
 
 local Map = {}
-
-local loaded = {}
 
 local load = {}
 setmetatable(load, {
@@ -165,38 +161,21 @@ function load.text(text, object, dir)
 	text.string = text[1]
 	text[1] = nil
 	local fontfamily = text.fontfamily
+	local pixelsize = text.pixelsize or 16
 	local file = dir..fontfamily
 	if text.bold then
-		file = file.."bold"
+		file = file.." Bold"
 	end
 	if text.italic then
-		file = file.."italic"
+		file = file.." Italic"
 	end
 	if text.underline then
-		file = file.."underline"
+		file = file.." Underline"
 	end
-	local pixelsize = text.pixelsize or 16
-	local ttfsize = file..".ttf"..pixelsize
 	local fnt = file..pixelsize..".fnt"
-	local font = loaded[fnt] or loaded[ttfsize]
-	if not font then
-		font = LFS.getInfo(fnt) and LG.newFont(fnt)
-		if font then
-			loaded[fnt] = font
-		end
-	end
-	if not font then
-		local ttf = file..".ttf"
-		font = LFS.getInfo(ttf) and LG.newFont(ttf, pixelsize)
-		if font then
-			loaded[ttfsize] = font
-		end
-	end
-	if not font then
-		local defaultfont = "defaultfont"..pixelsize
-		font = loaded[defaultfont] or LG.newFont(pixelsize)
-		loaded[defaultfont] = font
-	end
+	local ttf = file..".ttf"
+	local font = assets.get(fnt) or assets.get(ttf, pixelsize)
+		or assets.get(".defaultFont", pixelsize)
 	font:setFilter("nearest", "nearest")
 	text.font = font
 	return text
@@ -215,8 +194,7 @@ function load.object(object, parent, dir)
 	local template = object.template
 	if template then
 		local file = dir..template
-		template = loaded[file] or Tiled.load(file)
-		loaded[file] = template
+		template = assets.get(file)
 		tablex.update(object, template)
 	end
 	local properties = object.properties
@@ -226,8 +204,7 @@ function load.object(object, parent, dir)
 		local anchory = properties.anchory or 0
 		local animation = properties.animation
 		local file = aseprite -- custom property, dir was already prepended
-		aseprite = loaded[file] or Aseprite.load(file)
-		loaded[file] = aseprite
+		aseprite = assets.get(file)
 		object.aseprite = aseprite
 		object.animation = animation
 		aseprite:setAnchor(anchorx, anchory)
@@ -312,14 +289,7 @@ end
 
 function load.image(image, parent, dir)
 	local file = dir..image.source
-	local image = loaded[file]
-	if not image then
-		image = LG.newImage(file)
-		if image then
-			image:setFilter("nearest", "nearest")
-		end
-		loaded[file] = image
-	end
+	local image = assets.get(file)
 	parent.image = image
 end
 
@@ -343,11 +313,7 @@ function load.tileset(tileset, parent, dir)
 	local source = tileset.source
 	if source then
 		local file = dir..source
-		local exttileset = loaded[file]
-		if not exttileset then
-			exttileset = Tiled.load(file)
-			loaded[file] = exttileset
-		end
+		local exttileset = assets.get(file)
 		tablex.update(tileset, exttileset)
 	else
 		local tilecount = tileset.tilecount or 0
@@ -803,31 +769,11 @@ local function loadRecursive(doc, parent, dir)
 	end
 	return load[tag](node, parent, dir)
 end
-
-function Tiled.load(file)
-	local text, doc, err
-	text, err = LFS.read(file)
-	if not text then
-		print(err)
-		return
-	end
-	doc, err = xml.parse(text)
-	if not doc then
-		print(err)
-		return
-	end
-
-	local dir = file:match('(.*/)[^/]*$') or ""
-	return loadRecursive(doc, nil, dir)
-end
-
-function Tiled.clearCache()
-	loaded = {}
-end
+Tiled.loadRecursive = loadRecursive
 
 setmetatable(Tiled, {
-	__call = function(Tiled, file)
-		return Tiled.load(file)
+	__call = function(Tiled, ...)
+		return loadRecursive(...)
 	end
 })
 
