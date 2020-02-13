@@ -290,6 +290,9 @@ end
 function load.image(image, parent, dir)
 	local file = dir..image.source
 	local image = assets.get(file)
+	if image then
+		image:setFilter("nearest", "nearest")
+	end
 	parent.image = image
 end
 
