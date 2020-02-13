@@ -29,9 +29,8 @@ end
 function load.tmx(filename)
 	local doc, err = load.xml(filename)
 	if doc then
-		local dir = filename:match('(.*/)[^/]*$') or ""
 		local tiled = require "tiled"
-		return tiled.load(doc, nil, dir)
+		return tiled.load(doc, filename)
 	end
 	return doc, err
 end

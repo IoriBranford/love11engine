@@ -375,7 +375,7 @@ function load.tileset(tileset, parent, dir)
 		end
 	end
 
-	if parent then
+	if type(parent) == "table" then
 		local tilesets = parent.tilesets or {}
 		parent.tilesets = tilesets
 		tilesets[#tilesets + 1] = tileset
@@ -733,7 +733,7 @@ function Map.setSpriteBatchTile(map, spritebatch, i, x, y, tile)
 	end
 end
 
-function load.map(map, _, dir)
+function load.map(map, filename, dir)
 	tablex.update(map, Map)
 	local backgroundcolor = map.backgroundcolor
 	map.backgroundcolor = backgroundcolor and { parseColor(backgroundcolor) }
@@ -744,6 +744,7 @@ local function loadRecursive(doc, parent, dir)
 	if type(doc) == "string" then
 		return doc
 	end
+	dir = dir or parent:match('(.*/)[^/]*$') or ""
 	local node = doc.attr
 	tablex.transform(function(v)
 		local number = tonumber(v)
@@ -772,12 +773,5 @@ local function loadRecursive(doc, parent, dir)
 	end
 	return load[tag](node, parent, dir)
 end
-Tiled.loadRecursive = loadRecursive
 
-setmetatable(Tiled, {
-	__call = function(Tiled, ...)
-		return loadRecursive(...)
-	end
-})
-
-return Tiled
+return loadRecursive
