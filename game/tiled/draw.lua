@@ -89,7 +89,10 @@ setmetatable(draw, {
 })
 
 function draw.map(map)
-	LG.clear(map.backgroundcolor)
+	local backgroundcolor = map.backgroundcolor
+	if backgroundcolor then
+		LG.clear(backgroundcolor)
+	end
 end
 
 local function drawLayerTile(layer, i, tile, x, y, sx, sy, r)
