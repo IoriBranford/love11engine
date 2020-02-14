@@ -20,7 +20,6 @@ local pi = math.pi
 
 local pretty = require "pl.pretty"
 local assets = require "assets"
-local tiled = require "tiled"
 
 local fixedfps = 60
 local fixeddt = 1/fixedfps
@@ -146,7 +145,7 @@ function MapViewer:fixedUpdate(dt)
 	self.rotation = self.rotation + self.drotation * dt
 	self.scalex = self.scalex + self.dscalex * dt
 	self.scaley = self.scaley + self.dscaley * dt
-	tiled.update(map, dt)
+	map:update(dt)
 end
 
 local keypressed = {}
@@ -213,7 +212,7 @@ local function draw(lerp)
 	LG.translate(hlgw, hlgh)
 	LG.rotate(rotation)
 
-	tiled.draw(map, lerp)
+	map:draw(lerp)
 
 	local font = LG.getFont()
 	local h = font:getHeight()

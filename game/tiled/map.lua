@@ -248,4 +248,15 @@ function Map.setSpriteBatchTile(map, spritebatch, i, tile, x, y, sx, sy, r)
 	end
 end
 
+local update = require "tiled.update"
+local draw = require "tiled.draw"
+
+function Map.update(map, dt)
+	update(map, dt)
+end
+
+function Map.draw(map, lerp)
+	draw(map, lerp)
+end
+
 return Map
