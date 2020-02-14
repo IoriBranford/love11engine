@@ -557,6 +557,8 @@ end
 
 function load.map(map, filename, dir)
 	tablex.update(map, Map)
+	local layertileanimations = map.layertileanimations or {}
+	map.layertileanimations = layertileanimations
 	local backgroundcolor = map.backgroundcolor
 	map.backgroundcolor = backgroundcolor and { parseColor(backgroundcolor) }
 	return map
