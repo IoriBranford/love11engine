@@ -4,6 +4,19 @@ local tablex = require "pl.tablex"
 
 local Object = {}
 
+function Object.initScript(object, script)
+	if not script then
+		return
+	end
+	if type(script)=="string" then
+		script = assets.get(script)
+	end
+	object.script = script
+	if script then
+		script.init(object)
+	end
+end
+
 function Object.setTemplate(object, template)
 	if type(template) == "string" then
 		template = assets.get(template)

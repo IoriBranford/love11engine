@@ -3,9 +3,6 @@ local LE = love.event
 local LFS = love.filesystem
 local LG = love.graphics
 local LJ = love.joystick
-local LK = love.keyboard
-local LM = love.math
-local LP = love.physics
 local LT = love.timer
 local LW = love.window
 
@@ -13,9 +10,6 @@ local floor = math.floor
 local sqrt = math.sqrt
 local abs = math.abs
 local sin = math.sin
-local cos = math.cos
-local max = math.max
-local min = math.min
 local pi = math.pi
 
 local pretty = require "pl.pretty"
@@ -23,18 +17,9 @@ local assets = require "assets"
 
 local fixedfps = 60
 local fixeddt = 1/fixedfps
-local nextmapfiles = { "title.tmx", "gameplay.tmx" }
-
-local coroutines = {}
+local toload = { "title.tmx", "gameplay.tmx" }
 
 local maps = nil
-
-local MapViewer = {}
-
-yield = coroutine.yield
-function changeMaps(...)
-	nextmapfiles = {...}
-end
 
 local function init()
 	local gamepadfile = "gamecontrollerdb.txt"
@@ -50,48 +35,36 @@ local function init()
 	LW.setMode(window_width, window_height, window_flags)
 end
 
-local function loadNextMaps()
-	coroutines = {}
+local function load()
 	assets.clear()
 	local font = assets.get(".defaultFont", floor(LG.getHeight()/48))
 	font:setFilter("nearest", "nearest")
 	LG.setFont(font)
 	maps = {}
-	for i = 1, #nextmapfiles do
-		local filename = nextmapfiles[i]
+	for i = 1, #toload do
+		local filename = toload[i]
 		local map = assets.get(filename)
 		maps[filename] = map
-		local script = map.properties.script
-		script = script and assets.get(script)
-		local co = script and coroutine.create(script)
-		if co then
-			coroutines[filename] = co
-		end
+		map:broadcast("init")
 	end
-	--MapViewer.init(maps["title.tmx"])
-	--local hudmap = maps["gameplay.tmx"]
-	--if hudmap then
-	--	hudmap.x = -LG.getWidth()/2
-	--	hudmap.y = -LG.getHeight()/2
-	--end
-	LG.setLineStyle("rough")
+end
+
+local function broadcast(ev, ...)
+	for filename, map in pairs(maps) do
+		map:broadcast(ev, ...)
+	end
 end
 
 local function update(dt)
-	--MapViewer.update(maps["title.tmx"], dt)
+	for filename, map in pairs(maps) do
+		map:broadcast("update", dt)
+	end
 end
 
 local function fixedUpdate(dt)
-	--MapViewer.fixedUpdate(maps["title.tmx"], dt)
-	for id, co in pairs(coroutines) do
-		self = maps[id]
-		local ok, err = coroutine.resume(co, dt)
-		if coroutine.status(co) == "dead" then
-			coroutines[id] = nil
-		end
-		if not ok then
-			error(err)
-		end
+	for filename, map in pairs(maps) do
+		map:broadcast("fixedUpdate", dt)
+		map:update(dt)
 	end
 end
 
@@ -143,10 +116,10 @@ function love.run()
 
 	-- Main loop time.
 	return function()
-		if nextmapfiles then
-			loadNextMaps()
+		if toload then
+			load()
 			collectgarbage()
-			nextmapfiles = nil
+			toload = nil
 			if LT then LT.step() end
 		end
 
@@ -159,7 +132,7 @@ function love.run()
 						return a or 0
 					end
 				end
-				love.handlers[name](a,b,c,d,e,f)
+				broadcast(name, a, b, c, d, e, f)
 			end
 		end
 

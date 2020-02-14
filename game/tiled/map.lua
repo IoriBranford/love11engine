@@ -1,6 +1,8 @@
 local pi = math.pi
 local pairs = pairs
+local setmetatable = setmetatable
 local assets = require "assets"
+local tablex = require "pl.tablex"
 local Object = require "tiled.object"
 
 local Map = {}
@@ -282,11 +284,29 @@ local function listObjectsById(layers, layersbyid, objectsbyid)
 			listObjectsById(layer, layersbyid, objectsbyid)
 		end
 	end
+	return layersbyid, objectsbyid
+end
+
+local function setScript(node, script)
+	local properties = node.properties
+	if properties then
+		node.script = assets.get(properties.script)
+		properties.script = nil
+	end
+end
+
+local function setScripts(nodesbyid, script)
+	for id, node in pairs(nodesbyid) do
+		setScript(node, script)
+	end
 end
 
 function Map.initObjectManagement(map)
 	map.layersbyid, map.objectsbyid = listObjectsById(map)
 	map.destroyedobjectids = {}
+	setScripts(map.layersbyid)
+	setScripts(map.objectsbyid)
+	setScript(map)
 end
 
 local function newLayerId(map)
@@ -311,8 +331,9 @@ local function newObject(map, parent)
 		width = 0,
 		height = 0,
 		rotation = 0,
-		visible = true
+		visible = true,
 	}
+	setmetatable(object, Object)
 	if parent then
 		if parent.tag == "objectgroup" then
 			parent[#parent+1] = object
@@ -321,19 +342,21 @@ local function newObject(map, parent)
 	return object
 end
 
-function Map.newTemplateObject(map, parent, template)
+function Map.newTemplateObject(map, parent, template, script)
 	local object = newObject(map, parent)
-	Object.setTemplate(object, template)
+	object:setTemplate(template)
+	object:initScript(script)
 	return object
 end
 
-function Map.newAsepriteObject(map, parent, aseprite, animation, anchorx, anchory)
+function Map.newAsepriteObject(map, parent, aseprite, animation, anchorx, anchory, script)
 	local object = newObject(map, parent)
-	Object.setAseprite(object, aseprite, animation, anchorx, anchory)
+	object:setAseprite(aseprite, animation, anchorx, anchory)
+	object:initScript(script)
 	return object
 end
 
-function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy)
+function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy, script)
 	local tile = getTilesetTile(map.tilesets, tileset, tileid)
 	if not tile then
 		return
@@ -341,6 +364,7 @@ function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy)
 	local object = newObject(map, parent)
 	object.gid = tileset.firstgid + tileid
 	setObjectTile(object, tile, flipx, flipy)
+	object:initScript(script)
 	return object
 end
 
@@ -375,23 +399,26 @@ local function clearDestroyedObject(objectsbyid, id)
 	end
 end
 
-local function doEvent(node, event, ...)
-	local func = node[event]
-	if func then
-		return func(...)
+local function handle(node, event, ...)
+	local script = node.script
+	if not script then
+		return
+	end
+	event = script[event]
+	if event then
+		return event(node, ...)
 	end
 end
 
-function Map.doEvent(map, event, ...)
-	if doEvent(map, event, ...) then
+function Map.broadcast(map, event, ...)
+	if handle(map, event, ...) then
 		return
 	end
-	for l = 1, #map do
-		local layer = map[l]
-		if not doEvent(layer, event, ...) then
+	for id, layer in pairs(map.layersbyid) do
+		if not handle(layer, event, ...) then
 			if layer.tag == "objectgroup" then
 				for o = 1, #layer do
-					doEvent(layer[o], event, ...)
+					handle(layer[o], event, ...)
 				end
 			end
 		end

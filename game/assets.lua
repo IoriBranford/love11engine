@@ -77,7 +77,13 @@ function load.png(filename, ...)
 	return image
 end
 
-load.lua = LFS.load
+function load.lua(filename)
+	local module, err = LFS.load(filename)
+	if module then
+		return module()
+	end
+	return module, err
+end
 
 local function assetName(filename, ...)
 	local assetname = filename
@@ -98,6 +104,9 @@ function Assets.clear()
 end
 
 function Assets.get(filename, ...)
+	if not filename then
+		return
+	end
 	local assetname = assetName(filename, ...)
 	local asset = cache[assetname]
 	if asset == nil then
