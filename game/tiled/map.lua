@@ -1,4 +1,7 @@
 local pi = math.pi
+local pairs = pairs
+local assets = require "assets"
+local Object = require "tiled.object"
 
 local Map = {}
 
@@ -89,6 +92,19 @@ local function getTileByGid(tiles, gid)
 	return tiles[gid], sx, sy, r
 end
 
+local function getTilesetTile(tilesets, tileset, tileid)
+	local tileset = tilesets[tileset]
+		or type(tileset)=="string" and assets.get(tileset)
+	if not tileset then
+		return
+	end
+	tileid = tileid or 1
+	if type(tileid)=="string" then
+		tileid = tileset.namedtiles[tileid]
+	end
+	return tileset[tileid]
+end
+
 function Map.getTileByGid(map, gid)
 	return getTileByGid(map.tiles, gid)
 end
@@ -167,8 +183,8 @@ local function setObjectTile(object, tile, flipx, flipy)
 		end
 	end
 	object.tile = tile
-	object.flipx = flipx
-	object.flipy = flipy
+	object.flipx = flipx or 1
+	object.flipy = flipy or 1
 end
 
 function Map.setObjectGid(map, object, gid)
@@ -248,10 +264,150 @@ function Map.setSpriteBatchTile(map, spritebatch, i, tile, x, y, sx, sy, r)
 	end
 end
 
+local function listObjectsById(layers, layersbyid, objectsbyid)
+	layersbyid = layersbyid or {}
+	objectsbyid = objectsbyid or {}
+	for i = 1, #layers do
+		local layer = layers[i]
+		local layerid = layer.id
+		if layerid then
+			layersbyid[layerid] = layer
+		end
+		if layer.tag == "objectgroup" then
+			for j = 1, #layer do
+				local object = layer[j]
+				objectsbyid[object.id] = object
+			end
+		elseif layer.tag == "group" then
+			listObjectsById(layer, layersbyid, objectsbyid)
+		end
+	end
+end
+
+function Map.initObjectManagement(map)
+	map.layersbyid, map.objectsbyid = listObjectsById(map)
+	map.destroyedobjectids = {}
+end
+
+local function newLayerId(map)
+	local id = map.newlayerid
+	map.newlayerid = id + 1
+	return id
+end
+
+local function newObjectId(map)
+	local id = map.newobjectid
+	map.newobjectid = id + 1
+	return id
+end
+
+local function newObject(map, parent)
+	local object = {
+		tag = "object",
+		parent = parent,
+		id = newObjectId(),
+		x = 0,
+		y = 0,
+		width = 0,
+		height = 0,
+		rotation = 0,
+		visible = true
+	}
+	if parent then
+		if parent.tag == "objectgroup" then
+			parent[#parent+1] = object
+		end
+	end
+	return object
+end
+
+function Map.newTemplateObject(map, parent, template)
+	local object = newObject(map, parent)
+	Object.setTemplate(object, template)
+	return object
+end
+
+function Map.newAsepriteObject(map, parent, aseprite, animation, anchorx, anchory)
+	local object = newObject(map, parent)
+	Object.setAseprite(object, aseprite, animation, anchorx, anchory)
+	return object
+end
+
+function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy)
+	local tile = getTilesetTile(map.tilesets, tileset, tileid)
+	if not tile then
+		return
+	end
+	local object = newObject(map, parent)
+	object.gid = tileset.firstgid + tileid
+	setObjectTile(object, tile, flipx, flipy)
+	return object
+end
+
+function Map.getLayerById(map, id)
+	return map.layersbyid[id]
+end
+
+function Map.getObjectById(map, id)
+	return map.objectsbyid[id]
+end
+
+function Map.destroyObject(map, id)
+	if type(id)=="table" then
+		id = id.id
+	end
+	map.destroyedobjectids[id] = true
+end
+
+local function clearDestroyedObject(objectsbyid, id)
+	local object = objectsbyid[id]
+	objectsbyid[id] = nil
+	if object then
+		local parent = object.parent
+		if parent then
+			for i = 1, #parent do
+				if parent[i] == object then
+					table.remove(parent, i)
+					break
+				end
+			end
+		end
+	end
+end
+
+local function doEvent(node, event, ...)
+	local func = node[event]
+	if func then
+		return func(...)
+	end
+end
+
+function Map.doEvent(map, event, ...)
+	if doEvent(map, event, ...) then
+		return
+	end
+	for l = 1, #map do
+		local layer = map[l]
+		if not doEvent(layer, event, ...) then
+			if layer.tag == "objectgroup" then
+				for o = 1, #layer do
+					doEvent(layer[o], event, ...)
+				end
+			end
+		end
+	end
+end
+
 local update = require "tiled.update"
 local draw = require "tiled.draw"
 
 function Map.update(map, dt)
+	local objectsbyid = map.objectsbyid
+	local destroyedobjectids = map.destroyedobjectids
+	for id, _ in pairs(destroyedobjectids) do
+		clearDestroyedObject(objectsbyid, id)
+		destroyedobjectids[id] = nil
+	end
 	update(map, dt)
 end
 

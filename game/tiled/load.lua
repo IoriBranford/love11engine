@@ -19,6 +19,7 @@ local LD = love.data
 local LG = love.graphics
 
 local Map = require "tiled.map"
+local Object = require "tiled.object"
 
 local load = {}
 setmetatable(load, {
@@ -191,39 +192,19 @@ end
 function load.object(object, parent, dir)
 	local template = object.template
 	if template then
-		local file = dir..template
-		template = assets.get(file)
-
-		local gid = object.gid or 0
-		tablex.update(object, template)
-
-		-- template instance's gid may override the template's gid
-		-- with different flip flags
-		-- (Tiled bug: if template's tileset is not also in the map,
-		-- overriding gid is 0)
-		if gid > 0 then
-			object.gid = gid
-			object.tileset = nil
-		end
+		Object.setTemplate(object, dir..template)
 	end
 	local properties = object.properties
 	local aseprite = properties and properties.aseprite
 	if aseprite then
-		local anchorx = properties.anchorx or 0
-		local anchory = properties.anchory or 0
-		local animation = properties.animation
-		local file = aseprite -- custom property, dir was already prepended
-		aseprite = assets.get(file)
-		object.aseprite = aseprite
-		object.animation = animation
-		aseprite:setAnchor(anchorx, anchory)
-		object.spritebatch = aseprite:newSpriteBatch(animation)
-		object.animationmsecs = 0
-		object.animationframe = 1
+		Object.setAseprite(object, aseprite,
+			object.properties.animation,
+			object.properties.anchorx,
+			object.properties.anchory)
 		object.properties.aseprite = nil
+		object.properties.animation = nil
 		object.properties.anchorx = nil
 		object.properties.anchory = nil
-		object.properties.animation = nil
 	end
 	return object
 end
@@ -391,6 +372,7 @@ function load.tileset(tileset, parent, dir)
 		local tilesets = parent.tilesets or {}
 		parent.tilesets = tilesets
 		tilesets[#tilesets + 1] = tileset
+		tilesets[tileset.name] = tileset
 
 		local tiles = parent.tiles or {}
 		parent.tiles = tiles
@@ -557,11 +539,14 @@ end
 
 function load.map(map, filename, dir)
 	tablex.update(map, Map)
-	local layertileanimations = map.layertileanimations or {}
-	map.layertileanimations = layertileanimations
+	map.layertileanimations = map.layertileanimations or {}
 	local backgroundcolor = map.backgroundcolor
 	map.backgroundcolor = backgroundcolor and { parseColor(backgroundcolor) }
+	map:initObjectManagement()
 	return map
+end
+
+function load.editorsettings(editorsettings, map, dir)
 end
 
 local function loadRecursive(doc, parent, dir)
@@ -593,6 +578,9 @@ local function loadRecursive(doc, parent, dir)
 	if not dir then
 		dir = parent:match('(.*/)[^/]*$') or ""
 		node.filename = parent
+	end
+	if type(parent) == "table" then
+		node.parent = parent
 	end
 	local n = #doc
 	for i = 1, n do
