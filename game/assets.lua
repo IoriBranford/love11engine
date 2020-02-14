@@ -77,6 +77,8 @@ function load.png(filename, ...)
 	return image
 end
 
+load.lua = LFS.load
+
 local function assetName(filename, ...)
 	local assetname = filename
 	for i = 1, select('#', ...) do

@@ -4,7 +4,7 @@
   <property name="cameraid" type="int" value="11"/>
   <property name="nextmap" type="file" value="mainmenu.lua"/>
   <property name="playerid" type="int" value="42"/>
-  <property name="script" value="MenuMap"/>
+  <property name="script" type="file" value="MapViewer.lua"/>
  </properties>
  <tileset firstgid="1" source="img/bg_swirl.tsx"/>
  <tileset firstgid="26" source="img/title_demonization.tsx"/>
