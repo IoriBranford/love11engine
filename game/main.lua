@@ -19,20 +19,29 @@ local min = math.min
 local pi = math.pi
 
 local pretty = require "pl.pretty"
-local tiled = require "tiled"
 local assets = require "assets"
-local engine = require "engine"
-local newObject = engine.newObject
-local getObject = engine.getObject
+local tiled = require "tiled"
+
+local fixedfps = 60
+local fixeddt = 1/fixedfps
+local nextmapfile = "title.tmx"
 
 local map
 
-local MapViewer = {
-	x = 0, y = 0, rotation = 0,
-	dx = 0, dy = 0, drotation = 0,
-	scalex = 1, scaley = 1,
-	dscalex = 0, dscaley = 0
-}
+local MapViewer = {}
+
+function MapViewer:init()
+	self.x = 0
+	self.y = 0
+	self.rotation = 0
+	self.dx = 0
+	self.dy = 0
+	self.drotation = 0
+	self.scalex = 1
+	self.scaley = 1
+	self.dscalex = 0
+	self.dscaley = 0
+end
 
 function MapViewer:update(dt)
 	local keyUp = "w"
@@ -131,13 +140,13 @@ function MapViewer:update(dt)
 	self.drotation = -inr*pi
 end
 
-function MapViewer:fixedUpdate(fixeddt)
-	self.x = self.x + self.dx * fixeddt
-	self.y = self.y + self.dy * fixeddt
-	self.rotation = self.rotation + self.drotation * fixeddt
-	self.scalex = self.scalex + self.dscalex * fixeddt
-	self.scaley = self.scaley + self.dscaley * fixeddt
-	tiled.update(map, fixeddt)
+function MapViewer:fixedUpdate(dt)
+	self.x = self.x + self.dx * dt
+	self.y = self.y + self.dy * dt
+	self.rotation = self.rotation + self.drotation * dt
+	self.scalex = self.scalex + self.dscalex * dt
+	self.scaley = self.scaley + self.dscaley * dt
+	tiled.update(map, dt)
 end
 
 local keypressed = {}
@@ -149,7 +158,7 @@ setmetatable(keypressed, {
 })
 
 function keypressed.f2()
-	engine.reload()
+	nextmapfile = "title.tmx"
 end
 function keypressed.escape()
 	LE.quit()
@@ -159,7 +168,7 @@ function love.keypressed(key)
 	keypressed[key]()
 end
 
-function love.load()
+local function init()
 	local gamepadfile = "gamecontrollerdb.txt"
 	if LFS.getInfo(gamepadfile) then
 		LJ.loadGamepadMappings(gamepadfile)
@@ -173,18 +182,27 @@ function love.load()
 	LW.setMode(window_width, window_height, window_flags)
 end
 
-function love.reload()
+local function loadNextMap()
 	assets.clear()
 	local font = assets.get(".defaultFont", floor(LG.getHeight()/48))
 	font:setFilter("nearest", "nearest")
 	LG.setFont(font)
-	map = assets.get("title.tmx")
-	map = newObject(map, MapViewer)
+	map = assets.get(nextmapfile)
+	MapViewer.init(map)
+	--map = newObject(map, MapViewer)
 	LG.setLineStyle("rough")
 end
 
+local function update(dt)
+	MapViewer.update(map, dt)
+end
+
+local function fixedUpdate(dt)
+	MapViewer.fixedUpdate(map, dt)
+end
+
 local stats = {}
-function love.draw(alpha)
+local function draw(lerp)
 	local lgw = LG.getWidth()
 	local lgh = LG.getHeight()
 	local hlgw = lgw/2
@@ -195,7 +213,7 @@ function love.draw(alpha)
 	LG.translate(hlgw, hlgh)
 	LG.rotate(rotation)
 
-	tiled.draw(map, alpha)
+	tiled.draw(map, lerp)
 
 	local font = LG.getFont()
 	local h = font:getHeight()
@@ -217,5 +235,55 @@ function love.draw(alpha)
 	for k, v in pairs(LG.getStats(stats)) do
 		LG.printf(v.." "..k, 0, y, w, "right")
 		y = y + h
+	end
+end
+
+function love.run()
+	init(love.arg.parseGameArguments(arg), arg)
+	if LT then LT.step() end
+
+	local dt = 0
+	local timeaccum = 0
+
+	-- Main loop time.
+	return function()
+		if nextmapfile then
+			loadNextMap()
+			collectgarbage()
+			nextmapfile = nil
+			if LT then LT.step() end
+		end
+
+		-- Process events.
+		if LE then
+			LE.pump()
+			for name, a,b,c,d,e,f in LE.poll() do
+				if name == "quit" then
+					if not love.quit or not love.quit() then
+						return a or 0
+					end
+				end
+				love.handlers[name](a,b,c,d,e,f)
+			end
+		end
+
+		if LT then dt = LT.step() end
+
+		update(dt)
+
+		timeaccum = timeaccum + dt
+		while timeaccum >= fixeddt do
+			fixedUpdate(fixeddt)
+			timeaccum = timeaccum - fixeddt
+		end
+
+		if LG and LG.isActive() then
+			LG.origin()
+			draw(timeaccum)
+			LG.present()
+		end
+
+		if LT then LT.sleep(0.001) end
+		collectgarbage("step", 2)
 	end
 end
