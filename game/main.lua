@@ -23,9 +23,12 @@ local assets = require "assets"
 
 local fixedfps = 60
 local fixeddt = 1/fixedfps
-local nextmapfile = "title.tmx"
+local nextmapfiles = {
+	["title.tmx"] = true,
+	["gameplay.tmx"] = true
+}
 
-local map
+local maps = nil
 
 local MapViewer = {}
 
@@ -145,7 +148,9 @@ function MapViewer:fixedUpdate(dt)
 	self.rotation = self.rotation + self.drotation * dt
 	self.scalex = self.scalex + self.dscalex * dt
 	self.scaley = self.scaley + self.dscaley * dt
-	map:update(dt)
+	for filename, map in pairs(maps) do
+		map:update(dt)
+	end
 end
 
 local keypressed = {}
@@ -157,7 +162,10 @@ setmetatable(keypressed, {
 })
 
 function keypressed.f2()
-	nextmapfile = "title.tmx"
+	nextmapfiles = {
+		["title.tmx"] = true,
+		["gameplay.tmx"] = true
+	}
 end
 function keypressed.escape()
 	LE.quit()
@@ -181,23 +189,30 @@ local function init()
 	LW.setMode(window_width, window_height, window_flags)
 end
 
-local function loadNextMap()
+local function loadNextMaps()
 	assets.clear()
 	local font = assets.get(".defaultFont", floor(LG.getHeight()/48))
 	font:setFilter("nearest", "nearest")
 	LG.setFont(font)
-	map = assets.get(nextmapfile)
-	MapViewer.init(map)
-	--map = newObject(map, MapViewer)
+	maps = {}
+	for filename, _ in pairs(nextmapfiles) do
+		maps[filename] = assets.get(filename)
+	end
+	MapViewer.init(maps["title.tmx"])
+	local hudmap = maps["gameplay.tmx"]
+	if hudmap then
+		hudmap.x = -LG.getWidth()/2
+		hudmap.y = -LG.getHeight()/2
+	end
 	LG.setLineStyle("rough")
 end
 
 local function update(dt)
-	MapViewer.update(map, dt)
+	MapViewer.update(maps["title.tmx"], dt)
 end
 
 local function fixedUpdate(dt)
-	MapViewer.fixedUpdate(map, dt)
+	MapViewer.fixedUpdate(maps["title.tmx"], dt)
 end
 
 local stats = {}
@@ -212,7 +227,9 @@ local function draw(lerp)
 	LG.translate(hlgw, hlgh)
 	LG.rotate(rotation)
 
-	map:draw(lerp)
+	for filename, map in pairs(maps) do
+		map:draw(lerp)
+	end
 
 	local font = LG.getFont()
 	local h = font:getHeight()
@@ -246,10 +263,10 @@ function love.run()
 
 	-- Main loop time.
 	return function()
-		if nextmapfile then
-			loadNextMap()
+		if nextmapfiles then
+			loadNextMaps()
 			collectgarbage()
-			nextmapfile = nil
+			nextmapfiles = nil
 			if LT then LT.step() end
 		end
 
