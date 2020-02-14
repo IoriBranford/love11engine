@@ -175,10 +175,12 @@ end
 
 function love.reload()
 	assets.clear()
+	local font = assets.get(".defaultFont", floor(LG.getHeight()/48))
+	font:setFilter("nearest", "nearest")
+	LG.setFont(font)
 	map = assets.get("title.tmx")
 	map = newObject(map, MapViewer)
 	LG.setLineStyle("rough")
-	LG.getFont():setFilter("nearest", "nearest")
 end
 
 local stats = {}
