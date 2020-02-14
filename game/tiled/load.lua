@@ -568,7 +568,6 @@ local function loadRecursive(doc, parent, dir)
 	if type(doc) == "string" then
 		return doc
 	end
-	dir = dir or parent:match('(.*/)[^/]*$') or ""
 	local node = doc.attr
 	tablex.transform(function(v)
 		local number = tonumber(v)
@@ -590,6 +589,10 @@ local function loadRecursive(doc, parent, dir)
 	end
 	if node.rotation then
 		node.rotation = rad(node.rotation)
+	end
+	if not dir then
+		dir = parent:match('(.*/)[^/]*$') or ""
+		node.filename = parent
 	end
 	local n = #doc
 	for i = 1, n do
