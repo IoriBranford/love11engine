@@ -5,6 +5,7 @@ local LG = love.graphics
 local LJ = love.joystick
 local LK = love.keyboard
 local LM = love.math
+local LMO = love.mouse
 local LP = love.physics
 local LT = love.timer
 local LW = love.window
@@ -33,6 +34,7 @@ local maps = nil
 local MapViewer = {}
 
 function MapViewer:init()
+	LMO.setRelativeMode(true)
 	self.x = 0
 	self.y = 0
 	self.rotation = 0
@@ -167,12 +169,19 @@ function keypressed.f2()
 		["gameplay.tmx"] = true
 	}
 end
+
 function keypressed.escape()
 	LE.quit()
 end
 
 function love.keypressed(key)
 	keypressed[key]()
+end
+
+function love.mousemoved(x, y, dx, dy, istouch)
+	local worldmap = maps["title.tmx"]
+	worldmap.x = worldmap.x + dx
+	worldmap.y = worldmap.y + dy
 end
 
 local function init()
