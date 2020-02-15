@@ -1,5 +1,7 @@
 local love = love
+local atan2 = math.atan2
 local sqrt = math.sqrt
+local pi = math.pi
 local LG = love.graphics
 local LJ = love.joystick
 local LK = love.keyboard
@@ -50,121 +52,6 @@ function Bullet:beginContact(other)
 	if self.team == other.team then
 	else
 		self:setFree()
-	end
-end
-
-local Player = {
-	width = 16,
-	height = 16,
-	bodytype = "dynamic",
-	firewait = 0
-}
-
-function Player:update()
-	local body = self.body
-
-	local keyUp = "up"
-	local keyDown = "down"
-	local keyLeft = "left"
-	local keyRight = "right"
-	local keyFire = "z"
-	local keySlow = "lshift"
-	local joyX = 1
-	local joyY = 2
-	local joyHat = 1
-	local joyFire = 1
-	local joySlow = 2
-	local padX = "leftx"
-	local padY = "lefty"
-	local padUp = "dpup"
-	local padDown = "dpdown"
-	local padLeft = "dpleft"
-	local padRight = "dpright"
-	local padFire = "x"
-	local padSlow = "a"
-	local deadzonesq = 1/16
-	local speedNormal = 180
-	local speedSlow = 120
-
-	local firing = LK.isDown(keyFire)
-	local slowed = LK.isDown(keySlow)
-
-	local inx, iny = 0, 0
-	inx = inx - (LK.isDown(keyLeft)	and 1 or 0)
-	inx = inx + (LK.isDown(keyRight)and 1 or 0)
-	iny = iny - (LK.isDown(keyUp)	and 1 or 0)
-	iny = iny + (LK.isDown(keyDown)	and 1 or 0)
-	for _, joystick in pairs(LJ.getJoysticks()) do
-		local ax, ay = 0, 0
-		local bl, br, bu, bd
-		if joystick:isGamepad() then
-			firing = firing or joystick:isGamepadDown(padFire)
-			slowed = slowed or joystick:isGamepadDown(padSlow)
-			ax = joystick:getGamepadAxis(padX)
-			ay = joystick:getGamepadAxis(padY)
-			bl = joystick:isGamepadDown(padLeft)
-			br = joystick:isGamepadDown(padRight)
-			bu = joystick:isGamepadDown(padUp)
-			bd = joystick:isGamepadDown(padDown)
-		else
-			firing = firing or joystick:isDown(joyFire)
-			slowed = slowed or joystick:isDown(joySlow)
-			ax = joystick:getAxis(joyX)
-			ay = joystick:getAxis(joyY)
-			local hat = joystick:getHat(joyHat)
-			bl = hat:find("l")
-			br = hat:find("r")
-			bu = hat:find("u")
-			bd = hat:find("d")
-		end
-		if ax*ax + ay*ay >= deadzonesq then
-			inx = inx + ax
-			iny = iny + ay
-		end
-		inx = inx - (bl and 1 or 0)
-		inx = inx + (br and 1 or 0)
-		iny = iny - (bu and 1 or 0)
-		iny = iny + (bd and 1 or 0)
-	end
-	local insq = inx*inx + iny*iny
-	if insq > 1 then
-		local inmag = sqrt(insq)
-		inx = inx / inmag
-		iny = iny / inmag
-	end
-
-	local speed = slowed and speedSlow or speedNormal
-	body:setLinearVelocity(inx*speed, iny*speed)
-
-	self.firing = firing
-end
-
-function Player:fixedUpdate(fixeddt)
-	if self.firing then
-		local firewait = self.firewait
-		if firewait <= 0 then
-			local bullet = newObject(Bullet)
-			bullet.x, bullet.y = body:getPosition()
-			self.firewait = 1/10
-		else
-			self.firewait = firewait - fixeddt
-		end
-	else
-		self.firewait = 0
-	end
-end
-
-function Player:init()
-	local body = self:newBody()
-	local shape = LP.newRectangleShape(self.width, self.height)
-	local fixture = LP.newFixture(body, shape)
-end
-
-function Player:beginContact(other)
-	if self.team == other.team then
-	else
-		self:setFree()
-		Level.instance.playerid = nil
 	end
 end
 
@@ -269,20 +156,32 @@ local world
 local player = {}
 local guns = {}
 
-function Shmup.start(map)
-	map.x = -LG.getWidth()/2
-	map.y = -LG.getHeight()/2
+local function updateBodyTransforms(map, world)
+	for _, body in pairs(world:getBodies()) do
+		local id = body:getUserData()
+		local node = map:getObjectById(id)
+		local transform = node and node.transform
+		if transform then
+			local x, y = body:getPosition()
+			local r = body:getAngle()
+			transform:setTransformation(x, y, r)
+		end
+	end
+end
 
+function Shmup.start(map)
 	world = LP.newWorld()
-	local body = LP.newBody(world)
-	local shape = LP.newChainShape(true, 0, 0, 0, 640, 480, 640, 480, 0)
-	local fixture = LP.newFixture(body, shape)
-	fixture:setFriction(0)
+	--local body = LP.newBody(world)
+	--local shape = LP.newChainShape(true, 0, 0, 0, 640, 480, 640, 480, 0)
+	--local fixture = LP.newFixture(body, shape)
+	--fixture:setFriction(0)
 
 	local playerteam = find.named(map, "playerteam")
 	player = find.objectNamed(playerteam, "player")
 	if player then
-		local body = LP.newBody(world, player.x, player.y, "dynamic")
+		local x, y = player:getGlobalPosition()
+		local body = LP.newBody(world, x, y, "dynamic")
+		body:setUserData(player.id)
 		local shape = LP.newRectangleShape(16, 16)
 		local fixture = LP.newFixture(body, shape)
 		player.body = body
@@ -290,8 +189,6 @@ function Shmup.start(map)
 			local gun = find.objectNamed(playerteam, "gun"..i)
 			if gun then
 				gun.visible = false
-				gun.x = gun.x - player.x
-				gun.y = gun.y - player.y
 				gun:setParent(player)
 				guns[#guns+1] = gun
 			end
@@ -375,6 +272,9 @@ function Shmup.update(map, dt)
 	player.body:setLinearVelocity(vx, vy)
 
 	player.firing = firing
+
+	local x, y = player.body:getPosition()
+	map:setViewTransform(-x, -y)
 end
 
 function Shmup.fixedUpdate(map, dt)
@@ -385,13 +285,15 @@ function Shmup.fixedUpdate(map, dt)
 		gun.visible = firing
 		if firing and firewait <= 0 then
 			local bullet = map:newTileObject(player.parent, "playershot", "bullet")
-			local x = player.x + gun.x
-			local y = player.y + gun.y
+			local x, y = gun:getGlobalPosition()
 			local body = LP.newBody(world, x, y, "dynamic")
-			body:setLinearVelocity(0, -1024)
+			local vx, vy = 0, -1024
+			body:setUserData(bullet.id)
+			body:setLinearVelocity(vx, vy)
 			bullet.body = body
 		end
 	end
+
 	if firing then
 		if firewait <= 0 then
 			player.firewait = firewait + 1/15
@@ -401,7 +303,9 @@ function Shmup.fixedUpdate(map, dt)
 	else
 		player.firewait = 0
 	end
+
 	world:update(dt)
+	updateBodyTransforms(map, world)
 end
 
 return Shmup

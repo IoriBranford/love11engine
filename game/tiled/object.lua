@@ -1,9 +1,36 @@
 local pairs = pairs
 local assets = require "assets"
 local tablex = require "pl.tablex"
+local LM = love.math
 
 local Object = {}
 Object.__index = Object
+
+local function getGlobalTransform(object)
+	local parent = object.parent
+	local transform = object.transform
+	if not parent then
+		return transform and transform:clone() or LM.newTransform()
+	end
+	local globaltransform = getGlobalTransform(parent)
+	return transform and globaltransform:apply(transform) or globaltransform
+end
+Object.getGlobalTransform = getGlobalTransform
+
+local function getGlobalPosition(object, x, y)
+	x = x or 0
+	y = y or 0
+	local parent = object.parent
+	if parent then
+		x, y = getGlobalPosition(parent, x, y)
+	end
+	local transform = object.transform
+	if transform then
+		x, y = transform:transformPoint(x, y)
+	end
+	return x, y
+end
+Object.getGlobalPosition = getGlobalPosition
 
 function Object.setParent(object, parent)
 	local oldparent = object.parent
@@ -15,23 +42,13 @@ function Object.setParent(object, parent)
 			end
 		end
 	end
+	local newtransform = getGlobalTransform(object)
 	if parent then
+		newtransform = getGlobalTransform(parent):inverse():apply(newtransform)
 		parent[#parent+1] = object
 	end
 	object.parent = parent
-end
-
-function Object.initScript(object, script)
-	if not script then
-		return
-	end
-	if type(script)=="string" then
-		script = assets.get(script)
-	end
-	object.script = script
-	if script then
-		script.init(object)
-	end
+	object.transform = newtransform
 end
 
 function Object.setTemplate(object, template)

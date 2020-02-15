@@ -17,6 +17,7 @@ local tonumber = tonumber
 local love = love
 local LD = love.data
 local LG = love.graphics
+local LM = love.math
 
 local Map = require "tiled.map"
 local Object = require "tiled.object"
@@ -492,18 +493,19 @@ function load.layer(layer, map, dir)
 	local chunks = layer.chunks
 	local maptilewidth = map.tilewidth
 	local maptileheight = map.tileheight
+	local maptilescale = map.tilescale
+		or LM.newTransform(0, 0, 0, maptilewidth, maptileheight)
+	map.tilescale = tilescale
 	if chunks then
 		for i = 1, #chunks do
 			local chunk = chunks[i]
 			layer[#layer + 1] = chunk
 			load.layer(chunk, map, dir)
-			chunk.x = chunk.x * maptilewidth
-			chunk.y = chunk.y * maptileheight
+			chunk.transform:apply(maptilescale)
 		end
 		layer.chunks = nil
 		return layer
 	end
-	layer.offsety = maptileheight
 
 	local tiles = map.tiles or {}
 	map.tiles = tiles
@@ -585,9 +587,6 @@ local function loadRecursive(doc, parent, dir)
 	if node.visible == 0 then
 		node.visible = false
 	end
-	if node.rotation then
-		node.rotation = rad(node.rotation)
-	end
 	if not dir then
 		dir = parent:match('(.*/)[^/]*$') or ""
 		node.filename = parent
@@ -599,7 +598,23 @@ local function loadRecursive(doc, parent, dir)
 	for i = 1, n do
 		node[#node + 1] = loadRecursive(doc[i], node, dir)
 	end
-	return load[tag](node, parent, dir)
+	node = load[tag](node, parent, dir)
+
+	if type(node) == "table" then
+		-- layer types use offsetx/offsety, anything else uses x/y
+		local x = node.offsetx or node.x
+		local y = node.offsety or node.y
+		local rotation = rad(node.rotation or 0)
+		node.offsetx = nil
+		node.offsety = nil
+		node.x = nil
+		node.y = nil
+		node.rotation = nil
+		if x and y then
+			node.transform = LM.newTransform(x, y, rotation)
+		end
+	end
+	return node
 end
 
 return loadRecursive

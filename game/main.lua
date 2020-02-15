@@ -96,7 +96,13 @@ local function draw(lerp)
 	LG.rotate(rotation)
 
 	for filename, map in pairs(maps) do
+		LG.push()
+		local viewtransform = map.viewtransform
+		if viewtransform then
+			LG.applyTransform(viewtransform)
+		end
 		map:draw(lerp)
+		LG.pop()
 	end
 
 	local font = LG.getFont()

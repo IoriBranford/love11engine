@@ -5,79 +5,6 @@ local sin = math.sin
 local LG = love.graphics
 local LM = love.math
 
-local transform = {}
-local function transform_default(node, parent, map, lerp)
-	local x = node.x or 0
-	local y = node.y or 0
-	local offsetx = node.offsetx or 0
-	local offsety = node.offsety or 0
-	local dx = node.dx or 0
-	local dy = node.dy or 0
-	x = x + offsetx + dx*lerp
-	y = y + offsety + dy*lerp
-	LG.translate(x, y)
-
-	local rotation = node.rotation
-	if rotation then
-		rotation = rotation + (node.drotation or 0)*lerp
-		LG.rotate(rotation)
-	end
-	local scalex, scaley = node.scalex, node.scaley
-	if scalex and scaley then
-		local dscalex = node.dscalex or 0
-		local dscaley = node.dscaley or 0
-		scalex = scalex + dscalex*lerp
-		scaley = scaley + dscaley*lerp
-		LG.scale(scalex, scaley)
-	end
-end
-setmetatable(transform, {
-	__index = function()
-		return transform_default
-	end
-})
-
-function transform.map(node, parent, map, lerp)
-	-- view matrix
-	local rotation = node.rotation
-	if rotation then
-		rotation = rotation + (node.drotation or 0)*lerp
-		LG.rotate(rotation)
-	end
-	local scalex, scaley = node.scalex, node.scaley
-	if scalex and scaley then
-		LG.scale(scalex, scaley)
-	end
-
-	-- model matrix
-	local x = node.x
-	local y = node.y
-	if x and y then
-		local offsetx = node.offsetx or 0
-		local offsety = node.offsety or 0
-		local dx = node.dx or 0
-		local dy = node.dy or 0
-		x = x + offsetx + dx*lerp
-		y = y + offsety + dy*lerp
-		LG.translate(x, y)
-	end
-end
-
-function transform.object(object, objectgroup, map, lerp)
-	local tile = object.tile
-	if tile then
-		local width = object.width
-		local height = object.height
-		local flipx = object.flipx or 1
-		local flipy = object.flipy or 1
-		local tileset = tile.tileset
-		local tilewidth = tileset.tilewidth
-		local tileheight = tileset.tileheight
-		object.scalex, object.scaley = flipx*width/tilewidth, flipy*height/tileheight
-	end
-	transform_default(object, objectgroup, map, lerp)
-end
-
 local draw = {}
 setmetatable(draw, {
 	__index = function()
@@ -160,7 +87,7 @@ function draw.asepritebatch(asepritebatch, parent, map)
 	end
 end
 ]]
-function draw.object(object, parent, map)
+function draw.object(object, parent, map, lerp)
 	local spritebatch = object.spritebatch
 	if spritebatch then
 		if not object.spritei then
@@ -176,11 +103,21 @@ function draw.object(object, parent, map)
 		local tileoffsety = tileset.tileoffsety
 		local image = tile.image or tileset.image
 		local quad = tile.quad
+		local dx, dy, dr
+		local body = object.body
+		if body then
+			dx, dy = body:getLinearVelocity()
+			dx = dx * lerp
+			dy = dy * lerp
+			dr = body:getAngularVelocity() * lerp
+		end
+
 		if quad then
-			LG.draw(image, quad, 0, 0, 0, 1, 1,
+			LG.draw(image, quad, dx, dy, dr,
+				object.scalex, object.scaley,
 				tileoffsetx, tileoffsety)
 		else
-			LG.draw(image, 0, 0, 0, 1, 1,
+			LG.draw(image, dx, dy, dr, object.scalex, object.scaley,
 				tileoffsetx, tileoffsety)
 		end
 	end
@@ -243,8 +180,11 @@ local function drawRecursive(node, parent, map, lerp)
 	map = map or node
 	local tag = node.tag
 	LG.push("transform")
-	transform[tag](node, parent, map, lerp)
-	if not draw[tag](node, parent, map) then
+	local transform = node.transform
+	if transform then
+		LG.applyTransform(transform)
+	end
+	if not draw[tag](node, parent, map, lerp) then
 		for i = 1, #node do
 			drawRecursive(node[i], node, map, lerp)
 		end

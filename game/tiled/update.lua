@@ -3,13 +3,6 @@ local floor = math.floor
 
 local update = {}
 local function update_default(node, parent, root, dt)
-	local body = node.body
-	if body then
-		node.x, node.y = body:getPosition()
-		node.rotation = body:getAngle()
-		node.dx, node.dy = body:getLinearVelocity()
-		node.drotation = body:getAngularVelocity()
-	end
 end
 setmetatable(update, {
 	__index = function()
@@ -18,7 +11,6 @@ setmetatable(update, {
 })
 
 function update.map(map, _, _, dt)
-	update_default(map, _, _, dt)
 	for gid, animation in pairs(map.layertileanimations) do
 		local f = animation.globalframe
 		local msecs = animation.globalmsecs
@@ -29,7 +21,6 @@ function update.map(map, _, _, dt)
 end
 
 function update.layer(layer, _, map, dt)
-	update_default(layer, _, map, dt)
 	if type(layer[1]) ~= "number" then
 		return
 	end
@@ -82,7 +73,6 @@ function update.asepritebatch(asepritebatch, parent, map, dt)
 end
 ]]
 function update.object(object, parent, map, dt)
-	update_default(object, parent, map, dt)
 	local tiles = object.tileset or map.tiles
 	local gid = map.getGidFlip(object.gid)
 	local animatedtile = tiles[gid]

@@ -4,6 +4,7 @@ local setmetatable = setmetatable
 local assets = require "assets"
 local tablex = require "pl.tablex"
 local Object = require "tiled.object"
+local LM = love.math
 
 local Map = {}
 
@@ -59,29 +60,29 @@ local function getGidFlip(gid)
 	-- results in the range of signed 32 bit numbers (converted to the Lua
 	-- number type)."
 
-	local flipx, flipy, flipd
+	local scalex, scaley, scaled
 	if gid >= 0x80000000 then
-		flipx = true
+		scalex = true
 		gid = gid - 0x80000000
 	end
 	if gid >= 0x40000000 then
-		flipy = true
+		scaley = true
 		gid = gid - 0x40000000
 	end
 	if gid >= 0x20000000 then
-		flipd = true
+		scaled = true
 		gid = gid - 0x20000000
 	end
 
 	local sx, sy, r = 1, 1, 0
-	if flipd then
+	if scaled then
 		r  = pi/2
 		sx = -sx
 	end
-	if flipx then
+	if scalex then
 		sx = -sx
 	end
-	if flipy then
+	if scaley then
 		sy = -sy
 	end
 	return gid, sx, sy, r
@@ -106,7 +107,7 @@ function Map.forEachLayerTile(map, layer, func, ...)
 
 	local i = 1
 	local x = 0
-	local y = 0
+	local y = maptileheight
 	local cdx, cdy = maptilewidth, 0
 	local rdx, rdy = 0, maptileheight
 	local scalecdx, scalecdy = 1, 1
@@ -161,8 +162,9 @@ function Map.forEachLayerTile(map, layer, func, ...)
 	end
 end
 
-local function setObjectTile(object, tile, flipx, flipy)
-	local animationframe, animationmsecs
+local function setObjectTile(object, tile, scalex, scaley)
+	scalex = scalex or 1
+	scaley = scaley or 1
 	if tile then
 		local animation = tile.animation
 		if animation then
@@ -170,10 +172,22 @@ local function setObjectTile(object, tile, flipx, flipy)
 			object.animationframe = 1
 			tile = tile.tileset:getAnimationFrameTile(tile, 1)
 		end
+		local tileset = tile.tileset
+		local tilewidth = tileset.tilewidth
+		local tileheight = tileset.tileheight
+		local width = object.width
+		local height = object.height
+		width = width or tilewidth
+		height = height or tileheight
+		scalex = scalex*width/tilewidth
+		scaley = scaley*height/tileheight
+		object.width = width
+		object.height = height
 	end
+
 	object.tile = tile
-	object.flipx = flipx or 1
-	object.flipy = flipy or 1
+	object.scalex = scalex
+	object.scaley = scaley
 end
 
 function Map.setObjectGid(map, object, gid)
@@ -199,7 +213,7 @@ function Map.setLayerGid(map, layer, c, r, gid)
 	layer[i] = gid
 
 	local tiles = map.tiles
-	local tile, sx, sy, r = getTileByGid(tiles, gid)
+	local tile, sx, sy, rot = getTileByGid(tiles, gid)
 	local animation = tile and tile.animation
 	map.layertileanimations[gid] = animation
 	local f = animation and animation.globalframe
@@ -233,8 +247,9 @@ function Map.setLayerGid(map, layer, c, r, gid)
 
 	local maptilewidth = map.tilewidth
 	local maptileheight = map.tileheight
-	local x, y = x*maptilewidth, y*maptileheight
-	Map.setSpriteBatchTile(map, spritebatch, i, tile, x, y, sx, sy, r)
+	local x = maptilewidth * (x + (1-sx)/2)
+	local y = maptileheight * (y + (1-sy)/2)
+	Map.setSpriteBatchTile(map, spritebatch, i, tile, x, y, sx, sy, rot)
 end
 
 function Map.setSpriteBatchTile(map, spritebatch, i, tile, x, y, sx, sy, r)
@@ -292,18 +307,17 @@ local function newObjectId(map)
 end
 
 local function newObject(map, parent)
+	local id = newObjectId(map)
+
 	local object = {
 		tag = "object",
-		id = newObjectId(map),
-		x = 0,
-		y = 0,
-		width = 0,
-		height = 0,
-		rotation = 0,
+		id = id,
+		transform = LM.newTransform(),
 		visible = true,
 	}
 	setmetatable(object, Object)
 	object:setParent(parent)
+	map.objectsbyid[id] = object
 	return object
 end
 
@@ -319,7 +333,7 @@ function Map.newAsepriteObject(map, parent, aseprite, animation, anchorx, anchor
 	return object
 end
 
-function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy)
+function Map.newTileObject(map, parent, tileset, tileid, scalex, scaley)
 	if type(tileset)=="string" then
 		tileset = map.tilesets[tileset] or assets.get(tileset)
 	end
@@ -331,22 +345,12 @@ function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy)
 
 	local object = newObject(map, parent)
 
-	if tileset then
-		if not tile then
-			object.x = object.x + tileset.tileoffsetx
-			object.y = object.y + tileset.tileoffsety
-		end
-		object.width = tileset.tilewidth
-		object.height = tileset.tileheight
-	else
-		object.width = map.tilewidth
-		object.height = map.tileheight
-	end
-
 	if tile then
 		object.gid = tileset.firstgid + tileid
-		setObjectTile(object, tile, flipx, flipy)
+		setObjectTile(object, tile, scalex, scaley)
 	else
+		object.width = object.width or map.tilewidth
+		object.height = object.height or map.tileheight
 		object.linecolor = { 1, 0, 1, 1 }
 	end
 
@@ -391,6 +395,26 @@ end
 
 function Map.draw(map, lerp)
 	draw(map, lerp)
+end
+
+function Map.setViewTransform(map, x, y, r, sx, sy, dx, dy, dr, dsx, dsy, lerp)
+	x   	= x   	 or 0
+	y   	= y   	 or 0
+	r   	= r   	 or 0
+	sx  	= sx  	 or 1
+	sy  	= sy  	 or 1
+	dx  	= dx  	 or 0
+	dy  	= dy  	 or 0
+	dr  	= dr  	 or 0
+	dsx 	= dsx 	 or 0
+	dsy 	= dsy 	 or 0
+	lerp 	= lerp	 or 0
+	local viewtransform = map.viewtransform or LM.newTransform()
+	map.viewtransform = viewtransform
+	viewtransform:reset()
+	viewtransform:rotate(r + dr*lerp)
+	viewtransform:scale(sx, sy)
+	viewtransform:translate(x + dx*lerp, y + dy*lerp)
 end
 
 return Map
