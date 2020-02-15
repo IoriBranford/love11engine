@@ -1,3 +1,4 @@
+local LA = love.audio
 local LFS = love.filesystem
 local LG = love.graphics
 local json = require "json"
@@ -84,6 +85,9 @@ function load.lua(filename)
 	end
 	return module, err
 end
+
+load.wav = LA.newSource
+load.ogg = LA.newSource
 
 local function assetName(filename, ...)
 	local assetname = filename
