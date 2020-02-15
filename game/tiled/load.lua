@@ -353,8 +353,15 @@ function load.tileset(tileset, parent, dir)
 			y = y + tileheight
 		end
 
+		local namedtileids = {}
+		tileset.namedtileids = namedtileids
 		for t = 1, #tileset do
 			local tile = tileset[t]
+			local properties = tile.properties
+			local tilename = properties and properties.tilename
+			if tilename then
+				namedtileids[tilename] = t
+			end
 			local animation = tile.animation
 			if animation then
 				local duration = 0
