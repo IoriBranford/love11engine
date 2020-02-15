@@ -7,17 +7,16 @@ local LM = love.math
 
 local transform = {}
 local function transform_default(node, parent, map, lerp)
-	local x = node.x
-	local y = node.y
-	if x and y then
-		local offsetx = node.offsetx or 0
-		local offsety = node.offsety or 0
-		local dx = node.dx or 0
-		local dy = node.dy or 0
-		x = x + offsetx + dx*lerp
-		y = y + offsety + dy*lerp
-		LG.translate(x, y)
-	end
+	local x = node.x or 0
+	local y = node.y or 0
+	local offsetx = node.offsetx or 0
+	local offsety = node.offsety or 0
+	local dx = node.dx or 0
+	local dy = node.dy or 0
+	x = x + offsetx + dx*lerp
+	y = y + offsety + dy*lerp
+	LG.translate(x, y)
+
 	local rotation = node.rotation
 	if rotation then
 		rotation = rotation + (node.drotation or 0)*lerp
