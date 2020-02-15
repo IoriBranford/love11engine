@@ -160,12 +160,11 @@ function draw.asepritebatch(asepritebatch, parent, map)
 	end
 end
 ]]
-function draw.object(object, objectgroup, map)
+function draw.object(object, parent, map)
 	local spritebatch = object.spritebatch
 	if spritebatch then
 		if not object.spritei then
 			LG.draw(spritebatch)
-			return true
 		end
 		return
 	end
@@ -184,7 +183,6 @@ function draw.object(object, objectgroup, map)
 			LG.draw(image, 0, 0, 0, 1, 1,
 				tileoffsetx, tileoffsety)
 		end
-		return true
 	end
 
 	local fillcolor = object.fillcolor

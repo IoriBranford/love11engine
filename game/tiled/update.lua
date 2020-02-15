@@ -81,8 +81,8 @@ function update.asepritebatch(asepritebatch, parent, map, dt)
 	end
 end
 ]]
-function update.object(object, objectgroup, map, dt)
-	update_default(object, objectgroup, map, dt)
+function update.object(object, parent, map, dt)
+	update_default(object, parent, map, dt)
 	local tiles = object.tileset or map.tiles
 	local gid = map.getGidFlip(object.gid)
 	local animatedtile = tiles[gid]
@@ -105,7 +105,6 @@ function update.object(object, objectgroup, map, dt)
 		object.animationframe = f
 		object.animationmsecs = msecs
 	end
-	return true
 end
 
 local function updateRecursive(node, parent, map, dt)
