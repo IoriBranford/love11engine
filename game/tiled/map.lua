@@ -317,11 +317,7 @@ local function newObject(map, parent)
 		visible = true,
 	}
 	setmetatable(object, Object)
-	if parent then
-		if parent.tag == "objectgroup" then
-			parent[#parent+1] = object
-		end
-	end
+	object:setParent(parent)
 	return object
 end
 
@@ -367,15 +363,7 @@ local function clearDestroyedObject(objectsbyid, id)
 	local object = objectsbyid[id]
 	objectsbyid[id] = nil
 	if object then
-		local parent = object.parent
-		if parent then
-			for i = 1, #parent do
-				if parent[i] == object then
-					table.remove(parent, i)
-					break
-				end
-			end
-		end
+		object:setParent()
 	end
 end
 

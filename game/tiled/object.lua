@@ -3,6 +3,23 @@ local assets = require "assets"
 local tablex = require "pl.tablex"
 
 local Object = {}
+Object.__index = Object
+
+function Object.setParent(object, parent)
+	local oldparent = object.parent
+	if oldparent then
+		for i = 1, #oldparent do
+			if oldparent[i] == object then
+				table.remove(oldparent, i)
+				break
+			end
+		end
+	end
+	if parent then
+		parent[#parent+1] = object
+	end
+	object.parent = parent
+end
 
 function Object.initScript(object, script)
 	if not script then

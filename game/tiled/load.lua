@@ -190,6 +190,7 @@ function load.template(template, _, dir)
 end
 
 function load.object(object, parent, dir)
+	setmetatable(object, Object)
 	local template = object.template
 	if template then
 		Object.setTemplate(object, dir..template)
