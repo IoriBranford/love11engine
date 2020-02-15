@@ -9,7 +9,7 @@ local LK = love.keyboard
 
 local MapViewer = {}
 
-function MapViewer:init()
+function MapViewer:start()
 	LG.setLineStyle("rough")
 	self.x = 0
 	self.y = 0
