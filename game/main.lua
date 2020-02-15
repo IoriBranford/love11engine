@@ -23,13 +23,13 @@ local function init()
 		LJ.loadGamepadMappings(gamepadfile)
 	end
 
-	local window_width = 1280
-	local window_height = 720
+	local window_width = 480
+	local window_height = 640
 	local window_flags = {
 		vsync = -1
 	}
 	LW.setMode(window_width, window_height, window_flags)
-	LE.push("load", "title.tmx", "gameplay.tmx")
+	LE.push("load", "shmup.tmx", "shmuphud.tmx")
 end
 
 local function onEvent(ev, ...)

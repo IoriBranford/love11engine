@@ -1,3 +1,10 @@
+local love = love
+local sqrt = math.sqrt
+local LG = love.graphics
+local LJ = love.joystick
+local LK = love.keyboard
+local LP = love.physics
+
 --- Shmup object
 --@field team
 --@field health
@@ -254,3 +261,140 @@ function Level:init()
 	player.x, player.y = 120, 304
 	self.playerid = player.id
 end
+
+local find = require "tiled.find"
+
+local Shmup = {}
+local world
+local player = {}
+local guns = {}
+
+function Shmup.start(map)
+	map.x = -LG.getWidth()/2
+	map.y = -LG.getHeight()/2
+
+	world = LP.newWorld()
+	local body = LP.newBody(world)
+	local shape = LP.newChainShape(true, 0, 0, 0, 640, 480, 640, 480, 0)
+	local fixture = LP.newFixture(body, shape)
+	fixture:setFriction(0)
+
+	local playerteam = find.named(map, "playerteam")
+	player = find.objectNamed(playerteam, "player")
+	if player then
+		local body = LP.newBody(world, player.x, player.y, "dynamic")
+		local shape = LP.newRectangleShape(16, 16)
+		local fixture = LP.newFixture(body, shape)
+		player.body = body
+		for i = 1,2 do
+			local gun = find.objectNamed(playerteam, "gun"..i)
+			if gun then
+				gun.visible = false
+				gun.x = gun.x - player.x
+				gun.y = gun.y - player.y
+				gun:setParent(player)
+				guns[#guns+1] = gun
+			end
+		end
+	end
+end
+
+function Shmup.update(map, dt)
+	local keyUp = "up"
+	local keyDown = "down"
+	local keyLeft = "left"
+	local keyRight = "right"
+	local keyFire = "z"
+	local keySlow = "lshift"
+	local joyX = 1
+	local joyY = 2
+	local joyHat = 1
+	local joyFire = 1
+	local joySlow = 2
+	local padX = "leftx"
+	local padY = "lefty"
+	local padUp = "dpup"
+	local padDown = "dpdown"
+	local padLeft = "dpleft"
+	local padRight = "dpright"
+	local padFire = "x"
+	local padSlow = "a"
+	local deadzonesq = 1/16
+	local speedNormal = 360
+	local speedSlow = 240
+
+	local firing = LK.isDown(keyFire)
+	local slowed = LK.isDown(keySlow)
+
+	local inx, iny = 0, 0
+	inx = inx - (LK.isDown(keyLeft)	and 1 or 0)
+	inx = inx + (LK.isDown(keyRight)and 1 or 0)
+	iny = iny - (LK.isDown(keyUp)	and 1 or 0)
+	iny = iny + (LK.isDown(keyDown)	and 1 or 0)
+	for _, joystick in pairs(LJ.getJoysticks()) do
+		local ax, ay = 0, 0
+		local bl, br, bu, bd
+		if joystick:isGamepad() then
+			firing = firing or joystick:isGamepadDown(padFire)
+			slowed = slowed or joystick:isGamepadDown(padSlow)
+			ax = joystick:getGamepadAxis(padX)
+			ay = joystick:getGamepadAxis(padY)
+			bl = joystick:isGamepadDown(padLeft)
+			br = joystick:isGamepadDown(padRight)
+			bu = joystick:isGamepadDown(padUp)
+			bd = joystick:isGamepadDown(padDown)
+		else
+			firing = firing or joystick:isDown(joyFire)
+			slowed = slowed or joystick:isDown(joySlow)
+			ax = joystick:getAxis(joyX)
+			ay = joystick:getAxis(joyY)
+			local hat = joystick:getHat(joyHat)
+			bl = hat:find("l")
+			br = hat:find("r")
+			bu = hat:find("u")
+			bd = hat:find("d")
+		end
+		if ax*ax + ay*ay >= deadzonesq then
+			inx = inx + ax
+			iny = iny + ay
+		end
+		inx = inx - (bl and 1 or 0)
+		inx = inx + (br and 1 or 0)
+		iny = iny - (bu and 1 or 0)
+		iny = iny + (bd and 1 or 0)
+	end
+	local insq = inx*inx + iny*iny
+	if insq > 1 then
+		local inmag = sqrt(insq)
+		inx = inx / inmag
+		iny = iny / inmag
+	end
+
+	local speed = slowed and speedSlow or speedNormal
+	local vx, vy = inx*speed, iny*speed
+	player.body:setLinearVelocity(vx, vy)
+
+	player.firing = firing
+end
+
+function Shmup.fixedUpdate(map, dt)
+	for i = 1, #guns do
+		local gun = guns[i]
+		gun.visible = player.firing
+	end
+	if player.firing then
+		local firewait = player.firewait or 0
+		if firewait <= 0 then
+			--local bullet = map:newObject(Bullet)
+			--bullet.x, bullet.y = body:getPosition()
+			player.firewait = firewait + 1/10
+		else
+			player.firewait = firewait - dt
+		end
+	else
+		player.firewait = nil
+	end
+	world:update(dt)
+end
+
+return Shmup

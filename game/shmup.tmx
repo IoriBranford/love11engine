@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.2" tiledversion="1.3.2" orientation="orthogonal" renderorder="right-down" compressionlevel="-1" width="15" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="4">
+ <properties>
+  <property name="script" type="file" value="shmup.lua"/>
+ </properties>
+ <tileset firstgid="1" source="tileset01.tsx"/>
+ <tileset firstgid="401" source="fox01.tsx"/>
+ <tileset firstgid="481" source="playershot.tsx"/>
+ <layer id="1" name="Tile Layer 1" width="15" height="20">
+  <data encoding="base64" compression="zlib">
+   eJytUsEJwEAIc6KbQvdfqRR6UCRGL+1DEMUYTZaZrSe8yLsI0vMBXp6PV41hTzjl+ZO7pjMKRy9wkQboP3/yQLyYFzp9qn+5ca7VvafYqo6qviou8kCkyLXJj5A2Csdo9nzxXvYX47f7944Lsw47XA==
+  </data>
+ </layer>
+ <objectgroup id="2" name="playerteam">
+  <object id="1" name="player" gid="433" x="240" y="592" width="120" height="120"/>
+  <object id="2" name="gun1" gid="481" x="224" y="560" width="16" height="32"/>
+  <object id="3" name="gun2" gid="481" x="256" y="560" width="16" height="32"/>
+ </objectgroup>
+</map>
