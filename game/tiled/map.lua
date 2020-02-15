@@ -94,19 +94,6 @@ local function getTileByGid(tiles, gid)
 	return tiles[gid], sx, sy, r
 end
 
-local function getTilesetTile(tilesets, tileset, tileid)
-	local tileset = tilesets[tileset]
-		or type(tileset)=="string" and assets.get(tileset)
-	if not tileset then
-		return
-	end
-	tileid = tileid or 1
-	if type(tileid)=="string" then
-		tileid = tileset.namedtiles[tileid]
-	end
-	return tileset[tileid]
-end
-
 function Map.getTileByGid(map, gid)
 	return getTileByGid(map.tiles, gid)
 end
@@ -293,22 +280,21 @@ function Map.initObjectManagement(map)
 end
 
 local function newLayerId(map)
-	local id = map.newlayerid
-	map.newlayerid = id + 1
+	local id = map.nextlayerid
+	map.nextlayerid = id + 1
 	return id
 end
 
 local function newObjectId(map)
-	local id = map.newobjectid
-	map.newobjectid = id + 1
+	local id = map.nextobjectid
+	map.nextobjectid = id + 1
 	return id
 end
 
 local function newObject(map, parent)
 	local object = {
 		tag = "object",
-		parent = parent,
-		id = newObjectId(),
+		id = newObjectId(map),
 		x = 0,
 		y = 0,
 		width = 0,
@@ -334,13 +320,36 @@ function Map.newAsepriteObject(map, parent, aseprite, animation, anchorx, anchor
 end
 
 function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy)
-	local tile = getTilesetTile(map.tilesets, tileset, tileid)
-	if not tile then
-		return
+	if type(tileset)=="string" then
+		tileset = map.tilesets[tileset] or assets.get(tileset)
 	end
+	if type(tileid)=="string" then
+		tileid = tileset and tileset.namedtileids[tileid]
+	end
+
+	local tile = tileset and tileset[tileid]
+
 	local object = newObject(map, parent)
-	object.gid = tileset.firstgid + tileid
-	setObjectTile(object, tile, flipx, flipy)
+
+	if tileset then
+		if not tile then
+			object.x = object.x + tileset.tileoffsetx
+			object.y = object.y + tileset.tileoffsety
+		end
+		object.width = tileset.tilewidth
+		object.height = tileset.tileheight
+	else
+		object.width = map.tilewidth
+		object.height = map.tileheight
+	end
+
+	if tile then
+		object.gid = tileset.firstgid + tileid
+		setObjectTile(object, tile, flipx, flipy)
+	else
+		object.linecolor = { 1, 0, 1, 1 }
+	end
+
 	return object
 end
 
