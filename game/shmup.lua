@@ -378,21 +378,28 @@ function Shmup.update(map, dt)
 end
 
 function Shmup.fixedUpdate(map, dt)
+	local firing = player.firing
+	local firewait = player.firewait or 0
 	for i = 1, #guns do
 		local gun = guns[i]
-		gun.visible = player.firing
+		gun.visible = firing
+		if firing and firewait <= 0 then
+			local bullet = map:newTileObject(player.parent, "playershot", "bullet")
+			local x = player.x + gun.x
+			local y = player.y + gun.y
+			local body = LP.newBody(world, x, y, "dynamic")
+			body:setLinearVelocity(0, -1024)
+			bullet.body = body
+		end
 	end
-	if player.firing then
-		local firewait = player.firewait or 0
+	if firing then
 		if firewait <= 0 then
-			--local bullet = map:newObject(Bullet)
-			--bullet.x, bullet.y = body:getPosition()
-			player.firewait = firewait + 1/10
+			player.firewait = firewait + 1/15
 		else
 			player.firewait = firewait - dt
 		end
 	else
-		player.firewait = nil
+		player.firewait = 0
 	end
 	world:update(dt)
 end
