@@ -287,26 +287,9 @@ local function listObjectsById(layers, layersbyid, objectsbyid)
 	return layersbyid, objectsbyid
 end
 
-local function setScript(node, script)
-	local properties = node.properties
-	if properties then
-		node.script = assets.get(properties.script)
-		properties.script = nil
-	end
-end
-
-local function setScripts(nodesbyid, script)
-	for id, node in pairs(nodesbyid) do
-		setScript(node, script)
-	end
-end
-
 function Map.initObjectManagement(map)
 	map.layersbyid, map.objectsbyid = listObjectsById(map)
 	map.destroyedobjectids = {}
-	setScripts(map.layersbyid)
-	setScripts(map.objectsbyid)
-	setScript(map)
 end
 
 local function newLayerId(map)
@@ -342,21 +325,19 @@ local function newObject(map, parent)
 	return object
 end
 
-function Map.newTemplateObject(map, parent, template, script)
+function Map.newTemplateObject(map, parent, template)
 	local object = newObject(map, parent)
 	object:setTemplate(template)
-	object:initScript(script)
 	return object
 end
 
-function Map.newAsepriteObject(map, parent, aseprite, animation, anchorx, anchory, script)
+function Map.newAsepriteObject(map, parent, aseprite, animation, anchorx, anchory)
 	local object = newObject(map, parent)
 	object:setAseprite(aseprite, animation, anchorx, anchory)
-	object:initScript(script)
 	return object
 end
 
-function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy, script)
+function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy)
 	local tile = getTilesetTile(map.tilesets, tileset, tileid)
 	if not tile then
 		return
@@ -364,7 +345,6 @@ function Map.newTileObject(map, parent, tileset, tileid, flipx, flipy, script)
 	local object = newObject(map, parent)
 	object.gid = tileset.firstgid + tileid
 	setObjectTile(object, tile, flipx, flipy)
-	object:initScript(script)
 	return object
 end
 
@@ -393,32 +373,6 @@ local function clearDestroyedObject(objectsbyid, id)
 				if parent[i] == object then
 					table.remove(parent, i)
 					break
-				end
-			end
-		end
-	end
-end
-
-local function handle(node, event, ...)
-	local script = node.script
-	if not script then
-		return
-	end
-	event = script[event]
-	if event then
-		return event(node, ...)
-	end
-end
-
-function Map.broadcast(map, event, ...)
-	if handle(map, event, ...) then
-		return
-	end
-	for id, layer in pairs(map.layersbyid) do
-		if not handle(layer, event, ...) then
-			if layer.tag == "objectgroup" then
-				for o = 1, #layer do
-					handle(layer[o], event, ...)
 				end
 			end
 		end

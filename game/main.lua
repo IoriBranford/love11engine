@@ -15,11 +15,7 @@ local pi = math.pi
 local pretty = require "pl.pretty"
 local assets = require "assets"
 
-local fixedfps = 60
-local fixeddt = 1/fixedfps
-local toload = { "title.tmx", "gameplay.tmx" }
-
-local maps = nil
+local maps = {}
 
 local function init()
 	local gamepadfile = "gamecontrollerdb.txt"
@@ -33,37 +29,56 @@ local function init()
 		vsync = -1
 	}
 	LW.setMode(window_width, window_height, window_flags)
+	LE.push("load", "title.tmx", "gameplay.tmx")
 end
 
-local function load()
+local function onEvent(ev, ...)
+	for filename, map in pairs(maps) do
+		local script = map.script
+		if script then
+			local handler = script[ev]
+			if handler then
+				handler(map, ...)
+			end
+		end
+	end
+end
+
+local function load(...)
 	assets.clear()
 	local font = assets.get(".defaultFont", floor(LG.getHeight()/48))
 	font:setFilter("nearest", "nearest")
 	LG.setFont(font)
-	maps = {}
-	for i = 1, #toload do
-		local filename = toload[i]
-		local map = assets.get(filename)
-		maps[filename] = map
-		map:broadcast("init")
-	end
-end
 
-local function broadcast(ev, ...)
-	for filename, map in pairs(maps) do
-		map:broadcast(ev, ...)
+	maps = {}
+	for i = 1, select("#", ...) do
+		local map
+		local filename = select(i, ...)
+		if filename then
+			map = assets.get(filename)
+			maps[filename] = map
+		end
+
+		local properties = map and map.properties
+		if properties then
+			local script = assets.get(properties.script)
+			if script then
+				map.script = script
+				properties.script = nil
+			end
+		end
 	end
+
+	onEvent("start")
 end
 
 local function update(dt)
-	for filename, map in pairs(maps) do
-		map:broadcast("update", dt)
-	end
+	onEvent("update", dt)
 end
 
 local function fixedUpdate(dt)
+	onEvent("fixedUpdate", dt)
 	for filename, map in pairs(maps) do
-		map:broadcast("fixedUpdate", dt)
 		map:update(dt)
 	end
 end
@@ -111,18 +126,14 @@ function love.run()
 	init(love.arg.parseGameArguments(arg), arg)
 	if LT then LT.step() end
 
+	local fixedfps = 60
+	local fixeddt = 1/fixedfps
+
 	local dt = 0
 	local timeaccum = 0
 
 	-- Main loop time.
 	return function()
-		if toload then
-			load()
-			collectgarbage()
-			toload = nil
-			if LT then LT.step() end
-		end
-
 		-- Process events.
 		if LE then
 			LE.pump()
@@ -132,7 +143,15 @@ function love.run()
 						return a or 0
 					end
 				end
-				broadcast(name, a, b, c, d, e, f)
+
+				onEvent(name, a, b, c, d, e, f)
+
+				if name == "load" then
+					load(a, b, c, d, e, f)
+					collectgarbage()
+					if LT then LT.step() end
+					break
+				end
 			end
 		end
 
