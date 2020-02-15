@@ -497,15 +497,17 @@ function load.layer(layer, map, dir)
 	end
 	layer.offsety = maptileheight
 
-	local tiles = map.tiles
+	local tiles = map.tiles or {}
+	map.tiles = tiles
 	local layertileanimations = map.layertileanimations or {}
 	map.layertileanimations = layertileanimations
 
 	local tileanimationframes = {}
 	layer.tileanimationframes = tileanimationframes
+	local getGidFlip = Map.getGidFlip
 	for i = 1, #layer do
-		local gid = layer[i]
-		local tile = Map.getTileByGid(map, gid)
+		local gid = getGidFlip(layer[i])
+		local tile = tiles[gid]
 		local animation = tile and tile.animation
 		if animation then
 			tileanimationframes[i] = 1
@@ -516,7 +518,8 @@ function load.layer(layer, map, dir)
 	local mingid = layer.mingid
 	local maxgid = layer.maxgid
 	local tileset
-	local tilesets = map.tilesets
+	local tilesets = map.tilesets or {}
+	map.tilesets = tilesets
 	for i = 1, #tilesets do
 		local ts = tilesets[i]
 		if Tileset.areGidsInRange(ts, mingid, maxgid) then
@@ -539,6 +542,8 @@ end
 
 function load.map(map, filename, dir)
 	tablex.update(map, Map)
+	map.tiles = map.tiles or {}
+	map.tilesets = map.tilesets or {}
 	map.layertileanimations = map.layertileanimations or {}
 	local backgroundcolor = map.backgroundcolor
 	map.backgroundcolor = backgroundcolor and { parseColor(backgroundcolor) }
