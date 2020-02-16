@@ -23,13 +23,13 @@ local function init()
 		LJ.loadGamepadMappings(gamepadfile)
 	end
 
-	local window_width = 480
-	local window_height = 640
+	local window_width = 640
+	local window_height = 480
 	local window_flags = {
 		vsync = -1
 	}
 	LW.setMode(window_width, window_height, window_flags)
-	LE.push("load", "shmup.tmx", "shmuphud.tmx")
+	LE.push("load", "game.tmx")
 end
 
 local function onEvent(ev, ...)
@@ -47,25 +47,15 @@ end
 local function load(...)
 	assets.clear()
 	local font = assets.get(".defaultFont", floor(LG.getHeight()/48))
-	font:setFilter("nearest", "nearest")
 	LG.setFont(font)
 
 	maps = {}
 	for i = 1, select("#", ...) do
-		local map
 		local filename = select(i, ...)
-		if filename then
-			map = assets.get(filename)
+		local map = filename and assets.get(filename)
+		if map then
+			map.script = assets.get(map.script)
 			maps[filename] = map
-		end
-
-		local properties = map and map.properties
-		if properties then
-			local script = assets.get(properties.script)
-			if script then
-				map.script = script
-				properties.script = nil
-			end
 		end
 	end
 

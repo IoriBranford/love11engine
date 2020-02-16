@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.2" tiledversion="1.3.2" orientation="orthogonal" renderorder="right-down" compressionlevel="-1" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" backgroundcolor="#008040" nextlayerid="3" nextobjectid="4">
+ <properties>
+  <property name="script" type="file" value="game.lua"/>
+ </properties>
+ <layer id="1" name="Tile Layer 1" width="40" height="30">
+  <data encoding="base64" compression="zlib">
+   eJztwTEBAAAAwqD1T20ND6AAAAAA4NcAEsAAAQ==
+  </data>
+ </layer>
+ <objectgroup id="2" name="mainobjects">
+  <object id="1" name="wall" x="312" y="0" width="16" height="480">
+   <properties>
+    <property name="fillcolor" type="color" value="#ff808080"/>
+    <property name="linecolor" type="color" value="#ffffffff"/>
+   </properties>
+  </object>
+  <object id="2" name="player_right" x="488" y="416">
+   <properties>
+    <property name="controlstick" value="right"/>
+    <property name="fillcolor" type="color" value="#ff0080ff"/>
+    <property name="linecolor" type="color" value="#ffffffff"/>
+   </properties>
+   <polygon points="0,0 -8,-32 -16,0 -32,32 0,24 32,32 16,0 8,-32"/>
+  </object>
+  <object id="3" name="player_left" x="160" y="416">
+   <properties>
+    <property name="controlstick" value="left"/>
+    <property name="fillcolor" type="color" value="#ffff0080"/>
+    <property name="linecolor" type="color" value="#ffffffff"/>
+   </properties>
+   <polygon points="0,0 -8,-32 -16,0 -32,32 0,24 32,32 16,0 8,-32"/>
+  </object>
+ </objectgroup>
+</map>
