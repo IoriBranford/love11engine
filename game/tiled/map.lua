@@ -381,8 +381,13 @@ local function clearDestroyedObject(objectsbyid, id)
 	end
 end
 
+local find = require "tiled.find"
 local update = require "tiled.update"
 local draw = require "tiled.draw"
+
+function Map.find(map, condition, ...)
+	return find[condition](map, ...)
+end
 
 function Map.update(map, dt)
 	local objectsbyid = map.objectsbyid
