@@ -63,14 +63,11 @@ before_script:
 
 data:
         <<: *build-data
-        <<: *full
 
 win-64:
         <<: *build-windows
-        <<: *full
 
 win-32:
         <<: *build-windows
-        <<: *full
         variables:
                 ARCH_BITS: "32"
