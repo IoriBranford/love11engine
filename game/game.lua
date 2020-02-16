@@ -30,6 +30,7 @@ function Game.start(map)
 	for i = 1, #players do
 		local player = players[i]
 		local body = player:addBody(world, "dynamic")
+		body:setFixedRotation(true)
 		local shape = LP.newCircleShape(8)
 		local fixture = LP.newFixture(body, shape)
 	end
