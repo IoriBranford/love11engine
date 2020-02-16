@@ -49,7 +49,7 @@ resHack () {
 	xvfb-run wine ResourceHacker.exe -open ${LOVE_DIR}\\${PROJECT}.exe -save ${LOVE_DIR}\\${PROJECT}.exe $*
 }
 
-ICO=${ICO:=appicon.ico}
+ICO=${ICO:=${LOVE_DIR}/game.ico}
 if [ -f $ICO ]
 then
 	getZip ${RESHACK_ZIP} ${RESHACK_URL}
@@ -57,13 +57,16 @@ then
 	resHack -action add -res $ICO -mask ICONGROUP,MAINICON,
 fi
 
-if [ ${ARCH_BITS} = 64 ] && [ -f gme.dll ]
+if [ -f gme.dll ]
 then
-	# custom build with MAME YM2612
-	cp gme.dll ${GAME_DIR}
-else
-	getZip ${GME_ZIP} ${GME_URL}
-	cp bin/${ARCH}/gme.dll ${GAME_DIR}
+	if [ ${ARCH_BITS} = 64 ]
+	then
+		# custom build with MAME YM2612
+		cp gme.dll ${GAME_DIR}
+	else
+		getZip ${GME_ZIP} ${GME_URL}
+		cp bin/${ARCH}/gme.dll ${GAME_DIR}
+	fi
 fi
 
 if [ -f README.md ]
