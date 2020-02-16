@@ -30,9 +30,11 @@ before_script:
 
 .build-data: &build-data
         stage: build
+        variables:
+                GAME_ASSET: "${PROJECT}.love"
         script:
                 - apk add wget xz
-                - ./make-game.sh ${PROJECT}.love
+                - ./make-game.sh
         artifacts:
                 name: "${PROJECT}-${VERSION}-data"
                 paths:
