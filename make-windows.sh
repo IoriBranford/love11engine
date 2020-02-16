@@ -26,8 +26,8 @@ GME_MSVC=msvc12
 GME_ZIP=libgme_${GME_VERSION}_${GME_MSVC}.zip
 GME_URL=https://github.com/ShiftMediaProject/game-music-emu/releases/download/${GME_VERSION}/${GME_ZIP}
 
-RESHACK_ZIP=resource_hacker.zip
-RESHACK_URL=http://www.angusj.com/resourcehacker/${RESHACK_ZIP}
+RCEDIT=rcedit-x64.exe
+RCEDIT_URL=https://github.com/electron/rcedit/releases/download/v1.1.1/${RCEDIT}
 
 getZip () {
 	ZIP=$1
@@ -46,19 +46,14 @@ fi
 cat ${LOVE_DIR}/lovec.exe ${GAME_ASSET} > game-win/${PROJECT}.exe
 cp ${LOVE_DIR}/*.dll game-win
 
-resHack () {
-	xvfb-run wine ResourceHacker.exe -open game-win\\${PROJECT}.exe -save game-win\\${PROJECT}.exe $*
-}
-
 ICO=${ICO:=${LOVE_DIR}/game.ico}
 if [ -e $ICO ]
 then
-	if ! [ -e ResourceHacker.exe ]
+	if ! [ -e ${RCEDIT} ]
 	then
-		getZip ${RESHACK_ZIP} ${RESHACK_URL}
+		wget -N ${RCEDIT_URL}
 	fi
-	resHack -action delete -mask ICONGROUP,,
-	resHack -action add -res $ICO -mask ICONGROUP,MAINICON,
+	wine ${RCEDIT} --set-icon "$ICO"
 fi
 
 if [ -e gme.dll ]
