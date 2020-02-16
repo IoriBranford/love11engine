@@ -1,4 +1,5 @@
 local pi = math.pi
+local type = type
 local pairs = pairs
 local setmetatable = setmetatable
 local assets = require "assets"
@@ -247,8 +248,8 @@ function Map.setLayerGid(map, layer, c, r, gid)
 
 	local maptilewidth = map.tilewidth
 	local maptileheight = map.tileheight
-	local x = maptilewidth * (x + (1-sx)/2)
-	local y = maptileheight * (y + (1-sy)/2)
+	local x = maptilewidth*c + tileset.tilewidth*(1-sx)/2
+	local y = maptileheight*(r+1) + tileset.tileheight*(1-sy)/2
 	Map.setSpriteBatchTile(map, spritebatch, i, tile, x, y, sx, sy, rot)
 end
 
