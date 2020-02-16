@@ -32,12 +32,11 @@ before_script:
         stage: build
         script:
                 - apk add wget xz
-                - ./make-game.sh
-                - mv game.love "${PROJECT}-${GAME_TYPE}.love"
+                - ./make-game.sh ${PROJECT}.love
         artifacts:
                 name: "${PROJECT}-${VERSION}-data"
                 paths:
-                        - "${PROJECT}-${GAME_TYPE}.love"
+                        - "${PROJECT}.love"
 
 .build-windows: &build-windows
         <<: *debian
@@ -45,9 +44,9 @@ before_script:
         stage: build
         variables:
                 ARCH_BITS: "64"
+                GAME_DIR: "${PROJECT_TITLE}"
         script:
                 - apt-get install -y -qq wget xz-utils xvfb
-                - ./make-game.sh
                 - ./make-windows.sh
         cache:
                 key: "${PROJECT}-win-${ARCH_BITS}"
@@ -59,7 +58,6 @@ before_script:
                 name: "${PROJECT}-${VERSION}-win-${ARCH_BITS}"
                 paths:
                         - "${PROJECT_TITLE}"
-                expire_in: 1 week
 
 data:
         <<: *build-data
