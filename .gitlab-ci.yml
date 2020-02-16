@@ -20,13 +20,13 @@ stages:
 image: alpine:latest
 
 before_script:
-        - apk add --update zip
+        - apk add --update zip git
 
 .debian:
         <<: &debian
                 before_script:
                         - apt-get update
-                        - apt-get install -y -qq zip
+                        - apt-get install -y -qq zip git
 
 .build-data: &build-data
         stage: build
