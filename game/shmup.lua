@@ -193,7 +193,6 @@ function Shmup.start(map)
 	local playerteam = find.named(map, "playerteam")
 	player = find.objectNamed(playerteam, "player")
 	if player then
-		local x, y = player:getGlobalPosition()
 		local body = player:addBody(world, "dynamic")
 		local shape = LP.newRectangleShape(16, 16)
 		local fixture = LP.newFixture(body, shape)

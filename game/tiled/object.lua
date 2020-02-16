@@ -10,6 +10,9 @@ local Object = {}
 Object.__index = Object
 
 local function getGlobalTransform(object)
+	if not object then
+		return
+	end
 	local parent = object.parent
 	local transform = object.transform
 	if not parent then
@@ -23,13 +26,16 @@ Object.getGlobalTransform = getGlobalTransform
 local function getGlobalPosition(object, x, y)
 	x = x or 0
 	y = y or 0
-	local parent = object.parent
-	if parent then
-		x, y = getGlobalPosition(parent, x, y)
+	if not object then
+		return x, y
 	end
 	local transform = object.transform
 	if transform then
-		x, y = transform:transformPoint(x, y)
+		x, y = transform:inverseTransformPoint(x, y)
+	end
+	local parent = object.parent
+	if parent then
+		return getGlobalPosition(parent, x, y)
 	end
 	return x, y
 end
