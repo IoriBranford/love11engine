@@ -39,7 +39,7 @@ getZip () {
 ./make-game.sh
 mkdir -p game-win
 
-if [ -z ${LOVE_DIR} ]
+if ! [ -e ${LOVE_DIR} ]
 then
 	getZip ${LOVE_ZIP} ${LOVE_URL}
 fi
@@ -51,9 +51,9 @@ resHack () {
 }
 
 ICO=${ICO:=${LOVE_DIR}/game.ico}
-if [ -f $ICO ]
+if [ -e $ICO ]
 then
-	if [ -z ResourceHacker.exe ]
+	if ! [ -e ResourceHacker.exe ]
 	then
 		getZip ${RESHACK_ZIP} ${RESHACK_URL}
 	fi
@@ -61,14 +61,14 @@ then
 	resHack -action add -res $ICO -mask ICONGROUP,MAINICON,
 fi
 
-if [ -f gme.dll ]
+if [ -e gme.dll ]
 then
 	if [ ${ARCH_BITS} = 64 ]
 	then
 		# custom build with MAME YM2612
 		cp gme.dll game-win
 	else
-		if [ -z bin/${ARCH}/gme.dll ]
+		if ! [ -e bin/${ARCH}/gme.dll ]
 		then
 			getZip ${GME_ZIP} ${GME_URL}
 		fi
@@ -76,7 +76,7 @@ then
 	fi
 fi
 
-if [ -f README.md ]
+if [ -e README.md ]
 then
 	cp README.md game-win
 fi
