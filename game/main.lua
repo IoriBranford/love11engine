@@ -92,6 +92,7 @@ local function draw(lerp)
 			LG.applyTransform(viewtransform)
 		end
 		map:draw(lerp)
+		onEvent("drawOver", lerp)
 		LG.pop()
 	end
 
