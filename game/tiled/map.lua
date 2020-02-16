@@ -377,7 +377,7 @@ local function clearDestroyedObject(objectsbyid, id)
 	local object = objectsbyid[id]
 	objectsbyid[id] = nil
 	if object then
-		object:setParent()
+		object:onDestroy()
 	end
 end
 

@@ -1,7 +1,10 @@
 local pairs = pairs
+local type = type
+local atan2 = math.atan2
 local assets = require "assets"
 local tablex = require "pl.tablex"
 local LM = love.math
+local LP = love.physics
 
 local Object = {}
 Object.__index = Object
@@ -91,6 +94,46 @@ function Object.setAseprite(object, aseprite, animation, anchorx, anchory)
 	object.animation = animation
 	object.animationmsecs = 0
 	object.animationframe = 1
+end
+
+function Object.addBody(object, world, bodytype)
+	local parent = object.parent
+	if parent then
+		local px, py = getGlobalPosition(parent)
+		if px ~= 0 or py ~= 0 then
+			print("Warning: parent transform will not apply to physics body")
+		end
+	end
+
+	local transform = getGlobalTransform(object)
+	local xx, yx, zx, x, xy, yy, zy, y = transform:getMatrix()
+	local r = atan2(xy, xx)
+	local body = LP.newBody(world, x, y, bodytype)
+	body:setAngle(r)
+	body:setUserData(object.id)
+	object.body = body
+	object:updateFromBody()
+	return body
+end
+
+function Object.updateFromBody(object)
+	local body = object.body
+	if body then
+		local x, y = body:getPosition()
+		local r = body:getAngle()
+		local transform = object.transform or LM.newTransform()
+		object.transform = transform
+		transform:setTransformation(x, y, r)
+	end
+end
+
+function Object.onDestroy(object)
+	object:setParent()
+	local body = object.body
+	if body then
+		body:setUserData(nil)
+		body:destroy()
+	end
 end
 
 return Object

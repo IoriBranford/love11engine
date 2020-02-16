@@ -2,6 +2,8 @@ local love = love
 local atan2 = math.atan2
 local sqrt = math.sqrt
 local pi = math.pi
+local cos = math.cos
+local sin = math.sin
 local LG = love.graphics
 local LJ = love.joystick
 local LK = love.keyboard
@@ -172,12 +174,9 @@ end
 local function updateBodyTransforms(map, world)
 	for _, body in pairs(world:getBodies()) do
 		local id = body:getUserData()
-		local node = map:getObjectById(id)
-		local transform = node and node.transform
-		if transform then
-			local x, y = body:getPosition()
-			local r = body:getAngle()
-			transform:setTransformation(x, y, r)
+		local node = id and map:getObjectById(id)
+		if node then
+			node:updateFromBody()
 		end
 	end
 end
@@ -195,11 +194,9 @@ function Shmup.start(map)
 	player = find.objectNamed(playerteam, "player")
 	if player then
 		local x, y = player:getGlobalPosition()
-		local body = LP.newBody(world, x, y, "dynamic")
-		body:setUserData(player.id)
+		local body = player:addBody(world, "dynamic")
 		local shape = LP.newRectangleShape(16, 16)
 		local fixture = LP.newFixture(body, shape)
-		player.body = body
 		for i = 1,2 do
 			local gun = find.objectNamed(playerteam, "gun"..i)
 			if gun then
@@ -284,7 +281,8 @@ function Shmup.update(map, dt)
 
 	local speed = slowed and speedSlow or speedNormal
 	local vx, vy = inx*speed, iny*speed
-	player.body:setLinearVelocity(vx, vy)
+	--player.body:setLinearVelocity(vx, vy)
+	player.body:setAngularVelocity(inx*pi)
 
 	player.firing = firing
 
@@ -299,13 +297,13 @@ function Shmup.fixedUpdate(map, dt)
 		gun.visible = firing
 		if firing and firewait <= 0 then
 			local bullet = map:newTileObject(player.parent, "playershot", "bullet")
-			local x, y = gun:getGlobalPosition()
-			local body = LP.newBody(world, x, y, "dynamic")
-			local vx, vy = 0, -1024
-			body:setUserData(bullet.id)
-			body:setLinearVelocity(vx, vy)
-			bullet.body = body
 			bullet.lifetime = 0.5
+			local transform = bullet.transform
+			transform:apply(gun:getGlobalTransform())
+			local body = bullet:addBody(world, "dynamic")
+			local r = -pi/2 + body:getAngle()
+			local vx, vy = 1024*cos(r), 1024*sin(r)
+			body:setLinearVelocity(vx, vy)
 		end
 	end
 
