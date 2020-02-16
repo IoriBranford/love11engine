@@ -101,7 +101,7 @@ function draw.object(object, parent, map, lerp)
 		local quad = tile.quad
 		local dx, dy, dr
 		local body = object.body
-		if type(body) == "Body" then
+		if body then
 			dx, dy = body:getLinearVelocity()
 			dx = dx * lerp
 			dy = dy * lerp

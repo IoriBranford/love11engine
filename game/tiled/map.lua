@@ -418,9 +418,9 @@ function Map.setViewTransform(map, x, y, r, sx, sy, dx, dy, dr, dsx, dsy, lerp)
 	local viewtransform = map.viewtransform or LM.newTransform()
 	map.viewtransform = viewtransform
 	viewtransform:reset()
+	viewtransform:translate(x + dx*lerp, y + dy*lerp)
 	viewtransform:rotate(r + dr*lerp)
 	viewtransform:scale(sx, sy)
-	viewtransform:translate(x + dx*lerp, y + dy*lerp)
 end
 
 return Map
