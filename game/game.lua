@@ -11,7 +11,6 @@ local world
 local players
 
 function Game.start(map)
-	map:setViewTransform(-LG.getWidth()/2, -LG.getHeight()/2)
 	world = LP.newWorld()
 	local worldbody = LP.newBody(world)
 
@@ -68,6 +67,10 @@ function Game.update(map)
 	for i = 1, #players do
 		readPlayerInput(players[i])
 	end
+
+	local lgw = LG.getWidth()
+	local lgh = LG.getHeight()
+	map:setViewTransform(-lgw/2, -lgh/2, 0, lgw/640, lgh/480)
 end
 
 function Game.fixedUpdate(map, dt)
