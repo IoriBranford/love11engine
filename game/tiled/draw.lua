@@ -1,9 +1,5 @@
-local pretty = require "pl.pretty"
 local type = type
-local cos = math.cos
-local sin = math.sin
 local LG = love.graphics
-local LM = love.math
 
 local draw = {}
 setmetatable(draw, {
@@ -105,7 +101,7 @@ function draw.object(object, parent, map, lerp)
 		local quad = tile.quad
 		local dx, dy, dr
 		local body = object.body
-		if body then
+		if type(body) == "Body" then
 			dx, dy = body:getLinearVelocity()
 			dx = dx * lerp
 			dy = dy * lerp

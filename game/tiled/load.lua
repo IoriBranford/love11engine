@@ -495,7 +495,7 @@ function load.layer(layer, map, dir)
 	local maptileheight = map.tileheight
 	local maptilescale = map.tilescale
 		or LM.newTransform(0, 0, 0, maptilewidth, maptileheight)
-	map.tilescale = tilescale
+	map.tilescale = maptilescale
 	if chunks then
 		for i = 1, #chunks do
 			local chunk = chunks[i]

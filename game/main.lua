@@ -1,3 +1,4 @@
+require "pl.strict"
 local love = love
 local LE = love.event
 local LFS = love.filesystem
@@ -7,7 +8,6 @@ local LT = love.timer
 local LW = love.window
 
 local floor = math.floor
-local sqrt = math.sqrt
 local abs = math.abs
 local sin = math.sin
 local pi = math.pi

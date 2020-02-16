@@ -1,4 +1,5 @@
 local pairs = pairs
+local type = type
 local floor = math.floor
 
 local update = {}
