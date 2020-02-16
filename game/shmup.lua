@@ -280,7 +280,7 @@ function Shmup.update(map, dt)
 
 	local speed = slowed and speedSlow or speedNormal
 	local vx, vy = inx*speed, iny*speed
-	--player.body:setLinearVelocity(vx, vy)
+	player.body:setLinearVelocity(vx, vy)
 	player.body:setAngularVelocity(inx*pi)
 
 	player.firing = firing
@@ -297,8 +297,7 @@ function Shmup.fixedUpdate(map, dt)
 		if firing and firewait <= 0 then
 			local bullet = map:newTileObject(player.parent, "playershot", "bullet")
 			bullet.lifetime = 0.5
-			local transform = bullet.transform
-			transform:apply(gun:getGlobalTransform())
+			gun:getGlobalTransform(bullet.transform)
 			local body = bullet:addBody(world, "dynamic")
 			local r = -pi/2 + body:getAngle()
 			local vx, vy = 1024*cos(r), 1024*sin(r)

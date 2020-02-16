@@ -9,17 +9,20 @@ local LP = love.physics
 local Object = {}
 Object.__index = Object
 
-local function getGlobalTransform(object)
+local function getGlobalTransform(object, globaltransform)
 	if not object then
 		return
 	end
+	globaltransform = globaltransform or LM.newTransform()
 	local parent = object.parent
-	local transform = object.transform
-	if not parent then
-		return transform and transform:clone() or LM.newTransform()
+	if parent then
+		getGlobalTransform(parent, globaltransform)
 	end
-	local globaltransform = getGlobalTransform(parent)
-	return transform and globaltransform:apply(transform) or globaltransform
+	local transform = object.transform
+	if transform then
+		globaltransform:apply(transform)
+	end
+	return globaltransform
 end
 Object.getGlobalTransform = getGlobalTransform
 
@@ -41,6 +44,9 @@ local function getGlobalPosition(object, x, y)
 end
 Object.getGlobalPosition = getGlobalPosition
 
+local setParent_global = LM.newTransform()
+local setParent_parentglobal = LM.newTransform()
+
 function Object.setParent(object, parent)
 	local oldparent = object.parent
 	if oldparent then
@@ -51,13 +57,20 @@ function Object.setParent(object, parent)
 			end
 		end
 	end
-	local newtransform = getGlobalTransform(object)
+
+	local transform = object.transform or LM.newTransform()
+	object.transform = transform
+	local newtransform = getGlobalTransform(object, setParent_global:reset())
+
 	if parent then
-		newtransform = getGlobalTransform(parent):inverse():apply(newtransform)
+		getGlobalTransform(parent, setParent_parentglobal:reset())
+		newtransform = setParent_parentglobal:inverse()
+		newtransform:apply(setParent_global)
 		parent[#parent+1] = object
 	end
+
+	transform:setMatrix(newtransform:getMatrix())
 	object.parent = parent
-	object.transform = newtransform
 end
 
 function Object.setTemplate(object, template)
