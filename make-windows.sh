@@ -9,13 +9,12 @@ GAME_ASSET=${GAME_ASSET:=${GAME_TYPE}.love}
 #PROJECT_ZIP=${PROJECT}-win${ARCH_BITS}.zip
 
 ARCH_BITS=${ARCH_BITS:=64}
-if [ ${ARCH_BITS} = 64 ]; then
+if [ ${ARCH_BITS} = 64 ]
+then
 	ARCH=x64
 else
 	ARCH=x86
 fi
-
-./make-game.sh
 
 LOVE_VERSION=${LOVE_VERSION:="11.3"}
 LOVE_DIR=love-${LOVE_VERSION}-win${ARCH_BITS}
@@ -33,26 +32,31 @@ RESHACK_URL=http://www.angusj.com/resourcehacker/${RESHACK_ZIP}
 getZip () {
 	ZIP=$1
 	URL=$2
-	if [ ! -f ${ZIP} ]
-	then
-		wget -N ${URL}
-		unzip -o ${ZIP} -d .
-	fi
+	wget -N ${URL}
+	unzip -o ${ZIP} -d .
 }
-getZip ${LOVE_ZIP} ${LOVE_URL}
 
+./make-game.sh
 mkdir -p ${GAME_DIR}
+
+if [ -z ${LOVE_DIR} ]
+then
+	getZip ${LOVE_ZIP} ${LOVE_URL}
+fi
 cat ${LOVE_DIR}/lovec.exe ${GAME_ASSET} > ${GAME_DIR}/${PROJECT}.exe
 cp ${LOVE_DIR}/*.dll ${GAME_DIR}
 
 resHack () {
-	xvfb-run wine ResourceHacker.exe -open ${LOVE_DIR}\\${PROJECT}.exe -save ${LOVE_DIR}\\${PROJECT}.exe $*
+	xvfb-run wine ResourceHacker.exe -open ${GAME_DIR}\\${PROJECT}.exe -save ${GAME_DIR}\\${PROJECT}.exe $*
 }
 
 ICO=${ICO:=${LOVE_DIR}/game.ico}
 if [ -f $ICO ]
 then
-	getZip ${RESHACK_ZIP} ${RESHACK_URL}
+	if [ -z ResourceHacker.exe ]
+	then
+		getZip ${RESHACK_ZIP} ${RESHACK_URL}
+	fi
 	resHack -action delete -mask ICONGROUP,,
 	resHack -action add -res $ICO -mask ICONGROUP,MAINICON,
 fi
@@ -64,7 +68,10 @@ then
 		# custom build with MAME YM2612
 		cp gme.dll ${GAME_DIR}
 	else
-		getZip ${GME_ZIP} ${GME_URL}
+		if [ -z bin/${ARCH}/gme.dll ]
+		then
+			getZip ${GME_ZIP} ${GME_URL}
+		fi
 		cp bin/${ARCH}/gme.dll ${GAME_DIR}
 	fi
 fi

@@ -1,0 +1,76 @@
+# LOVE Multiplatform GitLab CI
+
+# Fill in the project info
+variables:
+        PROJECT: love11engine
+        PROJECT_TITLE: "LOVE 11 Tiled Engine"
+        PROJECT_TITLE_NOSPACE: "LOVE_11_Tiled_Engine"
+        DESCRIPTION: "LOVE 11 Tiled Engine"
+        COPYRIGHT: "© 2020 IoriBranford"
+        APPLICATION_ID_BASE: "io.itch.ioribranford.love11engine"
+        LOVE_VERSION: "11.3"
+        SCREEN_ORIENTATION: "landscape"
+        VERSION: "${CI_COMMIT_REF_NAME}"
+        GIT_DEPTH: "1"
+        GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+        - build
+
+image: alpine:latest
+
+before_script:
+        - apk add --update zip
+
+.debian:
+        <<: &debian
+                before_script:
+                        - apt-get update
+                        - apt-get install -y -qq zip
+
+.build-data: &build-data
+        stage: build
+        script:
+                - apk add wget xz
+                - ./make-game.sh
+                - mv game.love "${PROJECT}-${GAME_TYPE}.love"
+        artifacts:
+                name: "${PROJECT}-${VERSION}-data"
+                paths:
+                        - "${PROJECT}-${GAME_TYPE}.love"
+
+.build-windows: &build-windows
+        <<: *debian
+        image: tianon/wine
+        stage: build
+        variables:
+                ARCH_BITS: "64"
+        script:
+                - apt-get install -y -qq wget xz-utils xvfb
+                - ./make-game.sh
+                - ./make-windows.sh
+        cache:
+                key: "${PROJECT}-win-${ARCH_BITS}"
+                paths:
+                        - "love-${LOVE_VERSION}-win${ARCH_BITS}"
+                        - "bin"
+                        - "ResourceHacker.exe"
+        artifacts:
+                name: "${PROJECT}-${VERSION}-win-${ARCH_BITS}"
+                paths:
+                        - "${PROJECT_TITLE}"
+                expire_in: 1 week
+
+data:
+        <<: *build-data
+        <<: *full
+
+win-64:
+        <<: *build-windows
+        <<: *full
+
+win-32:
+        <<: *build-windows
+        <<: *full
+        variables:
+                ARCH_BITS: "32"
