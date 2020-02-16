@@ -3,12 +3,14 @@ local LG = love.graphics
 local LE = love.event
 local LJ = love.joystick
 local LK = love.keyboard
+local LM = love.math
 local LP = love.physics
 
 local Game = {}
 
 local world
 local players
+local playerlink
 
 function Game.start(map)
 	world = LP.newWorld()
@@ -25,7 +27,11 @@ function Game.start(map)
 		fixture:setFriction(0)
 	end
 
-	players = map:find("named", "players")
+	players = {
+		map:find("named", "player_left"),
+		map:find("named", "player_right"),
+	}
+
 	for i = 1, #players do
 		local player = players[i]
 		local body = player:addBody(world, "dynamic")
@@ -33,6 +39,9 @@ function Game.start(map)
 		local shape = LP.newCircleShape(8)
 		local fixture = LP.newFixture(body, shape)
 	end
+
+	playerlink = map:find("named", "playerlink")
+	playerlink:setParent(players[1])
 end
 
 function Game.keypressed(map, key)
@@ -82,6 +91,25 @@ function Game.fixedUpdate(map, dt)
 			object:updateFromBody()
 		end
 	end
+	local player1 = players[1]
+	local player2 = players[2]
+	local x1, y1 = player1.body:getPosition()
+	local x2, y2 = player2.body:getPosition()
+	local dx, dy = x2-x1, y2-y1
+	local dist = sqrt(dx*dx + dy*dy)
+	local perpx, perpy = dy/dist, -dx/dist
+
+	local polyline = playerlink.polyline
+	for i = 4, #polyline-2, 2 do
+		local rand = (LM.random()*2 - 1) * 8
+		local t = i/#polyline
+		local x = dx*t + perpx*rand
+		local y = dy*t + perpy*rand
+		polyline[i-1] = x
+		polyline[i  ] = y
+	end
+	polyline[#polyline-1] = dx
+	polyline[#polyline  ] = dy
 end
 
 local function debugDrawBoundingBoxes(world, lerp)
