@@ -156,6 +156,19 @@ local world
 local player = {}
 local guns = {}
 
+local function updateObjectLifetimes(map, dt)
+	for id, object in pairs(map.objectsbyid) do
+		local lifetime = object.lifetime
+		if lifetime then
+			lifetime = lifetime - dt
+			object.lifetime = lifetime
+			if lifetime <= 0 then
+				map:destroyObject(id)
+			end
+		end
+	end
+end
+
 local function updateBodyTransforms(map, world)
 	for _, body in pairs(world:getBodies()) do
 		local id = body:getUserData()
@@ -170,6 +183,8 @@ local function updateBodyTransforms(map, world)
 end
 
 function Shmup.start(map)
+	map:setViewTransform(-LG.getWidth()/2, -LG.getHeight()/2)
+
 	world = LP.newWorld()
 	--local body = LP.newBody(world)
 	--local shape = LP.newChainShape(true, 0, 0, 0, 640, 480, 640, 480, 0)
@@ -274,7 +289,6 @@ function Shmup.update(map, dt)
 	player.firing = firing
 
 	local x, y = player.body:getPosition()
-	map:setViewTransform(-x, -y)
 end
 
 function Shmup.fixedUpdate(map, dt)
@@ -291,6 +305,7 @@ function Shmup.fixedUpdate(map, dt)
 			body:setUserData(bullet.id)
 			body:setLinearVelocity(vx, vy)
 			bullet.body = body
+			bullet.lifetime = 0.5
 		end
 	end
 
@@ -306,6 +321,7 @@ function Shmup.fixedUpdate(map, dt)
 
 	world:update(dt)
 	updateBodyTransforms(map, world)
+	updateObjectLifetimes(map, dt)
 end
 
 return Shmup
