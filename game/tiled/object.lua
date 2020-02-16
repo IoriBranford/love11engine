@@ -34,7 +34,7 @@ local function getGlobalPosition(object, x, y)
 	end
 	local transform = object.transform
 	if transform then
-		x, y = transform:inverseTransformPoint(x, y)
+		x, y = transform:transformPoint(x, y)
 	end
 	local parent = object.parent
 	if parent then
