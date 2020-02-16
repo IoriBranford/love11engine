@@ -79,15 +79,9 @@ function Object.setTemplate(object, template)
 	end
 	object.template = template
 	local gid = object.gid or 0
-	tablex.update(object, template)
-	local templateproperties = template.properties
-	if templateproperties then
-		local properties = object.properties or {}
-		object.properties = properties
-		for k, v in pairs(templateproperties) do
-			if properties[k] == nil then
-				properties[k] = v
-			end
+	for k, v in pairs(template) do
+		if object[k] == nil then
+			object[k] = v
 		end
 	end
 

@@ -57,34 +57,25 @@ end
 -- After:
 -- {
 --  tag = PARENT,
---  properties = {
---   tag = "properties",
---   NAME1 = "VALUE1",
---   NAME2 = "VALUE2",
---   ...
---  }
+--  NAME1 = "VALUE1",
+--  NAME2 = "VALUE2",
+--  ...
 -- }
 function load.properties(properties, parent, dir)
-	for i = 1, #properties do
+	for i = #properties, 1, -1 do
 		local property = properties[i]
 		local value = property.value or property.default
 		if value then
 			local ptype = property.type
 			local pname = property.name
 			if ptype == "file" then
-				properties[pname] = dir..value
+				value = dir..value
 			elseif ptype == "color" then
-				properties[pname] = { parseColor(value) }
-			else
-				properties[pname] = value
+				value = { parseColor(value) }
 			end
+			parent[pname] = value
 		end
-	end
-	for i = #properties, 1, -1 do
 		properties[i] = nil
-	end
-	if parent then
-		parent.properties = properties
 	end
 end
 
@@ -104,7 +95,7 @@ end
 --  ...
 -- }
 function load.objecttype(objecttype, objecttypes, dir)
-	load.properties(objecttype, nil, dir)
+	load.properties(objecttype, objecttype, dir)
 	objecttypes[objecttype.name] = objecttype
 	objecttype.name = nil
 end
@@ -196,17 +187,12 @@ function load.object(object, parent, dir)
 	if template then
 		Object.setTemplate(object, dir..template)
 	end
-	local properties = object.properties
-	local aseprite = properties and properties.aseprite
+	local aseprite = object.aseprite
 	if aseprite then
 		Object.setAseprite(object, aseprite,
-			object.properties.animation,
-			object.properties.anchorx,
-			object.properties.anchory)
-		object.properties.aseprite = nil
-		object.properties.animation = nil
-		object.properties.anchorx = nil
-		object.properties.anchory = nil
+			object.animation,
+			object.anchorx,
+			object.anchory)
 	end
 	return object
 end
@@ -358,8 +344,7 @@ function load.tileset(tileset, parent, dir)
 		tileset.namedtileids = namedtileids
 		for t = 1, #tileset do
 			local tile = tileset[t]
-			local properties = tile.properties
-			local tilename = properties and properties.tilename
+			local tilename = tile.tilename
 			if tilename then
 				namedtileids[tilename] = t
 			end
