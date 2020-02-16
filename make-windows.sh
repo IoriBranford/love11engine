@@ -53,7 +53,7 @@ then
 	then
 		wget -N ${RCEDIT_URL}
 	fi
-	wine ${RCEDIT} --set-icon "$ICO"
+	wine ${RCEDIT} game-win/${PROJECT}.exe --set-icon "$ICO"
 fi
 
 if [ -e gme.dll ]
