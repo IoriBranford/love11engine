@@ -37,17 +37,17 @@ getZip () {
 }
 
 ./make-game.sh
-mkdir -p ${GAME_DIR}
+mkdir -p game-win
 
 if [ -z ${LOVE_DIR} ]
 then
 	getZip ${LOVE_ZIP} ${LOVE_URL}
 fi
-cat ${LOVE_DIR}/lovec.exe ${GAME_ASSET} > ${GAME_DIR}/${PROJECT}.exe
-cp ${LOVE_DIR}/*.dll ${GAME_DIR}
+cat ${LOVE_DIR}/lovec.exe ${GAME_ASSET} > game-win/${PROJECT}.exe
+cp ${LOVE_DIR}/*.dll game-win
 
 resHack () {
-	xvfb-run wine ResourceHacker.exe -open ${GAME_DIR}\\${PROJECT}.exe -save ${GAME_DIR}\\${PROJECT}.exe $*
+	xvfb-run wine ResourceHacker.exe -open game-win\\${PROJECT}.exe -save game-win\\${PROJECT}.exe $*
 }
 
 ICO=${ICO:=${LOVE_DIR}/game.ico}
@@ -66,19 +66,19 @@ then
 	if [ ${ARCH_BITS} = 64 ]
 	then
 		# custom build with MAME YM2612
-		cp gme.dll ${GAME_DIR}
+		cp gme.dll game-win
 	else
 		if [ -z bin/${ARCH}/gme.dll ]
 		then
 			getZip ${GME_ZIP} ${GME_URL}
 		fi
-		cp bin/${ARCH}/gme.dll ${GAME_DIR}
+		cp bin/${ARCH}/gme.dll game-win
 	fi
 fi
 
 if [ -f README.md ]
 then
-	cp README.md ${GAME_DIR}
+	cp README.md game-win
 fi
 
-#zip -r ${PROJECT_ZIP} "${GAME_DIR}"
+mv game-win "${GAME_DIR}"
