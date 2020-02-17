@@ -22,7 +22,7 @@ function Game.start(map)
 	local worldobjects = map:find("named", "worldobjects")
 	for i = 1, #worldobjects do
 		local object = worldobjects[i]
-		local x, y = object:getGlobalPosition()
+		local x, y = object.x, object.y
 		local width, height = object.width, object.height
 		local shape = LP.newRectangleShape(x + width/2, y + height/2,
 			width, height)
@@ -92,7 +92,9 @@ local function updatePlayerGun(map, player, dt)
 		local bullet = map:newTemplateObject(player.parent, "playershot.tx")
 		bullet.fillcolor = player.fillcolor
 		bullet.linecolor = player.linecolor
-		player:getGlobalTransform(bullet.transform)
+		bullet.x = player.x
+		bullet.y = player.y
+		bullet.rotation = player.rotation
 		local body = bullet:addBody(world, "dynamic")
 		local shape = LP.newRectangleShape(bullet.width, bullet.height)
 		local fixture = LP.newFixture(body, shape)
@@ -142,6 +144,8 @@ function Game.fixedUpdate(map, dt)
 	local perpx, perpy = dy/dist, -dx/dist
 
 	local polyline = playerlink.polyline
+	polyline[1] = 0
+	polyline[2] = 0
 	for i = 3, #polyline-3, 2 do
 		local rand = (LM.random()*2 - 1) * 8
 		local t = i/#polyline
