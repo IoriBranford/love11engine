@@ -9,6 +9,7 @@ local LJ = love.joystick
 local LK = love.keyboard
 local LM = love.math
 local LP = love.physics
+local audio = require "audio"
 
 local Game = {}
 
@@ -74,6 +75,7 @@ local function readPlayerInput(player)
 end
 
 local function killPlayer(map, player)
+	audio.play("Explosion5.wav")
 	player.visible = false
 	if not player.polygon then
 		return
