@@ -323,6 +323,7 @@ local function newObject(map, parent)
 	map.objectsbyid[id] = object
 	return object
 end
+Map.newObject = newObject
 
 function Map.newTemplateObject(map, parent, template)
 	local object = newObject(map, parent)
