@@ -130,7 +130,11 @@ end
 --  polygon = { 1, 2, 3, 4 }
 -- }
 function load.polygon(polygon, object, dir)
-	object.polygon = parsePoints(polygon.points)
+	local polygon = parsePoints(polygon.points)
+	object.polygon = polygon
+	if not LM.isConvex(polygon) then
+		object.triangles = LM.triangulate(polygon)
+	end
 end
 
 ---

@@ -129,6 +129,7 @@ function draw.object(object, parent, map, lerp)
 	local hheight = height/2
 	local ellipse = object.ellipse or object.point
 	local polygon = object.polygon
+	local triangles = object.triangles
 	local polyline = object.polyline
 
 	if fillcolor then
@@ -136,6 +137,10 @@ function draw.object(object, parent, map, lerp)
 
 		if ellipse then
 			LG.ellipse("fill", hwidth, hheight, hwidth, hheight)
+		elseif triangles then
+			for i = 1, #triangles do
+				LG.polygon("fill", triangles[i])
+			end
 		elseif polygon then
 			LG.polygon("fill", polygon)
 		else
