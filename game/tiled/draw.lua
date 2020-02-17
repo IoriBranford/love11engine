@@ -109,11 +109,10 @@ function draw.object(object, parent, map, lerp)
 		end
 
 		if quad then
-			LG.draw(image, quad, dx, dy, dr,
-				object.scalex, object.scaley,
+			LG.draw(image, quad, dx, dy, dr, 1, 1,
 				tileoffsetx, tileoffsety)
 		else
-			LG.draw(image, dx, dy, dr, object.scalex, object.scaley,
+			LG.draw(image, dx, dy, dr, 1, 1,
 				tileoffsetx, tileoffsety)
 		end
 	end
@@ -176,10 +175,12 @@ local function drawRecursive(node, parent, map, lerp)
 	map = map or node
 	local tag = node.tag
 	LG.push("transform")
-	local transform = node.transform
-	if transform then
-		LG.applyTransform(transform)
-	end
+	local x, y = node.x or 0, node.y or 0
+	local r = node.rotation or 0
+	local sx, sy = node.scalex or 1, node.scaley or 1
+	LG.translate(x, y)
+	LG.rotate(r)
+	LG.scale(sx, sy)
 	if not draw[tag](node, parent, map, lerp) then
 		for i = 1, #node do
 			drawRecursive(node[i], node, map, lerp)
