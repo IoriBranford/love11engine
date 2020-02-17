@@ -1,4 +1,7 @@
 local sqrt = math.sqrt
+local pi = math.pi
+local cos = math.cos
+local sin = math.sin
 local LG = love.graphics
 local LE = love.event
 local LJ = love.joystick
@@ -82,7 +85,45 @@ function Game.update(map)
 	map:setViewTransform(-lgw/2, -lgh/2, 0, lgw/640, lgh/480)
 end
 
+local function updatePlayerGun(map, player, dt)
+	local firewait = player.firewait or dt
+	firewait = firewait - dt
+	if firewait <= 0 then
+		local bullet = map:newTemplateObject(player.parent, "playershot.tx")
+		bullet.fillcolor = player.fillcolor
+		bullet.linecolor = player.linecolor
+		player:getGlobalTransform(bullet.transform)
+		local body = bullet:addBody(world, "dynamic")
+		local shape = LP.newRectangleShape(bullet.width, bullet.height)
+		local fixture = LP.newFixture(body, shape)
+		fixture:setSensor(true)
+		local r = -pi/2 + body:getAngle()
+		local speed = 1024
+		local vx, vy = speed*cos(r), speed*sin(r)
+		body:setLinearVelocity(vx, vy)
+		firewait = firewait + 1/15
+	end
+	player.firewait = firewait
+end
+
+local function updateObjectLifetimes(map, dt)
+	for id, object in pairs(map.objectsbyid) do
+		local lifetime = object.lifetime
+		if lifetime then
+			lifetime = lifetime - dt
+			object.lifetime = lifetime
+			if lifetime <= 0 then
+				map:destroyObject(id)
+			end
+		end
+	end
+end
+
 function Game.fixedUpdate(map, dt)
+	for i = 1, #players do
+		updatePlayerGun(map, players[i], dt)
+	end
+
 	world:update(dt)
 	for _, body in pairs(world:getBodies()) do
 		local id = body:getUserData()
@@ -91,6 +132,7 @@ function Game.fixedUpdate(map, dt)
 			object:updateFromBody()
 		end
 	end
+
 	local player1 = players[1]
 	local player2 = players[2]
 	local x1, y1 = player1.body:getPosition()
@@ -100,16 +142,18 @@ function Game.fixedUpdate(map, dt)
 	local perpx, perpy = dy/dist, -dx/dist
 
 	local polyline = playerlink.polyline
-	for i = 4, #polyline-2, 2 do
+	for i = 3, #polyline-3, 2 do
 		local rand = (LM.random()*2 - 1) * 8
 		local t = i/#polyline
 		local x = dx*t + perpx*rand
 		local y = dy*t + perpy*rand
-		polyline[i-1] = x
-		polyline[i  ] = y
+		polyline[i  ] = x
+		polyline[i+1] = y
 	end
 	polyline[#polyline-1] = dx
 	polyline[#polyline  ] = dy
+
+	updateObjectLifetimes(map, dt)
 end
 
 local function debugDrawBoundingBoxes(world, lerp)
