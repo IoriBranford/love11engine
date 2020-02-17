@@ -16,6 +16,7 @@ local Game = {}
 local world
 local players
 local playerlink
+local level
 
 function Game.start(map)
 	world = LP.newWorld()
@@ -94,7 +95,7 @@ local function killPlayer(map, player)
 		shard.y = player.y + cy
 		shard.linecolor = nil
 		shard.polygon = tri
-		shard.lifetime = 1
+		shard.timeleft = 1
 		local body = shard:addBody(world, "dynamic")
 		body:setLinearVelocity(16*cx, 16*cy)
 		body:setAngularVelocity(4*pi)
@@ -145,26 +146,48 @@ local function updatePlayerGun(map, player, dt)
 	player.firewait = firewait
 end
 
+local yield = coroutine.yield
+
+local function co_wait(t)
+	while t > 0 do
+		local map, dt = yield()
+		t = t - dt
+	end
+end
+
+local Moves = {}
+
+function Moves.sin(enemy)
+	enemy.body:setLinearVelocity(160*cos(enemy.time*pi), 240)
+end
+
+local function newEnemy(map, template, x, y)
+	local enemy = map:newTemplateObject(map, template)
+	enemy.x = x
+	enemy.y = y
+	enemy.time = 0
+	enemy.move = Moves[enemy.move]
+	local body = enemy:addBody(world, "dynamic")
+	local shape = LP.newRectangleShape(24, 24)
+	local fixture = LP.newFixture(body, shape)
+	fixture:setSensor(true)
+end
+
+local function co_level(map, dt)
+	local leftx = 160
+	local rightx = 480
+	local top = -32
+	co_wait(1)
+	newEnemy(map, "enemy1.tx", leftx, top)
+	newEnemy(map, "enemy1.tx", rightx, top)
+	co_wait(0.5)
+	newEnemy(map, "enemy1.tx", leftx, top)
+	newEnemy(map, "enemy1.tx", rightx, top)
+end
+
 function Game.fixedUpdate(map, dt)
 	for i = 1, #players do
 		updatePlayerGun(map, players[i], dt)
-	end
-
-	world:update(dt)
-	for _, body in pairs(world:getBodies()) do
-		local id = body:getUserData()
-		local object = map:getObjectById(id)
-		if object then
-			object:updateFromBody()
-			local lifetime = object.lifetime
-			if lifetime then
-				lifetime = lifetime - dt
-				object.lifetime = lifetime
-				if lifetime <= 0 then
-					map:destroyObject(id)
-				end
-			end
-		end
 	end
 
 	local player1 = players[1]
@@ -189,7 +212,46 @@ function Game.fixedUpdate(map, dt)
 	polyline[#polyline-1] = dx
 	polyline[#polyline  ] = dy
 
-	updateObjectLifetimes(map, dt)
+	level = level or coroutine.create(co_level)
+	if coroutine.status(level) ~= "dead" then
+		local ok, err = coroutine.resume(level, map, dt)
+		if not ok then
+			error(err)
+		end
+	end
+
+	for _, body in pairs(world:getBodies()) do
+		local id = body:getUserData()
+		local object = map:getObjectById(id)
+		if object then
+			local move = object.move
+			if move then
+				move(object, dt)
+			end
+			local time = object.time
+			if time then
+				object.time = time + dt
+			end
+		end
+	end
+
+	world:update(dt)
+
+	for _, body in pairs(world:getBodies()) do
+		local id = body:getUserData()
+		local object = map:getObjectById(id)
+		if object then
+			object:updateFromBody()
+			local timeleft = object.timeleft
+			if timeleft then
+				timeleft = timeleft - dt
+				object.timeleft = timeleft
+				if timeleft <= 0 then
+					map:destroyObject(id)
+				end
+			end
+		end
+	end
 end
 
 local function debugDrawBoundingBoxes(world, lerp)
