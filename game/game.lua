@@ -145,19 +145,6 @@ local function updatePlayerGun(map, player, dt)
 	player.firewait = firewait
 end
 
-local function updateObjectLifetimes(map, dt)
-	for id, object in pairs(map.objectsbyid) do
-		local lifetime = object.lifetime
-		if lifetime then
-			lifetime = lifetime - dt
-			object.lifetime = lifetime
-			if lifetime <= 0 then
-				map:destroyObject(id)
-			end
-		end
-	end
-end
-
 function Game.fixedUpdate(map, dt)
 	for i = 1, #players do
 		updatePlayerGun(map, players[i], dt)
@@ -169,6 +156,14 @@ function Game.fixedUpdate(map, dt)
 		local object = map:getObjectById(id)
 		if object then
 			object:updateFromBody()
+			local lifetime = object.lifetime
+			if lifetime then
+				lifetime = lifetime - dt
+				object.lifetime = lifetime
+				if lifetime <= 0 then
+					map:destroyObject(id)
+				end
+			end
 		end
 	end
 
