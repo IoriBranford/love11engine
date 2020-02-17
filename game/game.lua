@@ -94,6 +94,7 @@ local function killPlayer(map, player)
 		shard.x = player.x + cx
 		shard.y = player.y + cy
 		shard.linecolor = nil
+		shard.triangles = nil
 		shard.polygon = tri
 		shard.timeleft = 1
 		local body = shard:addBody(world, "dynamic")
