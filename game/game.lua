@@ -2,6 +2,7 @@ local sqrt = math.sqrt
 local pi = math.pi
 local cos = math.cos
 local sin = math.sin
+local atan2 = math.atan2
 local LG = love.graphics
 local LE = love.event
 local LJ = love.joystick
@@ -47,13 +48,10 @@ function Game.start(map)
 	playerlink:setParent(players[1])
 end
 
-function Game.keypressed(map, key)
-	if key == "escape" then
-		LE.quit()
-	end
-end
-
 local function readPlayerInput(player)
+	if player.visible == false then
+		return
+	end
 	local controlstick = player.controlstick or "left"
 	local controlkeys = player.controlkeys or "adws"
 	local ax, ay = 0, 0
@@ -75,6 +73,40 @@ local function readPlayerInput(player)
 	player.body:setLinearVelocity(ax*speed, ay*speed)
 end
 
+local function killPlayer(map, player)
+	player.visible = false
+	if not player.polygon then
+		return
+	end
+	local tris = LM.triangulate(player.polygon)
+	for i = 1, #tris do
+		local tri = tris[i]
+		local cx = (tri[1] + tri[3] + tri[5]) / 3
+		local cy = (tri[2] + tri[4] + tri[6]) / 3
+		for j = 1,5,2 do
+			tri[j] = tri[j] - cx
+			tri[j+1] = tri[j+1] - cy
+		end
+		local shard = map:newTemplateObject(player.parent, player)
+		shard.x = player.x + cx
+		shard.y = player.y + cy
+		shard.linecolor = nil
+		shard.polygon = tri
+		shard.lifetime = 1
+		local body = shard:addBody(world, "dynamic")
+		body:setLinearVelocity(16*cx, 16*cy)
+		body:setAngularVelocity(4*pi)
+	end
+end
+
+function Game.keypressed(map, key)
+	if key == "escape" then
+		playerlink.visible = false
+		killPlayer(map, players[1])
+		killPlayer(map, players[2])
+	end
+end
+
 function Game.update(map)
 	for i = 1, #players do
 		readPlayerInput(players[i])
@@ -86,14 +118,17 @@ function Game.update(map)
 end
 
 local function updatePlayerGun(map, player, dt)
+	if player.visible == false then
+		return
+	end
 	local firewait = player.firewait or dt
 	firewait = firewait - dt
 	if firewait <= 0 then
 		local bullet = map:newTemplateObject(player.parent, "playershot.tx")
 		bullet.fillcolor = player.fillcolor
 		bullet.linecolor = player.linecolor
-		bullet.x = player.x
-		bullet.y = player.y
+		bullet.x = player.x - bullet.width/2
+		bullet.y = player.y - bullet.height/2
 		bullet.rotation = player.rotation
 		local body = bullet:addBody(world, "dynamic")
 		local shape = LP.newRectangleShape(bullet.width, bullet.height)
