@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object>
+  <properties>
+   <property name="linecolor" type="color" value="#ffffffff"/>
+   <property name="timeleft" type="float" value="0.1"/>
+  </properties>
+  <polygon points="0.5,-9.5 -3,-2.5 -9,-5.5 -4.5,-1 -11,2.5 -3.5,4.5 -6.5,8.5 -1.5,6 1.5,12 2,5.5 7,7.5 3.5,3 10.5,2.5 4.5,-0.5 9,-5.5 2.5,-2.5"/>
+ </object>
+</template>

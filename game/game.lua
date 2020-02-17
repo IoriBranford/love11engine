@@ -15,6 +15,7 @@ local Game = {}
 
 local world
 local players
+local enemies
 local playerlink
 local level
 
@@ -42,12 +43,15 @@ function Game.start(map)
 		local player = players[i]
 		local body = player:addBody(world, "dynamic")
 		body:setFixedRotation(true)
-		local shape = LP.newCircleShape(8)
+		local shape = LP.newRectangleShape(24, 24)
 		local fixture = LP.newFixture(body, shape)
+		fixture:setUserData("player")
 	end
 
 	playerlink = map:find("named", "playerlink")
 	playerlink:setParent(players[1])
+
+	enemies = map:find("named", "enemies")
 end
 
 local function readPlayerInput(player)
@@ -75,39 +79,36 @@ local function readPlayerInput(player)
 	player.body:setLinearVelocity(ax*speed, ay*speed)
 end
 
-local function killPlayer(map, player)
-	audio.play("Explosion5.wav")
-	player.visible = false
-	if not player.polygon then
-		return
-	end
-	local tris = LM.triangulate(player.polygon)
-	for i = 1, #tris do
-		local tri = tris[i]
-		local cx = (tri[1] + tri[3] + tri[5]) / 3
-		local cy = (tri[2] + tri[4] + tri[6]) / 3
-		for j = 1,5,2 do
-			tri[j] = tri[j] - cx
-			tri[j+1] = tri[j+1] - cy
+local function killShip(map, ship)
+	audio.play(ship.killsound)
+	map:destroyObject(ship.id)
+	if ship.polygon then
+		local tris = LM.triangulate(ship.polygon)
+		for i = 1, #tris do
+			local tri = tris[i]
+			local cx = (tri[1] + tri[3] + tri[5]) / 3
+			local cy = (tri[2] + tri[4] + tri[6]) / 3
+			for j = 1,5,2 do
+				tri[j] = tri[j] - cx
+				tri[j+1] = tri[j+1] - cy
+			end
+			local shard = map:newObject(ship.parent)
+			shard.x = ship.x + cx
+			shard.y = ship.y + cy
+			shard.polygon = tri
+			shard.linecolor = ship.linecolor
+			shard.fillcolor = ship.fillcolor
+			shard.timeleft = 1
+			local body = shard:addBody(world, "dynamic")
+			body:setLinearVelocity(16*cx, 16*cy)
+			body:setAngularVelocity(4*pi)
 		end
-		local shard = map:newTemplateObject(player.parent, player)
-		shard.x = player.x + cx
-		shard.y = player.y + cy
-		shard.linecolor = nil
-		shard.triangles = nil
-		shard.polygon = tri
-		shard.timeleft = 1
-		local body = shard:addBody(world, "dynamic")
-		body:setLinearVelocity(16*cx, 16*cy)
-		body:setAngularVelocity(4*pi)
 	end
 end
 
 function Game.keypressed(map, key)
-	if key == "escape" then
-		playerlink.visible = false
-		killPlayer(map, players[1])
-		killPlayer(map, players[2])
+	if key == "f2" then
+		LE.push("load", map.filename)
 	end
 end
 
@@ -131,12 +132,13 @@ local function updatePlayerGun(map, player, dt)
 		local bullet = map:newTemplateObject(player.parent, "playershot.tx")
 		bullet.fillcolor = player.fillcolor
 		bullet.linecolor = player.linecolor
-		bullet.x = player.x - bullet.width/2
-		bullet.y = player.y - bullet.height/2
+		bullet.x = player.x
+		bullet.y = player.y
 		bullet.rotation = player.rotation
 		local body = bullet:addBody(world, "dynamic")
-		local shape = LP.newRectangleShape(bullet.width, bullet.height)
+		local shape = LP.newRectangleShape(0, 16, 16, 32)
 		local fixture = LP.newFixture(body, shape)
+		fixture:setUserData("playershot")
 		fixture:setSensor(true)
 		local r = -pi/2 + body:getAngle()
 		local speed = 1024
@@ -163,14 +165,15 @@ function Moves.sin(enemy)
 end
 
 local function newEnemy(map, template, x, y)
-	local enemy = map:newTemplateObject(map, template)
+	local enemy = map:newTemplateObject(enemies, template)
 	enemy.x = x
 	enemy.y = y
 	enemy.time = 0
 	enemy.move = Moves[enemy.move]
 	local body = enemy:addBody(world, "dynamic")
-	local shape = LP.newRectangleShape(24, 24)
+	local shape = LP.newRectangleShape(32, 32)
 	local fixture = LP.newFixture(body, shape)
+	fixture:setUserData("enemy")
 	fixture:setSensor(true)
 end
 
@@ -186,6 +189,43 @@ local function co_level(map, dt)
 	newEnemy(map, "enemy1.tx", rightx, top)
 end
 
+local function tagsMatch(f1, f2, t1, t2)
+	local tag1, tag2 = f1:getUserData(), f2:getUserData()
+	local id1, id2 = f1:getBody():getUserData(), f2:getBody():getUserData()
+	if tag1 == t1 and tag2 == t2 then
+		return id1, id2
+	elseif tag1 == t2 and tag2 == t1 then
+		return id2, id1
+	end
+end
+
+local function handleCollision(map, contact)
+	local f1, f2 = contact:getFixtures()
+	local playerid, enemyid = tagsMatch(f1, f2, "player", "enemy")
+	if playerid and enemyid then
+		playerlink.visible = false
+		killShip(map, players[1])
+		killShip(map, players[2])
+		players[2] = nil
+		players[1] = nil
+		local enemy = map:getObjectById(enemyid)
+		killShip(map, enemy)
+	end
+	local playershotid, enemyid = tagsMatch(f1, f2, "playershot", "enemy")
+	if playershotid and enemyid then
+		local enemy = map:getObjectById(enemyid)
+		killShip(map, enemy)
+		local bullet = map:getObjectById(playershotid)
+		local spark = map:newTemplateObject(bullet.parent, "hitspark.tx")
+		spark.fillcolor = bullet.fillcolor
+		spark.x = bullet.x
+		spark.y = bullet.y
+		spark.rotation = bullet.rotation
+		local body = spark:addBody(world, "dynamic")
+		map:destroyObject(playershotid)
+	end
+end
+
 function Game.fixedUpdate(map, dt)
 	for i = 1, #players do
 		updatePlayerGun(map, players[i], dt)
@@ -193,25 +233,27 @@ function Game.fixedUpdate(map, dt)
 
 	local player1 = players[1]
 	local player2 = players[2]
-	local x1, y1 = player1.body:getPosition()
-	local x2, y2 = player2.body:getPosition()
-	local dx, dy = x2-x1, y2-y1
-	local dist = sqrt(dx*dx + dy*dy)
-	local perpx, perpy = dy/dist, -dx/dist
+	if player1 and player2 then
+		local x1, y1 = player1.body:getPosition()
+		local x2, y2 = player2.body:getPosition()
+		local dx, dy = x2-x1, y2-y1
+		local dist = sqrt(dx*dx + dy*dy)
+		local perpx, perpy = dy/dist, -dx/dist
 
-	local polyline = playerlink.polyline
-	polyline[1] = 0
-	polyline[2] = 0
-	for i = 3, #polyline-3, 2 do
-		local rand = (LM.random()*2 - 1) * 8
-		local t = i/#polyline
-		local x = dx*t + perpx*rand
-		local y = dy*t + perpy*rand
-		polyline[i  ] = x
-		polyline[i+1] = y
+		local polyline = playerlink.polyline
+		polyline[1] = 0
+		polyline[2] = 0
+		for i = 3, #polyline-3, 2 do
+			local rand = (LM.random()*2 - 1) * 8
+			local t = i/#polyline
+			local x = dx*t + perpx*rand
+			local y = dy*t + perpy*rand
+			polyline[i  ] = x
+			polyline[i+1] = y
+		end
+		polyline[#polyline-1] = dx
+		polyline[#polyline  ] = dy
 	end
-	polyline[#polyline-1] = dx
-	polyline[#polyline  ] = dy
 
 	level = level or coroutine.create(co_level)
 	if coroutine.status(level) ~= "dead" then
@@ -226,7 +268,7 @@ function Game.fixedUpdate(map, dt)
 		local object = map:getObjectById(id)
 		if object then
 			local move = object.move
-			if move then
+			if type(move)=="function" then
 				move(object, dt)
 			end
 			local time = object.time
@@ -238,11 +280,18 @@ function Game.fixedUpdate(map, dt)
 
 	world:update(dt)
 
+	for _, contact in pairs(world:getContacts()) do
+		if contact:isTouching() then
+			handleCollision(map, contact)
+		end
+	end
+
 	for _, body in pairs(world:getBodies()) do
 		local id = body:getUserData()
 		local object = map:getObjectById(id)
 		if object then
 			object:updateFromBody()
+
 			local timeleft = object.timeleft
 			if timeleft then
 				timeleft = timeleft - dt

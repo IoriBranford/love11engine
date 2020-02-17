@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="player_left">
+  <properties>
+   <property name="controlkeys" value="adws"/>
+   <property name="controlstick" value="left"/>
+   <property name="fillcolor" type="color" value="#ffff0080"/>
+   <property name="killsound" type="file" value="Explosion5.wav"/>
+   <property name="linecolor" type="color" value="#ffffffff"/>
+  </properties>
+  <polygon points="0,0 -8,-32 -16,0 -32,32 0,24 32,32 16,0 8,-32"/>
+ </object>
+</template>

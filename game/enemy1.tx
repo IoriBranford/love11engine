@@ -3,6 +3,7 @@
  <object>
   <properties>
    <property name="fillcolor" type="color" value="#ffaa55ff"/>
+   <property name="killsound" type="file" value="Explosion17.wav"/>
    <property name="linecolor" type="color" value="#ff000000"/>
    <property name="move" value="sin"/>
    <property name="timeleft" type="float" value="2.5"/>

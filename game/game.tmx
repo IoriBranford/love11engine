@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.2" tiledversion="1.3.2" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" backgroundcolor="#008040" nextlayerid="5" nextobjectid="10">
+<map version="1.2" tiledversion="1.3.2" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" backgroundcolor="#008040" nextlayerid="6" nextobjectid="11">
  <properties>
   <property name="script" type="file" value="game.lua"/>
  </properties>
@@ -9,36 +9,28 @@
   </data>
  </layer>
  <objectgroup id="3" name="worldobjects">
-  <object id="1" name="wall" x="296" y="0" width="48" height="480">
+  <object id="1" name="wall" x="304" y="0" width="32" height="480">
    <properties>
     <property name="fillcolor" type="color" value="#ff808080"/>
     <property name="linecolor" type="color" value="#ffffffff"/>
    </properties>
   </object>
-  <object id="4" name="wall" x="0" y="32" width="32" height="416"/>
-  <object id="5" name="wall" x="0" y="448" width="640" height="32"/>
-  <object id="6" name="wall" x="608" y="32" width="32" height="416"/>
-  <object id="7" name="wall" x="0" y="0" width="640" height="32"/>
+  <object id="4" name="wall" x="0" y="16" width="16" height="448"/>
+  <object id="5" name="wall" x="0" y="464" width="640" height="16"/>
+  <object id="6" name="wall" x="624" y="16" width="16" height="448"/>
+  <object id="7" name="wall" x="0" y="0" width="640" height="16"/>
  </objectgroup>
+ <objectgroup id="5" name="enemies"/>
  <objectgroup id="2" name="players">
-  <object id="2" name="player_right" x="480" y="416">
+  <object id="2" template="player.tx" name="player_right" x="480" y="416">
    <properties>
     <property name="controlkeys" value="jlik"/>
     <property name="controlstick" value="right"/>
     <property name="fillcolor" type="color" value="#ff0080ff"/>
     <property name="linecolor" type="color" value="#ffffffff"/>
    </properties>
-   <polygon points="0,0 -8,-32 -16,0 -32,32 0,24 32,32 16,0 8,-32"/>
   </object>
-  <object id="3" name="player_left" x="160" y="416">
-   <properties>
-    <property name="controlkeys" value="adws"/>
-    <property name="controlstick" value="left"/>
-    <property name="fillcolor" type="color" value="#ffff0080"/>
-    <property name="linecolor" type="color" value="#ffffffff"/>
-   </properties>
-   <polygon points="0,0 -8,-32 -16,0 -32,32 0,24 32,32 16,0 8,-32"/>
-  </object>
+  <object id="3" template="player.tx" x="160" y="416"/>
   <object id="8" name="playerlink" x="160" y="416">
    <properties>
     <property name="linecolor" type="color" value="#ffffff7f"/>
