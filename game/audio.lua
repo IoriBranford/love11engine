@@ -4,7 +4,7 @@ local Audio = {}
 
 local function newSource(filename, sourcetype)
 	local sounddata = assets.get(filename, sourcetype)
-	return sounddata:clone()
+	return sounddata and sounddata:clone()
 end
 Audio.newSource = newSource
 
