@@ -163,9 +163,7 @@ function Map.forEachLayerTile(map, layer, func, ...)
 	end
 end
 
-local function setObjectTile(object, tile, scalex, scaley)
-	scalex = scalex or 1
-	scaley = scaley or 1
+local function setObjectTile(object, tile, flipx, flipy)
 	if tile then
 		local animation = tile.animation
 		if animation then
@@ -180,15 +178,15 @@ local function setObjectTile(object, tile, scalex, scaley)
 		local height = object.height
 		width = width or tilewidth
 		height = height or tileheight
-		scalex = scalex*width/tilewidth
-		scaley = scaley*height/tileheight
+		flipx = flipx or 1
+		flipy = flipy or 1
+		object.scalex = flipx*width/tilewidth
+		object.scaley = flipx*height/tileheight
 		object.width = width
 		object.height = height
 	end
 
 	object.tile = tile
-	object.scalex = scalex
-	object.scaley = scaley
 end
 
 function Map.setObjectGid(map, object, gid)
@@ -313,7 +311,11 @@ local function newObject(map, parent)
 	local object = {
 		tag = "object",
 		id = id,
-		transform = LM.newTransform(),
+		x = 0,
+		y = 0,
+		rotation = 0,
+		scalex = 1,
+		scaley = 1,
 		visible = true,
 	}
 	setmetatable(object, Object)

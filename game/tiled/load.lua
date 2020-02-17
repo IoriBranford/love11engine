@@ -486,7 +486,8 @@ function load.layer(layer, map, dir)
 			local chunk = chunks[i]
 			layer[#layer + 1] = chunk
 			load.layer(chunk, map, dir)
-			chunk.transform:apply(maptilescale)
+			chunk.x = chunk.x*maptilewidth
+			chunk.y = chunk.y*maptileheight
 		end
 		layer.chunks = nil
 		return layer
@@ -592,12 +593,9 @@ local function loadRecursive(doc, parent, dir)
 		local rotation = rad(node.rotation or 0)
 		node.offsetx = nil
 		node.offsety = nil
-		node.x = nil
-		node.y = nil
-		node.rotation = nil
-		if x and y then
-			node.transform = LM.newTransform(x, y, rotation)
-		end
+		node.x = x
+		node.y = y
+		node.rotation = rotation
 	end
 	return node
 end

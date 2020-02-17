@@ -13,42 +13,25 @@ local function getGlobalTransform(object, globaltransform)
 	if not object then
 		return
 	end
-	globaltransform = globaltransform or LM.newTransform()
 	local parent = object.parent
 	if parent then
 		getGlobalTransform(parent, globaltransform)
 	end
-	local transform = object.transform
-	if transform then
-		globaltransform:apply(transform)
-	end
+	globaltransform:translate(object.x or 0, object.y or 0)
+	globaltransform:rotate(object.rotation or 0)
+	globaltransform:scale(object.scalex or 1, object.scaley or 1)
 	return globaltransform
 end
 Object.getGlobalTransform = getGlobalTransform
 
-local function getGlobalPosition(object, x, y)
-	x = x or 0
-	y = y or 0
-	if not object then
-		return x, y
-	end
-	local transform = object.transform
-	if transform then
-		x, y = transform:transformPoint(x, y)
-	end
-	local parent = object.parent
-	if parent then
-		return getGlobalPosition(parent, x, y)
-	end
-	return x, y
-end
-Object.getGlobalPosition = getGlobalPosition
-
 local setParent_global = LM.newTransform()
 local setParent_parentglobal = LM.newTransform()
 
-function Object.setParent(object, parent)
+function Object.setParent(object, newparent)
 	local oldparent = object.parent
+	if newparent == oldparent then
+		return
+	end
 	if oldparent then
 		for i = 1, #oldparent do
 			if oldparent[i] == object then
@@ -58,19 +41,22 @@ function Object.setParent(object, parent)
 		end
 	end
 
-	local transform = object.transform or LM.newTransform()
-	object.transform = transform
 	local newtransform = getGlobalTransform(object, setParent_global:reset())
 
-	if parent then
-		getGlobalTransform(parent, setParent_parentglobal:reset())
+	if newparent then
+		getGlobalTransform(newparent, setParent_parentglobal:reset())
 		newtransform = setParent_parentglobal:inverse()
 		newtransform:apply(setParent_global)
-		parent[#parent+1] = object
+		newparent[#newparent+1] = object
 	end
 
-	transform:setMatrix(newtransform:getMatrix())
-	object.parent = parent
+	local xx, yx, zx, x, xy, yy, zy, y = newtransform:getMatrix()
+	object.x = x
+	object.y = y
+	object.rotation = atan2(xy, xx)
+	object.scalex = xx
+	object.scaley = yy
+	object.parent = newparent
 end
 
 function Object.setTemplate(object, template)
@@ -110,33 +96,18 @@ function Object.setAseprite(object, aseprite, animation, anchorx, anchory)
 end
 
 function Object.addBody(object, world, bodytype)
-	local parent = object.parent
-	if parent then
-		local px, py = getGlobalPosition(parent)
-		if px ~= 0 or py ~= 0 then
-			print("Warning: parent transform will not apply to physics body")
-		end
-	end
-
-	local transform = getGlobalTransform(object)
-	local xx, yx, zx, x, xy, yy, zy, y = transform:getMatrix()
-	local r = atan2(xy, xx)
-	local body = LP.newBody(world, x, y, bodytype)
-	body:setAngle(r)
+	local body = LP.newBody(world, object.x, object.y, bodytype)
+	body:setAngle(object.rotation)
 	body:setUserData(object.id)
 	object.body = body
-	object:updateFromBody()
 	return body
 end
 
 function Object.updateFromBody(object)
 	local body = object.body
 	if body then
-		local x, y = body:getPosition()
-		local r = body:getAngle()
-		local transform = object.transform or LM.newTransform()
-		object.transform = transform
-		transform:setTransformation(x, y, r)
+		object.x, object.y = body:getPosition()
+		object.rotation = body:getAngle()
 	end
 end
 
