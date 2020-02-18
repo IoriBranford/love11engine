@@ -79,9 +79,8 @@ local function readPlayerInput(player)
 	player.body:setLinearVelocity(ax*speed, ay*speed)
 end
 
-local function killShip(map, ship)
+local function knockoutShip(map, ship)
 	audio.play(ship.killsound)
-	map:destroyObject(ship.id)
 	local polygon = ship.polygon
 	if polygon then
 		local time = ship.shardtime or .5
@@ -109,6 +108,16 @@ local function killShip(map, ship)
 			body:setLinearVelocity(1.5*speed*cx, 1.5*speed*cy)
 			body:setAngularVelocity(spin*pi)
 		end
+	end
+end
+
+local function killShip(map, ship)
+	knockoutShip(map, ship)
+	local polygon = ship.polygon
+	if polygon then
+		local time = ship.shardtime or .5
+		local speed = ship.shardspeed or 30
+		local spin = ship.shardspin or 4
 
 		local tris = ship.triangles or LM.triangulate(polygon)
 		for i = 1, #tris do
@@ -133,6 +142,7 @@ local function killShip(map, ship)
 			body:setAngularVelocity(spin*pi)
 		end
 	end
+	map:destroyObject(ship.id)
 end
 
 function Game.keypressed(map, key)
@@ -203,6 +213,10 @@ local function newEnemy(map, template, x, y)
 	return enemy
 end
 
+function Moves.defeated(enemy)
+	enemy.body:applyForce(0, 120)
+end
+
 function Moves.sin(enemy)
 	enemy.body:setLinearVelocity(320*cos(enemy.time*pi), 120)
 end
@@ -213,12 +227,12 @@ end
 
 local function co_level(map, dt)
 	local leftx = 240
-	local rightx = 320+240
+	local rightx = 320+240-160
 	local top = -32
 	co_wait(1)
 	for i = 1, 20 do
 		newEnemy(map, "enemy1.tx", leftx, top)
-		newEnemy(map, "enemy1.tx", rightx, top)
+		newEnemy(map, "enemy1.tx", rightx, top).time = 1
 		co_wait(0.5)
 	end
 end
@@ -231,6 +245,31 @@ local function tagsMatch(f1, f2, t1, t2)
 	elseif tag1 == t2 and tag2 == t1 then
 		return id2, id1
 	end
+end
+
+local function defeatEnemy(map, enemy)
+	if enemy.move == Moves.defeated then
+		return
+	end
+	knockoutShip(map, enemy)
+	local body = enemy.body
+	if enemy.x < 320 then
+		body:setLinearVelocity(120, 0)
+		body:setAngularVelocity(pi)
+	else
+		body:setLinearVelocity(-120, 0)
+		body:setAngularVelocity(-pi)
+	end
+	for _, fixture in pairs(body:getFixtures()) do
+		fixture:setUserData("defeated")
+	end
+	enemy.time = 0
+	enemy.linecolor = nil
+	local fillcolor = enemy.fillcolor
+	for i = 1, 3 do
+		fillcolor[i] = fillcolor[i]/2
+	end
+	enemy.move = Moves.defeated
 end
 
 local function handleCollision(map, contact)
@@ -248,14 +287,15 @@ local function handleCollision(map, contact)
 	local playershotid, enemyid = tagsMatch(f1, f2, "playershot", "enemy")
 	if playershotid and enemyid then
 		local enemy = map:getObjectById(enemyid)
-		killShip(map, enemy)
+		defeatEnemy(map, enemy)
+
 		local bullet = map:getObjectById(playershotid)
 		local spark = map:newTemplateObject(bullet.parent, "hitspark.tx")
 		spark.fillcolor = bullet.fillcolor
 		spark.x = bullet.x
 		spark.y = bullet.y
 		spark.rotation = bullet.rotation
-		local body = spark:addBody(world, "dynamic")
+		spark:addBody(world, "dynamic")
 		map:destroyObject(playershotid)
 	end
 end
