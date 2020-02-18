@@ -6,6 +6,8 @@
    <property name="killsound" type="file" value="Explosion17.wav"/>
    <property name="linecolor" type="color" value="#ff000000"/>
    <property name="move" value="cos"/>
+   <property name="shardspeed" type="float" value="5"/>
+   <property name="shardtime" type="float" value=".25"/>
    <property name="timeleft" type="float" value="10"/>
   </properties>
   <polygon points="0,8 -8,0 -16,24 -16,8 -24,-8 -8,-16 -8,-24 0,-16 8,-24 8,-16 24,-8 16,8 16,24 8,0"/>

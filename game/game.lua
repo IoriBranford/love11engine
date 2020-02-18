@@ -82,10 +82,40 @@ end
 local function killShip(map, ship)
 	audio.play(ship.killsound)
 	map:destroyObject(ship.id)
-	if ship.polygon then
-		local tris = LM.triangulate(ship.polygon)
+	local polygon = ship.polygon
+	if polygon then
+		local time = ship.shardtime or .5
+		local speed = ship.shardspeed or 30
+		local spin = ship.shardspin or 4
+
+		for i = 1, #polygon-3, 2 do
+			local x1 = polygon[i+0]
+			local y1 = polygon[i+1]
+			local x2 = polygon[i+2]
+			local y2 = polygon[i+3]
+			local cx = (x1+x2) / 2
+			local cy = (y1+y2) / 2
+			x1 = x1 - cx
+			y1 = y1 - cy
+			x2 = x2 - cx
+			y2 = y2 - cy
+			local shard = map:newObject(ship.parent)
+			shard.x = ship.x + cx
+			shard.y = ship.y + cy
+			shard.polyline = { x1, y1, x2, y2 }
+			shard.linecolor = ship.linecolor
+			shard.timeleft = time
+			local body = shard:addBody(world, "dynamic")
+			body:setLinearVelocity(1.5*speed*cx, 1.5*speed*cy)
+			body:setAngularVelocity(spin*pi)
+		end
+
+		local tris = ship.triangles or LM.triangulate(polygon)
 		for i = 1, #tris do
 			local tri = tris[i]
+			tri = { tri[1], tri[2],
+				tri[3], tri[4],
+				tri[5], tri[6] }
 			local cx = (tri[1] + tri[3] + tri[5]) / 3
 			local cy = (tri[2] + tri[4] + tri[6]) / 3
 			for j = 1,5,2 do
@@ -96,12 +126,11 @@ local function killShip(map, ship)
 			shard.x = ship.x + cx
 			shard.y = ship.y + cy
 			shard.polygon = tri
-			shard.linecolor = ship.linecolor
 			shard.fillcolor = ship.fillcolor
-			shard.timeleft = 1
+			shard.timeleft = time
 			local body = shard:addBody(world, "dynamic")
-			body:setLinearVelocity(16*cx, 16*cy)
-			body:setAngularVelocity(4*pi)
+			body:setLinearVelocity(speed*cx, speed*cy)
+			body:setAngularVelocity(spin*pi)
 		end
 	end
 end
