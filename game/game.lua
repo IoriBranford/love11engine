@@ -160,10 +160,6 @@ end
 
 local Moves = {}
 
-function Moves.sin(enemy)
-	enemy.body:setLinearVelocity(160*cos(enemy.time*pi), 240)
-end
-
 local function newEnemy(map, template, x, y)
 	local enemy = map:newTemplateObject(enemies, template)
 	enemy.x = x
@@ -175,18 +171,27 @@ local function newEnemy(map, template, x, y)
 	local fixture = LP.newFixture(body, shape)
 	fixture:setUserData("enemy")
 	fixture:setSensor(true)
+	return enemy
+end
+
+function Moves.sin(enemy)
+	enemy.body:setLinearVelocity(320*cos(enemy.time*pi), 120)
+end
+
+function Moves.cos(enemy)
+	enemy.body:setLinearVelocity(-320*sin(enemy.time*pi), 120)
 end
 
 local function co_level(map, dt)
-	local leftx = 160
-	local rightx = 480
+	local leftx = 240
+	local rightx = 320+240
 	local top = -32
 	co_wait(1)
-	newEnemy(map, "enemy1.tx", leftx, top)
-	newEnemy(map, "enemy1.tx", rightx, top)
-	co_wait(0.5)
-	newEnemy(map, "enemy1.tx", leftx, top)
-	newEnemy(map, "enemy1.tx", rightx, top)
+	for i = 1, 20 do
+		newEnemy(map, "enemy1.tx", leftx, top)
+		newEnemy(map, "enemy1.tx", rightx, top)
+		co_wait(0.5)
+	end
 end
 
 local function tagsMatch(f1, f2, t1, t2)
