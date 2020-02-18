@@ -66,7 +66,13 @@ function Object.setTemplate(object, template)
 	object.template = template
 	local gid = object.gid or 0
 	for k, v in pairs(template) do
-		if object[k] == nil then
+		local t = type(v)
+		if t == "lightuserdata" or t == "userdata" then
+
+		elseif object[k] == nil then
+			if type(v) == "table" then
+				v = tablex.deepcopy(v)
+			end
 			object[k] = v
 		end
 	end
