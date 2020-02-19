@@ -2,6 +2,7 @@ local sqrt = math.sqrt
 local pi = math.pi
 local cos = math.cos
 local sin = math.sin
+local abs = math.abs
 local atan2 = math.atan2
 local LG = love.graphics
 local LE = love.event
@@ -13,13 +14,15 @@ local audio = require "audio"
 
 local Game = {}
 
+local map
 local world
 local players
 local enemies
 local playerlink
 local level
 
-function Game.start(map)
+function Game.start(m)
+	map = m
 	world = LP.newWorld()
 	local worldbody = LP.newBody(world)
 
@@ -79,69 +82,74 @@ local function readPlayerInput(player)
 	player.body:setLinearVelocity(ax*speed, ay*speed)
 end
 
-local function knockoutShip(map, ship)
-	audio.play(ship.killsound)
-	local polygon = ship.polygon
-	if polygon then
-		local time = ship.shardtime or .5
-		local speed = ship.shardspeed or 30
-		local spin = ship.shardspin or 4
-
-		for i = 1, #polygon-3, 2 do
-			local x1 = polygon[i+0]
-			local y1 = polygon[i+1]
-			local x2 = polygon[i+2]
-			local y2 = polygon[i+3]
-			local cx = (x1+x2) / 2
-			local cy = (y1+y2) / 2
-			x1 = x1 - cx
-			y1 = y1 - cy
-			x2 = x2 - cx
-			y2 = y2 - cy
-			local shard = map:newObject(ship.parent)
-			shard.x = ship.x + cx
-			shard.y = ship.y + cy
-			shard.polyline = { x1, y1, x2, y2 }
-			shard.linecolor = ship.linecolor
-			shard.timeleft = time
-			local body = shard:addBody(world, "dynamic")
-			body:setLinearVelocity(1.5*speed*cx, 1.5*speed*cy)
-			body:setAngularVelocity(spin*pi)
-		end
+local function explodeLines(polygon, linecolor, originx, originy, parent, force, lifetime)
+	if not polygon or not linecolor then
+		return
+	end
+	for i = 1, #polygon-3, 2 do
+		local x1 = polygon[i+0]
+		local y1 = polygon[i+1]
+		local x2 = polygon[i+2]
+		local y2 = polygon[i+3]
+		local cx = (x1+x2) / 2
+		local cy = (y1+y2) / 2
+		x1 = x1 - cx
+		y1 = y1 - cy
+		x2 = x2 - cx
+		y2 = y2 - cy
+		local shard = map:newObject(parent)
+		shard.x = originx + cx
+		shard.y = originy + cy
+		shard.polyline = { x1, y1, x2, y2 }
+		shard.linecolor = linecolor
+		shard.timeleft = lifetime
+		local body = shard:addBody(world, "dynamic")
+		body:setLinearVelocity(force*cx, force*cy)
+		body:setAngularVelocity(force*pi)
 	end
 end
 
-local function killShip(map, ship)
-	knockoutShip(map, ship)
-	local polygon = ship.polygon
-	if polygon then
-		local time = ship.shardtime or .5
-		local speed = ship.shardspeed or 30
-		local spin = ship.shardspin or 4
-
-		local tris = ship.triangles or LM.triangulate(polygon)
-		for i = 1, #tris do
-			local tri = tris[i]
-			tri = { tri[1], tri[2],
-				tri[3], tri[4],
-				tri[5], tri[6] }
-			local cx = (tri[1] + tri[3] + tri[5]) / 3
-			local cy = (tri[2] + tri[4] + tri[6]) / 3
-			for j = 1,5,2 do
-				tri[j] = tri[j] - cx
-				tri[j+1] = tri[j+1] - cy
-			end
-			local shard = map:newObject(ship.parent)
-			shard.x = ship.x + cx
-			shard.y = ship.y + cy
-			shard.polygon = tri
-			shard.fillcolor = ship.fillcolor
-			shard.timeleft = time
-			local body = shard:addBody(world, "dynamic")
-			body:setLinearVelocity(speed*cx, speed*cy)
-			body:setAngularVelocity(spin*pi)
-		end
+local function explodeTriangles(tris, fillcolor, originx, originy, parent, force, lifetime)
+	if not tris or not fillcolor then
+		return
 	end
+	for i = 1, #tris do
+		local tri = tris[i]
+		local cx = (tri[1] + tri[3] + tri[5]) / 3
+		local cy = (tri[2] + tri[4] + tri[6]) / 3
+		tri = { tri[1]-cx, tri[2]-cy,
+			tri[3]-cx, tri[4]-cy,
+			tri[5]-cx, tri[6]-cy }
+
+		local shard = map:newObject(parent)
+		shard.x = originx + cx
+		shard.y = originy + cy
+		shard.polygon = tri
+		shard.fillcolor = fillcolor
+		shard.timeleft = lifetime
+		local body = shard:addBody(world, "dynamic")
+		body:setLinearVelocity(force*cx, force*cy)
+		body:setAngularVelocity(force*pi)
+	end
+end
+
+local function knockoutShip(map, ship)
+	audio.play(ship.killsound)
+	explodeLines(ship.polygon, ship.linecolor, ship.x, ship.y, ship.parent,
+		ship.explodeforce, ship.explodetime)
+end
+
+local function killShip(map, ship)
+	for i = 1, #ship do
+		local child = ship[i]
+		child:setParent(ship.parent)
+		killShip(map, child)
+	end
+	audio.play(ship.killsound)
+	explodeLines(ship.polygon, ship.linecolor, ship.x, ship.y, ship.parent,
+		ship.explodeforce, ship.explodetime)
+	explodeTriangles(ship.triangles, ship.fillcolor, ship.x, ship.y, ship.parent,
+		ship.explodeforce, ship.explodetime)
 	map:destroyObject(ship.id)
 end
 
@@ -243,15 +251,26 @@ local function getPlayerLinkPosition(enemy)
 	return pos
 end
 
+local function haloCrackle(halo)
+	local radius = halo.radius
+	local polygon = halo.polygon
+	local numpoints = #polygon/2
+	local angle = 0
+	local dangle = 2*pi/numpoints
+	for i = 1, #polygon-1, 2 do
+		local rand = (LM.random()*2 - 1) * 8
+		local r = radius + rand
+		polygon[i] = r*cos(angle)
+		polygon[i+1] = r*sin(angle)
+		angle = angle + dangle
+	end
+end
+
 function Moves.held(enemy)
 	local player1 = players[1]
 	local player2 = players[2]
 	if not player1 or not player2 then
-		enemy.body:setLinearVelocity(0, 0)
-		enemy.move = Moves.defeated
-		for _, fixture in pairs(enemy.body:getFixtures()) do
-			fixture:setUserData("defeated")
-		end
+		killShip(map, enemy)
 		return
 	end
 
@@ -265,7 +284,10 @@ function Moves.held(enemy)
 	local desty = p1y + dy*playerlinkpos
 	local vx = (destx - ex)*30
 	local vy = (desty - ey)*30
+
 	enemy.body:setLinearVelocity(vx, vy)
+
+	haloCrackle(enemy.halo)
 end
 
 function Moves.defeated(enemy)
@@ -278,6 +300,38 @@ function Moves.defeated(enemy)
 			fixture:setUserData("held")
 		end
 		enemy.body:setLinearVelocity(0, 0)
+
+		local maxx, maxy = 0, 0
+		local polygon = enemy.polygon
+		for i = 1, #polygon-1, 2 do
+			local x = polygon[i]
+			local y = polygon[i+1]
+			if abs(x) > abs(maxx) and abs(y) > abs(maxy) then
+				maxx = x
+				maxy = y
+			end
+		end
+		local radius = sqrt(maxx*maxx + maxy*maxy)
+		local halo = map:newObject(enemy)
+		enemy.halo = halo
+		halo.radius = radius
+		halo.x = 0
+		halo.y = 0
+		halo.scalex = 1
+		halo.scaley = 1
+		halo.linecolor = playerlink.linecolor
+		halo.explodeforce = enemy.explodeforce or 15
+		halo.explodetime = enemy.explodetime or .25
+		local angle = 0
+		local numpoints = 16
+		local dangle = 2*pi/numpoints
+		polygon = {}
+		halo.polygon = polygon
+		for i = 1, numpoints do
+			polygon[#polygon+1] = radius*cos(angle)
+			polygon[#polygon+1] = radius*sin(angle)
+			angle = angle + dangle
+		end
 	else
 		enemy.body:applyForce(0, 120)
 	end
@@ -444,6 +498,9 @@ function Game.fixedUpdate(map, dt)
 				timeleft = timeleft - dt
 				object.timeleft = timeleft
 				if timeleft <= 0 then
+					for i = 1, #object do
+						map:destroyObject(object[i].id)
+					end
 					map:destroyObject(id)
 				end
 			end

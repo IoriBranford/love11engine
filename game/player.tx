@@ -7,8 +7,8 @@
    <property name="fillcolor" type="color" value="#ffff0080"/>
    <property name="killsound" type="file" value="Explosion5.wav"/>
    <property name="linecolor" type="color" value="#ffffffff"/>
-   <property name="shardspeed" type="float" value="15"/>
-   <property name="shardtime" type="float" value="1"/>
+   <property name="explodeforce" type="float" value="15"/>
+   <property name="explodetime" type="float" value="1"/>
   </properties>
   <polygon points="0,0 -8,-32 -16,0 -32,32 0,24 32,32 16,0 8,-32"/>
  </object>
