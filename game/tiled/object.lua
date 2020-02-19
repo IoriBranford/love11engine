@@ -1,6 +1,7 @@
 local pairs = pairs
 local type = type
 local atan2 = math.atan2
+local cos = math.cos
 local assets = require "assets"
 local tablex = require "pl.tablex"
 local LM = love.math
@@ -53,9 +54,11 @@ function Object.setParent(object, newparent)
 	local xx, yx, zx, x, xy, yy, zy, y = newtransform:getMatrix()
 	object.x = x
 	object.y = y
-	object.rotation = atan2(xy, xx)
-	object.scalex = xx
-	object.scaley = yy
+	local rotation = atan2(xy, xx)
+	object.rotation = rotation
+	local cosr = cos(rotation)
+	object.scalex = xx / cosr
+	object.scaley = yy / cosr
 	object.parent = newparent
 end
 
