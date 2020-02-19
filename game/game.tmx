@@ -15,10 +15,30 @@
     <property name="linecolor" type="color" value="#ffffffff"/>
    </properties>
   </object>
-  <object id="4" name="wall" x="0" y="16" width="16" height="448"/>
-  <object id="5" name="wall" x="0" y="464" width="640" height="16"/>
-  <object id="6" name="wall" x="624" y="16" width="16" height="448"/>
-  <object id="7" name="wall" x="0" y="0" width="640" height="16"/>
+  <object id="4" name="wall" x="0" y="16" width="16" height="448">
+   <properties>
+    <property name="fillcolor" type="color" value="#ff808080"/>
+    <property name="linecolor" type="color" value="#ffffffff"/>
+   </properties>
+  </object>
+  <object id="5" name="wall" x="0" y="464" width="640" height="16">
+   <properties>
+    <property name="fillcolor" type="color" value="#ff808080"/>
+    <property name="linecolor" type="color" value="#ffffffff"/>
+   </properties>
+  </object>
+  <object id="6" name="wall" x="624" y="16" width="16" height="448">
+   <properties>
+    <property name="fillcolor" type="color" value="#ff808080"/>
+    <property name="linecolor" type="color" value="#ffffffff"/>
+   </properties>
+  </object>
+  <object id="7" name="wall" x="0" y="0" width="640" height="16">
+   <properties>
+    <property name="fillcolor" type="color" value="#ff808080"/>
+    <property name="linecolor" type="color" value="#ffffffff"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="5" name="enemies"/>
  <objectgroup id="2" name="players">
