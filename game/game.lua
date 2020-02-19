@@ -270,7 +270,7 @@ local function haloCrackle(halo)
 	end
 end
 
-function Moves.held(enemy)
+function Moves.held(enemy, dt)
 	local player1 = players[1]
 	local player2 = players[2]
 	if not player1 or not player2 then
@@ -284,6 +284,12 @@ function Moves.held(enemy)
 	local dx, dy = p2x-p1x, p2y-p1y
 
 	local playerlinkpos = enemy.playerlinkpos
+	if playerlinkpos < .1 then
+		playerlinkpos = playerlinkpos + dt
+	elseif playerlinkpos > .9 then
+		playerlinkpos = playerlinkpos - dt
+	end
+	enemy.playerlinkpos = playerlinkpos
 	local destx = p1x + dx*playerlinkpos
 	local desty = p1y + dy*playerlinkpos
 	local vx = (destx - ex)*30
