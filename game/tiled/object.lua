@@ -118,6 +118,13 @@ function Object.updateFromBody(object)
 end
 
 function Object.onDestroy(object)
+	local parent = object.parent
+	for i = 1, #object do
+		local child = object[i]
+		if child and child.setParent then
+			child:setParent(parent)
+		end
+	end
 	object:setParent()
 	local body = object.body
 	if body then
