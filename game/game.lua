@@ -213,8 +213,74 @@ local function newEnemy(map, template, x, y)
 	return enemy
 end
 
+local function getPlayerLinkPosition(enemy)
+	local player1 = players[1]
+	local player2 = players[2]
+	if not player1 or not player2 then
+		return
+	end
+
+	local ex, ey = enemy.body:getPosition()
+	local p1x, p1y = player1.body:getPosition()
+	local p2x, p2y = player2.body:getPosition()
+	local dx, dy = p2x-p1x, p2y-p1y
+	local p1ex, p1ey = ex - p1x, ey - p1y
+	local dot = dx*p1ex + dy*p1ey
+	local playersdistsq = dx*dx + dy*dy
+	if dot < 0 or dot > playersdistsq then
+		return
+	end
+
+	local pos = dot/playersdistsq
+	local projx = dx*pos
+	local projy = dy*pos
+	local rejx = p1ex - projx
+	local rejy = p1ey - projy
+	local rejsq = rejx*rejx + rejy*rejy
+	if rejsq > 32*32 then
+		return
+	end
+	return pos
+end
+
+function Moves.held(enemy)
+	local player1 = players[1]
+	local player2 = players[2]
+	if not player1 or not player2 then
+		enemy.body:setLinearVelocity(0, 0)
+		enemy.move = Moves.defeated
+		for _, fixture in pairs(enemy.body:getFixtures()) do
+			fixture:setUserData("defeated")
+		end
+		return
+	end
+
+	local ex, ey = enemy.body:getPosition()
+	local p1x, p1y = player1.body:getPosition()
+	local p2x, p2y = player2.body:getPosition()
+	local dx, dy = p2x-p1x, p2y-p1y
+
+	local playerlinkpos = enemy.playerlinkpos
+	local destx = p1x + dx*playerlinkpos
+	local desty = p1y + dy*playerlinkpos
+	local vx = (destx - ex)*30
+	local vy = (desty - ey)*30
+	enemy.body:setLinearVelocity(vx, vy)
+end
+
 function Moves.defeated(enemy)
-	enemy.body:applyForce(0, 120)
+	local playerlinkpos = getPlayerLinkPosition(enemy)
+
+	if playerlinkpos then
+		enemy.move = Moves.held
+		enemy.playerlinkpos = playerlinkpos
+		for _, fixture in pairs(enemy.body:getFixtures()) do
+			fixture:setUserData("held")
+		end
+		enemy.body:setLinearVelocity(0, 0)
+	else
+		enemy.body:applyForce(0, 120)
+	end
 end
 
 function Moves.sin(enemy)
@@ -297,6 +363,13 @@ local function handleCollision(map, contact)
 		spark.rotation = bullet.rotation
 		spark:addBody(world, "dynamic")
 		map:destroyObject(playershotid)
+	end
+	local heldid, enemyid = tagsMatch(f1, f2, "held", "enemy")
+	if heldid and enemyid then
+		local held = map:getObjectById(heldid)
+		killShip(map, held)
+		local enemy = map:getObjectById(enemyid)
+		killShip(map, enemy)
 	end
 end
 
