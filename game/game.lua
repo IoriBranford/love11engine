@@ -3,6 +3,7 @@ local pi = math.pi
 local cos = math.cos
 local sin = math.sin
 local abs = math.abs
+local min = math.min
 local atan2 = math.atan2
 local LG = love.graphics
 local LE = love.event
@@ -46,7 +47,7 @@ function Game.start(m)
 		local player = players[i]
 		local body = player:addBody(world, "dynamic")
 		body:setFixedRotation(true)
-		local shape = LP.newRectangleShape(24, 24)
+		local shape = LP.newRectangleShape(32, 32)
 		local fixture = LP.newFixture(body, shape)
 		fixture:setUserData("player")
 	end
@@ -156,6 +157,8 @@ end
 function Game.keypressed(map, key)
 	if key == "f2" then
 		LE.push("load", map.filename)
+	elseif key == "escape" then
+		LE.quit()
 	end
 end
 
@@ -166,7 +169,8 @@ function Game.update(map)
 
 	local lgw = LG.getWidth()
 	local lgh = LG.getHeight()
-	map:setViewTransform(-lgw/2, -lgh/2, 0, lgw/640, lgh/480)
+	local scale = min(lgw/640, lgh/480)
+	map:setViewTransform(-640*scale/2, -lgh/2, 0, scale, scale)
 end
 
 local function updatePlayerGun(map, player, dt)
@@ -183,15 +187,15 @@ local function updatePlayerGun(map, player, dt)
 		bullet.y = player.y
 		bullet.rotation = player.rotation
 		local body = bullet:addBody(world, "dynamic")
-		local shape = LP.newRectangleShape(0, 16, 16, 32)
+		local shape = LP.newRectangleShape(16, 32)
 		local fixture = LP.newFixture(body, shape)
 		fixture:setUserData("playershot")
 		fixture:setSensor(true)
 		local r = -pi/2 + body:getAngle()
-		local speed = 1024
+		local speed = 16*60
 		local vx, vy = speed*cos(r), speed*sin(r)
 		body:setLinearVelocity(vx, vy)
-		firewait = firewait + 1/15
+		firewait = firewait + 1/10
 	end
 	player.firewait = firewait
 end
@@ -410,8 +414,11 @@ local function handleCollision(map, contact)
 		local bullet = map:getObjectById(playershotid)
 		local spark = map:newTemplateObject(bullet.parent, "hitspark.tx")
 		spark.fillcolor = bullet.fillcolor
-		spark.x = bullet.x
-		spark.y = bullet.y
+		local x, y = contact:getPositions()
+		x = x or 0
+		y = y or 0
+		spark.x = bullet.x + x
+		spark.y = bullet.y + y
 		spark.rotation = bullet.rotation
 		spark:addBody(world, "dynamic")
 		map:destroyObject(playershotid)
