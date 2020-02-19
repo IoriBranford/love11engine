@@ -317,8 +317,6 @@ function Moves.defeated(enemy)
 		halo.radius = radius
 		halo.x = 0
 		halo.y = 0
-		halo.scalex = 1
-		halo.scaley = 1
 		halo.linecolor = playerlink.linecolor
 		halo.explodeforce = enemy.explodeforce or 15
 		halo.explodetime = enemy.explodetime or .25
