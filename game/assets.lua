@@ -59,12 +59,13 @@ end
 function load.fnt(filename, ...)
 	local ok, font = pcall(LG.newFont, filename, ...)
 	if not ok then
-		return LG.newFont(...), font
+		return nil, font
 	end
 	return font
 end
 
 load.ttf = load.fnt
+load.otf = load.fnt
 
 function load.defaultFont(filename, ...)
 	return LG.newFont(...)
