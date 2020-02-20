@@ -61,6 +61,22 @@ before_script:
                 paths:
                         - "${PROJECT_TITLE}"
 
+osx:
+        <<: *debian
+        stage: build
+        image: fzwoch/osxcross
+        script:
+                - apt-get install -y -qq wget
+                - ./make-macosx.sh
+        cache:
+                key: "${PROJECT}-osx"
+                paths:
+                        - "love.app"
+        artifacts:
+                name: "${PROJECT}-${VERSION}-osx"
+                paths:
+                        - "${PROJECT_TITLE}.app"
+
 data:
         <<: *build-data
 
