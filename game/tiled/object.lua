@@ -1,5 +1,6 @@
 local pairs = pairs
 local type = type
+local sqrt = math.sqrt
 local atan2 = math.atan2
 local cos = math.cos
 local assets = require "assets"
@@ -57,8 +58,8 @@ function Object.setParent(object, newparent)
 	local rotation = atan2(xy, xx)
 	object.rotation = rotation
 	local cosr = cos(rotation)
-	object.scalex = xx / cosr
-	object.scaley = yy / cosr
+	object.scalex = sqrt(xx*xx + xy*xy)
+	object.scaley = sqrt(yx*yx + yy*yy)
 	object.parent = newparent
 end
 
