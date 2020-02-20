@@ -2,6 +2,7 @@
 <template>
  <object>
   <properties>
+   <property name="hitsound" type="file" value="Hit.wav"/>
    <property name="linecolor" type="color" value="#ffffffff"/>
    <property name="timeleft" type="float" value="1"/>
   </properties>

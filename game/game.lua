@@ -174,8 +174,10 @@ function Game.keypressed(map, key)
 end
 
 function Game.update(map)
-	for i = 1, #players do
-		readPlayerInput(players[i])
+	if level then
+		for i = 1, #players do
+			readPlayerInput(players[i])
+		end
 	end
 
 	local lgw = LG.getWidth()
@@ -479,7 +481,12 @@ local function handleCollision(map, contact)
 		players[2] = nil
 		players[1] = nil
 		local enemy = map:getObjectById(enemyid)
-		damageEnemy(map, enemy)
+		killShip(map, enemy)
+
+		local restart = map:find("named", "restart")
+		if restart then
+			restart.visible = nil
+		end
 	end
 	local playershotid, enemyid = tagsMatch(f1, f2, "playershot", "enemy")
 	if playershotid and enemyid then
@@ -488,6 +495,7 @@ local function handleCollision(map, contact)
 
 		local bullet = map:getObjectById(playershotid)
 		newBulletSpark(map, bullet, contact)
+		audio.play(bullet.hitsound)
 		map:destroyObject(playershotid)
 	end
 	local heldid, enemyid = tagsMatch(f1, f2, "held", "enemy")
@@ -511,9 +519,31 @@ local function handleCollision(map, contact)
 	end
 end
 
+function Game.gamepadaxis(map, gamepad, axis, value)
+	if axis:find("trigger") and value >= 1 then
+		if not level then
+			local intro = map:find("named", "intro")
+			if intro then
+				intro.visible = false
+			end
+			level = coroutine.create(co_level)
+		end
+	end
+end
+
+function Game.gamepadpressed(map, gamepad, button)
+	if button == "back" and gamepad:isGamepadDown("start")
+	or button == "start" and gamepad:isGamepadDown("back")
+	then
+		LE.push("load", map.filename)
+	end
+end
+
 function Game.fixedUpdate(map, dt)
-	for i = 1, #players do
-		updatePlayerGun(map, players[i], dt)
+	if level then
+		for i = 1, #players do
+			updatePlayerGun(map, players[i], dt)
+		end
 	end
 
 	local player1 = players[1]
@@ -540,8 +570,7 @@ function Game.fixedUpdate(map, dt)
 		polyline[#polyline  ] = dy
 	end
 
-	level = level or coroutine.create(co_level)
-	if coroutine.status(level) ~= "dead" then
+	if level and coroutine.status(level) ~= "dead" then
 		local ok, err = coroutine.resume(level, map, dt)
 		if not ok then
 			error(err)
