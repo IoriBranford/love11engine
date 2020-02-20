@@ -150,6 +150,7 @@ end
 local function knockoutShip(map, ship)
 	audio.play(ship.killsound)
 	explodeLines(ship)
+	explodeTriangles(ship)
 end
 
 local function killShip(map, ship)
@@ -437,9 +438,11 @@ local function defeatEnemy(map, enemy)
 	enemy.time = 0
 	enemy.linecolor = nil
 	local fillcolor = enemy.fillcolor
-	for i = 1, 3 do
-		fillcolor[i] = fillcolor[i]/2
-	end
+	enemy.fillcolor = {
+		fillcolor[1]/2,
+		fillcolor[2]/2,
+		fillcolor[3]/2
+	}
 	enemy.move = Moves.defeated
 end
 
@@ -501,6 +504,7 @@ local function handleCollision(map, contact)
 
 		local thrown = map:getObjectById(thrownid)
 		newBulletSpark(map, thrown, contact)
+		explodeTriangles(thrown)
 		thrown.lifetime = .25
 		thrown.body:setLinearVelocity(0, 0)
 		thrown.body:setAngularVelocity(15*pi)
