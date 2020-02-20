@@ -110,14 +110,14 @@ local function draw(lerp)
 	local dt = LT.getDelta()
 
 	local fps = floor(1/dt)
-	LG.printf(dt.." dt", 0, y, w, "right")
-	y = y + h
+	--LG.printf(dt.." dt", 0, y, w, "right")
+	--y = y + h
 	LG.printf(floor(fps).." fps", 0, y, w, "right")
 	y = y + h
 	LG.printf(mem.." kb", 0, y, w, "right")
 	y = y + h
 	for k, v in pairs(LG.getStats(stats)) do
-		LG.printf(v.." "..k, 0, y, w, "right")
+		--LG.printf(v.." "..k, 0, y, w, "right")
 		y = y + h
 	end
 end
