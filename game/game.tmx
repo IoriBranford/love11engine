@@ -44,7 +44,7 @@
  <objectgroup id="2" name="players">
   <object id="2" template="player.tx" name="player_right" x="480" y="416">
    <properties>
-    <property name="controlkeys" value="jlik"/>
+    <property name="controlkeys" value="kp4,kp6,kp8,kp5"/>
     <property name="controlstick" value="right"/>
     <property name="fillcolor" type="color" value="#ff0080ff"/>
     <property name="linecolor" type="color" value="#ffffffff"/>

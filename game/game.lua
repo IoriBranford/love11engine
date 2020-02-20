@@ -63,12 +63,13 @@ local function readPlayerInput(player)
 		return
 	end
 	local controlstick = player.controlstick or "left"
-	local controlkeys = player.controlkeys or "adws"
+	local controlkeys = player.controlkeys or "a,d,w,s"
+	local keyl, keyr, keyu, keyd = controlkeys:match("(%w+),(%w+),(%w+),(%w+)")
 	local ax, ay = 0, 0
-	ax = ax - (LK.isDown(controlkeys:sub(1, 1)) and 1 or 0)
-	ax = ax + (LK.isDown(controlkeys:sub(2, 2)) and 1 or 0)
-	ay = ay - (LK.isDown(controlkeys:sub(3, 3)) and 1 or 0)
-	ay = ay + (LK.isDown(controlkeys:sub(4, 4)) and 1 or 0)
+	ax = ax - (LK.isDown(keyl) and 1 or 0)
+	ax = ax + (LK.isDown(keyr) and 1 or 0)
+	ay = ay - (LK.isDown(keyu) and 1 or 0)
+	ay = ay + (LK.isDown(keyd) and 1 or 0)
 	for _, joystick in pairs(LJ.getJoysticks()) do
 		ax = ax + joystick:getGamepadAxis(controlstick.."x")
 		ay = ay + joystick:getGamepadAxis(controlstick.."y")
