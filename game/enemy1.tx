@@ -10,6 +10,7 @@
    <property name="explodeforce" type="float" value="15"/>
    <property name="explodetime" type="float" value=".25"/>
    <property name="timeleft" type="float" value="10"/>
+   <property name="throwsound" type="file" value="Powerup28.wav"/>
   </properties>
   <polygon points="0,8 -8,0 -16,24 -16,8 -24,-8 -8,-16 -8,-24 0,-16 8,-24 8,-16 24,-8 16,8 16,24 8,0"/>
  </object>

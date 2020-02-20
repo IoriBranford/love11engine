@@ -329,6 +329,7 @@ function Moves.held(enemy, dt)
 	haloCrackle(enemy.halo, fire)
 
 	if fire >= 2 then
+		audio.play(enemy.throwsound)
 		enemy.move = Moves.thrown
 		for _, fixture in pairs(enemy.body:getFixtures()) do
 			fixture:setUserData("thrown")
