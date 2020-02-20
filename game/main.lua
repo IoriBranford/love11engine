@@ -26,9 +26,12 @@ local function init()
 	local window_width = 640
 	local window_height = 480
 	local window_flags = {
+		resizable = true,
 		vsync = -1
 	}
 	LW.setMode(window_width, window_height, window_flags)
+	LW.setTitle(LFS.getIdentity())
+	LW.maximize()
 	LE.push("load", "game.tmx")
 end
 
