@@ -327,10 +327,17 @@ function Moves.held(enemy, dt)
 
 	if fire >= 2 then
 		enemy.move = Moves.thrown
+		for _, fixture in pairs(enemy.body:getFixtures()) do
+			fixture:setUserData("thrown")
+		end
 		enemy.timeleft = 1
 		local throwangle = destangle + pi/2
 		enemy.body:setLinearVelocity(960*cos(throwangle), 960*sin(throwangle))
 	end
+end
+
+function Moves.thrown(enemy)
+	haloCrackle(enemy.halo, 0)
 end
 
 function Moves.defeated(enemy)
@@ -344,6 +351,7 @@ function Moves.defeated(enemy)
 		end
 		enemy.body:setLinearVelocity(0, 0)
 		enemy.body:setAngularVelocity(0)
+		enemy.fillcolor = playerlink.linecolor
 
 		local maxx, maxy = 0, 0
 		local polygon = enemy.polygon
@@ -435,6 +443,29 @@ local function defeatEnemy(map, enemy)
 	enemy.move = Moves.defeated
 end
 
+local function damageEnemy(map, ship)
+	local health = ship.health or 1
+	if health then
+		health = health-1
+		ship.health = health
+		if health <= 0 then
+			defeatEnemy(map, ship)
+		end
+	end
+end
+
+local function newBulletSpark(map, bullet, contact)
+	local spark = map:newTemplateObject(bullet.parent, "hitspark.tx")
+	spark.fillcolor = bullet.fillcolor
+	local x, y = contact:getPositions()
+	x = x or 0
+	y = y or 0
+	spark.x = bullet.x + x
+	spark.y = bullet.y + y
+	spark.rotation = bullet.rotation
+	spark:addBody(world, "dynamic")
+end
+
 local function handleCollision(map, contact)
 	local f1, f2 = contact:getFixtures()
 	local playerid, enemyid = tagsMatch(f1, f2, "player", "enemy")
@@ -445,23 +476,15 @@ local function handleCollision(map, contact)
 		players[2] = nil
 		players[1] = nil
 		local enemy = map:getObjectById(enemyid)
-		killShip(map, enemy)
+		damageEnemy(map, enemy)
 	end
 	local playershotid, enemyid = tagsMatch(f1, f2, "playershot", "enemy")
 	if playershotid and enemyid then
 		local enemy = map:getObjectById(enemyid)
-		defeatEnemy(map, enemy)
+		damageEnemy(map, enemy)
 
 		local bullet = map:getObjectById(playershotid)
-		local spark = map:newTemplateObject(bullet.parent, "hitspark.tx")
-		spark.fillcolor = bullet.fillcolor
-		local x, y = contact:getPositions()
-		x = x or 0
-		y = y or 0
-		spark.x = bullet.x + x
-		spark.y = bullet.y + y
-		spark.rotation = bullet.rotation
-		spark:addBody(world, "dynamic")
+		newBulletSpark(map, bullet, contact)
 		map:destroyObject(playershotid)
 	end
 	local heldid, enemyid = tagsMatch(f1, f2, "held", "enemy")
@@ -469,7 +492,15 @@ local function handleCollision(map, contact)
 		local held = map:getObjectById(heldid)
 		killShip(map, held)
 		local enemy = map:getObjectById(enemyid)
-		killShip(map, enemy)
+		damageEnemy(map, enemy)
+	end
+	local thrownid, enemyid = tagsMatch(f1, f2, "thrown", "enemy")
+	if thrownid and enemyid then
+		local enemy = map:getObjectById(enemyid)
+		damageEnemy(map, enemy)
+
+		local thrown = map:getObjectById(thrownid)
+		newBulletSpark(map, thrown, contact)
 	end
 end
 
