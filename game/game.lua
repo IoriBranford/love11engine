@@ -89,10 +89,13 @@ local function readPlayerInput(player)
 	player.body:setLinearVelocity(ax*speed, ay*speed)
 end
 
-local function explodeLines(polygon, linecolor, originx, originy, parent, force, lifetime)
+local function explodeLines(object)
+	local polygon, linecolor = object.polygon, object.linecolor
 	if not polygon or not linecolor then
 		return
 	end
+	local x, y, parent, force, lifetime = object.x, object.y,
+		object.parent, object.explodeforce, object.explodetime
 	for i = 1, #polygon-3, 2 do
 		local x1 = polygon[i+0]
 		local y1 = polygon[i+1]
@@ -105,8 +108,8 @@ local function explodeLines(polygon, linecolor, originx, originy, parent, force,
 		x2 = x2 - cx
 		y2 = y2 - cy
 		local shard = map:newObject(parent)
-		shard.x = originx + cx
-		shard.y = originy + cy
+		shard.x = x + cx
+		shard.y = y + cy
 		shard.polyline = { x1, y1, x2, y2 }
 		shard.linecolor = linecolor
 		shard.timeleft = lifetime
@@ -116,10 +119,14 @@ local function explodeLines(polygon, linecolor, originx, originy, parent, force,
 	end
 end
 
-local function explodeTriangles(tris, fillcolor, originx, originy, parent, force, lifetime)
-	if not tris or not fillcolor then
+local function explodeTriangles(object)
+	local polygon, fillcolor = object.polygon, object.fillcolor
+	if not polygon or not fillcolor then
 		return
 	end
+	local tris = object.triangles or LM.triangulate(polygon)
+	local x, y, parent, force, lifetime = object.x, object.y,
+		object.parent, object.explodeforce, object.explodetime
 	for i = 1, #tris do
 		local tri = tris[i]
 		local cx = (tri[1] + tri[3] + tri[5]) / 3
@@ -129,8 +136,8 @@ local function explodeTriangles(tris, fillcolor, originx, originy, parent, force
 			tri[5]-cx, tri[6]-cy }
 
 		local shard = map:newObject(parent)
-		shard.x = originx + cx
-		shard.y = originy + cy
+		shard.x = x + cx
+		shard.y = y + cy
 		shard.polygon = tri
 		shard.fillcolor = fillcolor
 		shard.timeleft = lifetime
@@ -142,8 +149,7 @@ end
 
 local function knockoutShip(map, ship)
 	audio.play(ship.killsound)
-	explodeLines(ship.polygon, ship.linecolor, ship.x, ship.y, ship.parent,
-		ship.explodeforce, ship.explodetime)
+	explodeLines(ship)
 end
 
 local function killShip(map, ship)
@@ -153,10 +159,8 @@ local function killShip(map, ship)
 		killShip(map, child)
 	end
 	audio.play(ship.killsound)
-	explodeLines(ship.polygon, ship.linecolor, ship.x, ship.y, ship.parent,
-		ship.explodeforce, ship.explodetime)
-	explodeTriangles(ship.triangles, ship.fillcolor, ship.x, ship.y, ship.parent,
-		ship.explodeforce, ship.explodetime)
+	explodeLines(ship)
+	explodeTriangles(ship)
 	map:destroyObject(ship.id)
 end
 
@@ -271,7 +275,7 @@ local function haloCrackle(halo, fire)
 		local x = cos(angle)
 		local y = sin(angle)
 		if fire >= 1 and y >= 1 then
-			y = y * 4
+			y = y * 2
 		end
 
 		local rand = (LM.random()*2 - 1) * 8
