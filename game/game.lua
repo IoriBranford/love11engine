@@ -62,18 +62,23 @@ local function readPlayerInput(player)
 	if player.visible == false then
 		return
 	end
-	local controlstick = player.controlstick or "left"
-	local controlkeys = player.controlkeys or "a,d,w,s"
-	local keyl, keyr, keyu, keyd = controlkeys:match("(%w+),(%w+),(%w+),(%w+)")
+	local movestick = player.movestick or "left"
+	local movekeys = player.movekeys or "a,d,w,s"
+	local firetrigger = player.firetrigger or "left"
+	local firekey = player.firekey or "space"
+	local keyl, keyr, keyu, keyd = movekeys:match("(%w+),(%w+),(%w+),(%w+)")
 	local ax, ay = 0, 0
+	local fire = (LK.isDown(firekey) and 1 or 0)
 	ax = ax - (LK.isDown(keyl) and 1 or 0)
 	ax = ax + (LK.isDown(keyr) and 1 or 0)
 	ay = ay - (LK.isDown(keyu) and 1 or 0)
 	ay = ay + (LK.isDown(keyd) and 1 or 0)
 	for _, joystick in pairs(LJ.getJoysticks()) do
-		ax = ax + joystick:getGamepadAxis(controlstick.."x")
-		ay = ay + joystick:getGamepadAxis(controlstick.."y")
+		ax = ax + joystick:getGamepadAxis(movestick.."x")
+		ay = ay + joystick:getGamepadAxis(movestick.."y")
+		fire = fire + joystick:getGamepadAxis("trigger"..firetrigger)
 	end
+	player.fire = fire
 	local alen = sqrt(ax*ax + ay+ay)
 	if alen > 1 then
 		ax = ax/alen
@@ -256,17 +261,26 @@ local function getPlayerLinkPosition(enemy)
 	return pos
 end
 
-local function haloCrackle(halo)
+local function haloCrackle(halo, fire)
 	local radius = halo.radius
 	local polygon = halo.polygon
 	local numpoints = #polygon/2
-	local angle = 0
+	local angle = pi/2
 	local dangle = 2*pi/numpoints
 	for i = 1, #polygon-1, 2 do
+		local x = cos(angle)
+		local y = sin(angle)
+		if fire >= 1 and y >= 1 then
+			y = y * 4
+		end
+
 		local rand = (LM.random()*2 - 1) * 8
 		local r = radius + rand
-		polygon[i] = r*cos(angle)
-		polygon[i+1] = r*sin(angle)
+		x = x*r
+		y = y*r
+
+		polygon[i] = x
+		polygon[i+1] = y
 		angle = angle + dangle
 	end
 end
@@ -275,6 +289,13 @@ function Moves.held(enemy, dt)
 	local player1 = players[1]
 	local player2 = players[2]
 	if not player1 or not player2 then
+		killShip(map, enemy)
+		return
+	end
+
+	local fire = player1.fire + player2.fire
+	if fire >= 2 then
+		--enemy.move = Moves.thrown
 		killShip(map, enemy)
 		return
 	end
@@ -291,14 +312,19 @@ function Moves.held(enemy, dt)
 		playerlinkpos = playerlinkpos - dt
 	end
 	enemy.playerlinkpos = playerlinkpos
+
 	local destx = p1x + dx*playerlinkpos
 	local desty = p1y + dy*playerlinkpos
 	local vx = (destx - ex)*30
 	local vy = (desty - ey)*30
-
 	enemy.body:setLinearVelocity(vx, vy)
 
-	haloCrackle(enemy.halo)
+	local angle = enemy.body:getAngle()
+	local destangle = atan2(-dy, -dx)
+	enemy.body:setAngle(destangle)
+	--local av = (destangle - angle)*30
+
+	haloCrackle(enemy.halo, fire)
 end
 
 function Moves.defeated(enemy)
@@ -311,6 +337,7 @@ function Moves.defeated(enemy)
 			fixture:setUserData("held")
 		end
 		enemy.body:setLinearVelocity(0, 0)
+		enemy.body:setAngularVelocity(0)
 
 		local maxx, maxy = 0, 0
 		local polygon = enemy.polygon
@@ -328,6 +355,7 @@ function Moves.defeated(enemy)
 		halo.radius = radius
 		halo.x = 0
 		halo.y = 0
+		halo.rotation = 0
 		halo.linecolor = playerlink.linecolor
 		halo.explodeforce = enemy.explodeforce or 15
 		halo.explodetime = enemy.explodetime or .25

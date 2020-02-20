@@ -2,8 +2,10 @@
 <template>
  <object name="player_left">
   <properties>
-   <property name="controlkeys" value="a,d,w,s"/>
-   <property name="controlstick" value="left"/>
+   <property name="firekey" value="space"/>
+   <property name="firetrigger" value="left"/>
+   <property name="movekeys" value="a,d,w,s"/>
+   <property name="movestick" value="left"/>
    <property name="fillcolor" type="color" value="#ffff0080"/>
    <property name="killsound" type="file" value="Explosion5.wav"/>
    <property name="linecolor" type="color" value="#ffffffff"/>
