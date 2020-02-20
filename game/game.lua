@@ -271,10 +271,11 @@ local function haloCrackle(halo, fire)
 	local numpoints = #polygon/2
 	local angle = pi/2
 	local dangle = 2*pi/numpoints
+	local aiming = fire >= 1 and fire < 2
 	for i = 1, #polygon-1, 2 do
 		local x = cos(angle)
 		local y = sin(angle)
-		if fire >= 1 and y >= 1 then
+		if aiming and y >= 1 then
 			y = y * 2
 		end
 
@@ -293,13 +294,6 @@ function Moves.held(enemy, dt)
 	local player1 = players[1]
 	local player2 = players[2]
 	if not player1 or not player2 then
-		killShip(map, enemy)
-		return
-	end
-
-	local fire = player1.fire + player2.fire
-	if fire >= 2 then
-		--enemy.move = Moves.thrown
 		killShip(map, enemy)
 		return
 	end
@@ -328,7 +322,15 @@ function Moves.held(enemy, dt)
 	enemy.body:setAngle(destangle)
 	--local av = (destangle - angle)*30
 
+	local fire = player1.fire + player2.fire
 	haloCrackle(enemy.halo, fire)
+
+	if fire >= 2 then
+		enemy.move = Moves.thrown
+		enemy.timeleft = 1
+		local throwangle = destangle + pi/2
+		enemy.body:setLinearVelocity(960*cos(throwangle), 960*sin(throwangle))
+	end
 end
 
 function Moves.defeated(enemy)
