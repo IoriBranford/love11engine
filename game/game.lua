@@ -501,6 +501,9 @@ local function handleCollision(map, contact)
 
 		local thrown = map:getObjectById(thrownid)
 		newBulletSpark(map, thrown, contact)
+		thrown.lifetime = .25
+		thrown.body:setLinearVelocity(0, 0)
+		thrown.body:setAngularVelocity(15*pi)
 	end
 end
 
