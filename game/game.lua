@@ -536,6 +536,8 @@ function Game.gamepadpressed(map, gamepad, button)
 	or button == "start" and gamepad:isGamepadDown("back")
 	then
 		LE.push("load", map.filename)
+	elseif button == "guide" then
+		LG.captureScreenshot("shot"..os.time()..".png")
 	end
 end
 
