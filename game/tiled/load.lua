@@ -16,6 +16,7 @@ local pairs = pairs
 local tonumber = tonumber
 local love = love
 local LD = love.data
+local LFS = love.filesystem
 local LG = love.graphics
 local LM = love.math
 
@@ -169,9 +170,12 @@ function load.text(text, object, dir)
 	end
 	local fnt = file..pixelsize..".fnt"
 	local ttf = file..".ttf"
-	local font = assets.get(fnt) or assets.get(ttf, pixelsize)
+	local otf = file..".otf"
+	local font = LFS.getInfo(fnt) and assets.get(fnt)
+		or LFS.getInfo(ttf) and assets.get(ttf, pixelsize)
+		or LFS.getInfo(otf) and assets.get(otf, pixelsize)
 		or assets.get(".defaultFont", pixelsize)
-	font:setFilter("nearest", "nearest")
+	--font:setFilter("nearest", "nearest")
 	text.font = font
 	return text
 end
