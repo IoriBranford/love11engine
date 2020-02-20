@@ -2,12 +2,12 @@
 
 # Fill in the project info
 variables:
-        PROJECT: love11engine
-        PROJECT_TITLE: "LOVE 11 Tiled Engine"
-        PROJECT_TITLE_NOSPACE: "LOVE_11_Tiled_Engine"
-        DESCRIPTION: "LOVE 11 Tiled Engine"
+        PROJECT: twinthunder
+        PROJECT_TITLE: "Twin Thunder Trigger"
+        PROJECT_TITLE_NOSPACE: "Twin_Thunder_Trigger"
+        DESCRIPTION: "Single-player cooperative shmup"
         COPYRIGHT: "© 2020 IoriBranford"
-        APPLICATION_ID_BASE: "io.itch.ioribranford.love11engine"
+        APPLICATION_ID_BASE: "io.itch.ioribranford.twinthunder"
         LOVE_VERSION: "11.3"
         SCREEN_ORIENTATION: "landscape"
         VERSION: "${CI_COMMIT_REF_NAME}"
