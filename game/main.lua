@@ -1,5 +1,6 @@
 require "pl.strict"
 local love = love
+local LA = love.audio
 local LE = love.event
 local LFS = love.filesystem
 local LG = love.graphics
@@ -45,6 +46,7 @@ local function onEvent(ev, ...)
 end
 
 local function load(...)
+	LA.stop()
 	assets.clear()
 	local font = assets.get(".defaultFont", floor(LG.getHeight()/48))
 	font:setFilter("nearest", "nearest")
