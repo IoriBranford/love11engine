@@ -89,6 +89,10 @@ end
 
 load.wav = LA.newSource
 load.ogg = LA.newSource
+load.xm = LA.newSource
+load.mod = LA.newSource
+load.s3m = LA.newSource
+load.it = LA.newSource
 
 local function assetName(filename, ...)
 	local assetname = filename
