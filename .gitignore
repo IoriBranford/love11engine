@@ -21,6 +21,7 @@ history.db
 *.exe
 *.dll
 *.AppImage
+*.AppDir
 squashfs-root
 bin*/
 love-android-sdl2/
