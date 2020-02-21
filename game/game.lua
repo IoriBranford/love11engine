@@ -379,23 +379,27 @@ local function co_wait(t)
 end
 
 local function endGame(map, dt)
-	local music = map.music
-	if music then
-		--BUG - stopped or silent state persists across reloads
-		--local minvolume, maxvolume = music:getVolumeLimits()
-		--local musicvolume = maxvolume
-		--while musicvolume >= minvolume do
-		--	musicvolume = musicvolume - dt
-		--	music:setVolume(musicvolume)
-		--	map, dt = yield()
-		--end
-		music:stop()
-	end
+	level = coroutine.create(function(map, dt)
+		local music = map.music
+		if music then
+			local minvolume, maxvolume = music:getVolumeLimits()
+			local musicvolume = maxvolume
+			while musicvolume > minvolume do
+				musicvolume = musicvolume - dt
+				if musicvolume < minvolume then
+					musicvolume = minvolume
+				end
+				music:setVolume(musicvolume)
+				map, dt = yield()
+			end
+			music:stop()
+		end
 
-	local restart = map:find("named", "restart")
-	if restart then
-		restart.visible = true
-	end
+		local restart = map:find("named", "restart")
+		if restart then
+			restart.visible = true
+		end
+	end)
 end
 
 local function co_level(map, dt)
