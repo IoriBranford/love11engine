@@ -410,6 +410,15 @@ local function co_level(map, dt)
 		newEnemy(map, "enemy1.tx", rightx, top).time = 1
 		co_wait(0.5)
 	end
+
+	while #enemies > 0 do
+		map, dt = yield()
+	end
+
+	local restart = map:find("named", "restart")
+	if restart then
+		restart.visible = true
+	end
 end
 
 local function tagsMatch(f1, f2, t1, t2)
@@ -447,6 +456,9 @@ local function defeatEnemy(map, enemy)
 		fillcolor[3]/2
 	}
 	enemy.move = Moves.defeated
+	if #players > 0 then
+		enemy:setParent(players[1].parent)
+	end
 end
 
 local function damageEnemy(map, ship)
