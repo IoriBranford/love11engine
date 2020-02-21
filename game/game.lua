@@ -12,18 +12,17 @@ local LK = love.keyboard
 local LM = love.math
 local LP = love.physics
 local audio = require "audio"
+local assets = require "assets"
 
 local Game = {}
 
-local map
 local world
 local players
 local enemies
 local playerlink
 local level
 
-function Game.start(m)
-	map = m
+function Game.start(map)
 	world = LP.newWorld()
 	local worldbody = LP.newBody(world)
 
@@ -89,7 +88,7 @@ local function readPlayerInput(player)
 	player.body:setLinearVelocity(ax*speed, ay*speed)
 end
 
-local function explodeLines(object)
+local function explodeLines(map, object)
 	local polygon, linecolor = object.polygon, object.linecolor
 	if not polygon or not linecolor then
 		return
@@ -119,7 +118,7 @@ local function explodeLines(object)
 	end
 end
 
-local function explodeTriangles(object)
+local function explodeTriangles(map, object)
 	local polygon, fillcolor = object.polygon, object.fillcolor
 	if not polygon or not fillcolor then
 		return
@@ -149,8 +148,8 @@ end
 
 local function knockoutShip(map, ship)
 	audio.play(ship.killsound)
-	explodeLines(ship)
-	explodeTriangles(ship)
+	explodeLines(map, ship)
+	explodeTriangles(map, ship)
 end
 
 local function killShip(map, ship)
@@ -160,8 +159,8 @@ local function killShip(map, ship)
 		killShip(map, child)
 	end
 	audio.play(ship.killsound)
-	explodeLines(ship)
-	explodeTriangles(ship)
+	explodeLines(map, ship)
+	explodeTriangles(map, ship)
 	map:destroyObject(ship.id)
 end
 
@@ -293,7 +292,7 @@ local function haloCrackle(halo, fire)
 	end
 end
 
-function Moves.held(enemy, dt)
+function Moves.held(enemy, map, dt)
 	local player1 = players[1]
 	local player2 = players[2]
 	if not player1 or not player2 then
@@ -340,11 +339,11 @@ function Moves.held(enemy, dt)
 	end
 end
 
-function Moves.thrown(enemy)
+function Moves.thrown(enemy, map, dt)
 	haloCrackle(enemy.halo, 0)
 end
 
-function Moves.defeated(enemy)
+function Moves.defeated(enemy, map, dt)
 	local playerlinkpos = getPlayerLinkPosition(enemy)
 
 	if playerlinkpos then
@@ -392,15 +391,40 @@ function Moves.defeated(enemy)
 	end
 end
 
-function Moves.sin(enemy)
+function Moves.sin(enemy, map, dt)
 	enemy.body:setLinearVelocity(320*cos(enemy.time*pi), 120)
 end
 
-function Moves.cos(enemy)
+function Moves.cos(enemy, map, dt)
 	enemy.body:setLinearVelocity(-320*sin(enemy.time*pi), 120)
 end
 
+local function endGame(map, dt)
+	local music = map.music
+	if music then
+		--BUG - stopped or silent state persists across reloads
+		--local minvolume, maxvolume = music:getVolumeLimits()
+		--local musicvolume = maxvolume
+		--while musicvolume >= minvolume do
+		--	musicvolume = musicvolume - dt
+		--	music:setVolume(musicvolume)
+		--	map, dt = yield()
+		--end
+		music:stop()
+	end
+
+	local restart = map:find("named", "restart")
+	if restart then
+		restart.visible = true
+	end
+end
+
 local function co_level(map, dt)
+	local music = assets.get(map.music, "stream")
+	if music then
+		music:play()
+		map.music = music
+	end
 	local leftx = 240
 	local rightx = 320+240-160
 	local top = -32
@@ -415,10 +439,7 @@ local function co_level(map, dt)
 		map, dt = yield()
 	end
 
-	local restart = map:find("named", "restart")
-	if restart then
-		restart.visible = true
-	end
+	endGame(map, dt)
 end
 
 local function tagsMatch(f1, f2, t1, t2)
@@ -495,11 +516,7 @@ local function handleCollision(map, contact)
 		players[1] = nil
 		local enemy = map:getObjectById(enemyid)
 		killShip(map, enemy)
-
-		local restart = map:find("named", "restart")
-		if restart then
-			restart.visible = nil
-		end
+		endGame(map)
 	end
 	local playershotid, enemyid = tagsMatch(f1, f2, "playershot", "enemy")
 	if playershotid and enemyid then
@@ -525,7 +542,7 @@ local function handleCollision(map, contact)
 
 		local thrown = map:getObjectById(thrownid)
 		newBulletSpark(map, thrown, contact)
-		explodeTriangles(thrown)
+		explodeTriangles(map, thrown)
 		thrown.lifetime = .25
 		thrown.body:setLinearVelocity(0, 0)
 		thrown.body:setAngularVelocity(15*pi)
@@ -598,7 +615,7 @@ function Game.fixedUpdate(map, dt)
 		if object then
 			local move = object.move
 			if type(move)=="function" then
-				move(object, dt)
+				move(object, map, dt)
 			end
 			local time = object.time
 			if time then
