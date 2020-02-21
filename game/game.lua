@@ -164,27 +164,6 @@ local function killShip(map, ship)
 	map:destroyObject(ship.id)
 end
 
-function Game.keypressed(map, key)
-	if key == "f2" then
-		LE.push("load", map.filename)
-	elseif key == "escape" then
-		LE.quit()
-	end
-end
-
-function Game.update(map)
-	if level then
-		for i = 1, #players do
-			readPlayerInput(players[i])
-		end
-	end
-
-	local lgw = LG.getWidth()
-	local lgh = LG.getHeight()
-	local scale = min(lgw/640, lgh/480)
-	map:setViewTransform(-640*scale/2, -lgh/2, 0, scale, scale)
-end
-
 local function updatePlayerGun(map, player, dt)
 	if player.visible == false then
 		return
@@ -210,15 +189,6 @@ local function updatePlayerGun(map, player, dt)
 		firewait = firewait + 1/10
 	end
 	player.firewait = firewait
-end
-
-local yield = coroutine.yield
-
-local function co_wait(t)
-	while t > 0 do
-		local map, dt = yield()
-		t = t - dt
-	end
 end
 
 local Moves = {}
@@ -399,6 +369,15 @@ function Moves.cos(enemy, map, dt)
 	enemy.body:setLinearVelocity(-320*sin(enemy.time*pi), 120)
 end
 
+local yield = coroutine.yield
+
+local function co_wait(t)
+	while t > 0 do
+		local map, dt = yield()
+		t = t - dt
+	end
+end
+
 local function endGame(map, dt)
 	local music = map.music
 	if music then
@@ -549,15 +528,33 @@ local function handleCollision(map, contact)
 	end
 end
 
+local function startGame(map)
+	if not level then
+		local intro = map:find("named", "intro")
+		if intro then
+			intro.visible = false
+		end
+		level = coroutine.create(co_level)
+	end
+end
+
+function Game.keypressed(map, key)
+	if key == "f2" then
+		LE.push("load", map.filename)
+	elseif key == "escape" then
+		LE.quit()
+	else
+		for i = 1, #players do
+			if key == players[i].firekey then
+				startGame(map)
+			end
+		end
+	end
+end
+
 function Game.gamepadaxis(map, gamepad, axis, value)
 	if axis:find("trigger") and value >= 1 then
-		if not level then
-			local intro = map:find("named", "intro")
-			if intro then
-				intro.visible = false
-			end
-			level = coroutine.create(co_level)
-		end
+		startGame(map)
 	end
 end
 
@@ -569,6 +566,19 @@ function Game.gamepadpressed(map, gamepad, button)
 	elseif button == "guide" then
 		LG.captureScreenshot("shot"..os.time()..".png")
 	end
+end
+
+function Game.update(map)
+	if level then
+		for i = 1, #players do
+			readPlayerInput(players[i])
+		end
+	end
+
+	local lgw = LG.getWidth()
+	local lgh = LG.getHeight()
+	local scale = min(lgw/640, lgh/480)
+	map:setViewTransform(-640*scale/2, -lgh/2, 0, scale, scale)
 end
 
 function Game.fixedUpdate(map, dt)
