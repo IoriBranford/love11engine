@@ -61,6 +61,24 @@ before_script:
                 paths:
                         - "${PROJECT_TITLE}"
 
+.build-linux: &build-linux
+        <<: *debian
+        stage: build
+        image: debian:stretch-slim
+        script:
+                - apt-get install -y -qq file wget fuse libglib2.0-0
+                - ./make-linux.sh
+        cache:
+                key: "${PROJECT}-linux-${ARCH}"
+                paths:
+                        - "love-${LOVE_VERSION}-${ARCH}.AppImage"
+                        - "appimagetool"
+                        - "*.deb"
+        artifacts:
+                name: "${PROJECT}-${VERSION}-linux-${ARCH}"
+                paths:
+                        - ${PROJECT_TITLE_NOSPACE}-${ARCH}.AppImage
+
 osx:
         <<: *debian
         stage: build
@@ -87,3 +105,14 @@ win-32:
         <<: *build-windows
         variables:
                 ARCH_BITS: "32"
+
+linux-x86_64:
+        <<: *build-linux
+        variables:
+                ARCH: "x86_64"
+
+linux-i686:
+        <<: *build-linux
+        image: i386/debian:stretch-slim
+        variables:
+                ARCH: "i686"
