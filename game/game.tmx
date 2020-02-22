@@ -9,6 +9,7 @@
    eAHt0DEBAAAAwqD1T20ND4hAYcCAAQMGDBgwYMCAAQMGDBgwYOB3YBLAAAE=
   </data>
  </layer>
+ <objectgroup id="5" name="enemies"/>
  <objectgroup draworder="index" id="3" name="worldobjects">
   <object id="4" name="wall" x="0" y="16" width="16" height="448">
    <properties>
@@ -55,7 +56,6 @@
    <polyline points="0,0 32,0 64,0 96,0 128,0 160,0 192,0 224,0 256,0 288,0 320,0"/>
   </object>
  </objectgroup>
- <objectgroup id="5" name="enemies"/>
  <objectgroup id="7" name="restart" visible="0">
   <object id="17" x="80" y="224" width="480" height="32">
    <text fontfamily="Hyperspace" pixelsize="24" wrap="1" color="#ffffff" bold="1" halign="center">PRESS BACK + START TO RESTART</text>
