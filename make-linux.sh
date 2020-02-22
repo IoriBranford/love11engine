@@ -45,10 +45,10 @@ download() {
 
 if [ ! -e appimagetool ]
 then
-	wget -N ${APPIMAGETOOL_URL}/${APPIMAGETOOL}
+	download ${APPIMAGETOOL_URL} ${APPIMAGETOOL}
+	chmod a+x ${APPIMAGETOOL}
 	./${APPIMAGETOOL} --appimage-extract
 	mv squashfs-root appimagetool
-	chmod a+x ${APPIMAGETOOL}
 fi
 
 download ${LOVE_APPIMAGE_URL} ${LOVE_APPIMAGE}
