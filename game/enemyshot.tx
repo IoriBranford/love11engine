@@ -2,12 +2,11 @@
 <template>
  <object>
   <properties>
-   <property name="collisiontag" type="string" value="playershot"/>
+   <property name="collisiontag" type="string" value="enemyshot"/>
    <property name="explodeforce" type="float" value="5"/>
    <property name="explodetime" type="float" value="0.25"/>
-   <property name="killsound" type="file" value="Hit.wav"/>
-   <property name="timeleft" type="float" value="1"/>
+   <property name="timeleft" type="float" value="5"/>
   </properties>
-  <polygon points="16,0 -8,-8 -16,0 -8,8"/>
+  <polygon points="24,0 0,-8 -8,-16 -16,-8 -24,-8 -16,0 -24,8 -16,8 -8,16 0,8"/>
  </object>
 </template>

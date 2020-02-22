@@ -2,17 +2,18 @@
 <template>
  <object>
   <properties>
-   <property name="attack" value="face"/>
+   <property name="attack" value="singleAimed"/>
    <property name="explodeforce" type="float" value="15"/>
    <property name="explodetime" type="float" value="0.25"/>
    <property name="fillcolor" type="color" value="#ffaa55ff"/>
-   <property name="health" type="int" value="2"/>
+   <property name="fireinterval" type="float" value=".5"/>
+   <property name="health" type="int" value="16"/>
    <property name="killsound" type="file" value="Explosion17.wav"/>
    <property name="linecolor" type="color" value="#ff000000"/>
    <property name="move" value="cos"/>
    <property name="throwsound" type="file" value="Powerup28.wav"/>
-   <property name="timeleft" type="float" value="5"/>
+   <property name="timeleft" type="float" value="10"/>
   </properties>
-  <polygon points="8,0 0,-8 24,-8 0,-16 -8,-24 -16,-8 -24,-8 -16,0 -24,8 -16,8 -8,24 0,16 24,8 0,8"/>
+  <polygon points="-32,0 -48,32 -32,16 0,48 24,40 48,8 24,24 0,16 16,0 0,-16 24,-24 48,-8 24,-40 0,-48 -32,-16 -48,-32"/>
  </object>
 </template>

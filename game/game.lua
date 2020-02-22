@@ -13,6 +13,7 @@ local LM = love.math
 local LP = love.physics
 local audio = require "audio"
 local assets = require "assets"
+local tablex = require "pl.tablex"
 
 local Game = {}
 
@@ -164,6 +165,37 @@ local function killShip(map, ship)
 	map:destroyObject(ship.id)
 end
 
+local function fireBullet_XY(map, ship, template, vx, vy, angle)
+	local bullet = map:newTemplateObject(ship.parent, template)
+	bullet.fillcolor = tablex.copy(ship.fillcolor)
+	bullet.linecolor = tablex.copy(ship.linecolor)
+	bullet.x = ship.x
+	bullet.y = ship.y
+	bullet.rotation = ship.rotation
+	local body = bullet:addBody(world, "dynamic")
+	local radius = 16
+	local polygon = bullet.polygon
+	if polygon then
+		local rsq = 0
+		for i = 1, #polygon - 1, 2 do
+			local x = polygon[i]
+			local y = polygon[i+1]
+			rsq = rsq + x*x + y*y
+		end
+		radius = sqrt(rsq/(#polygon/2))
+	end
+	local shape = LP.newCircleShape(radius)
+	local fixture = LP.newFixture(body, shape)
+	fixture:setUserData(bullet.collisiontag)
+	fixture:setSensor(true)
+	body:setAngle(angle or atan2(vy, vx))
+	body:setLinearVelocity(vx, vy)
+end
+
+local function fireBullet_SpeedAngle(map, ship, template, speed, angle)
+	fireBullet_XY(map, ship, template, speed*cos(angle), speed*sin(angle), angle)
+end
+
 local function updatePlayerGun(map, player, dt)
 	if player.visible == false then
 		return
@@ -171,34 +203,24 @@ local function updatePlayerGun(map, player, dt)
 	local firewait = player.firewait or dt
 	firewait = firewait - dt
 	if firewait <= 0 then
-		local bullet = map:newTemplateObject(player.parent, "playershot.tx")
-		bullet.fillcolor = player.fillcolor
-		bullet.linecolor = player.linecolor
-		bullet.x = player.x
-		bullet.y = player.y
-		bullet.rotation = player.rotation
-		local body = bullet:addBody(world, "dynamic")
-		local shape = LP.newRectangleShape(16, 32)
-		local fixture = LP.newFixture(body, shape)
-		fixture:setUserData("playershot")
-		fixture:setSensor(true)
-		local r = -pi/2 + body:getAngle()
-		local speed = 16*60
-		local vx, vy = speed*cos(r), speed*sin(r)
-		body:setLinearVelocity(vx, vy)
+		fireBullet_SpeedAngle(map, player, "playershot.tx", 16*60, -pi/2)
 		firewait = firewait + 1/10
 	end
 	player.firewait = firewait
 end
 
 local Moves = {}
+local Attacks = {}
 
-local function newEnemy(map, template, x, y)
+local function newEnemy(map, template, x, y, move, attack)
 	local enemy = map:newTemplateObject(enemies, template)
 	enemy.x = x
 	enemy.y = y
 	enemy.time = 0
-	enemy.move = Moves[enemy.move]
+	local move = move or enemy.move
+	enemy.move = Moves[move]
+	local attack = attack or enemy.attack
+	enemy.attack = Attacks[attack]
 	local body = enemy:addBody(world, "dynamic")
 	local shape = LP.newRectangleShape(32, 32)
 	local fixture = LP.newFixture(body, shape)
@@ -289,9 +311,8 @@ function Moves.held(enemy, map, dt)
 	local vy = (desty - ey)*30
 	enemy.body:setLinearVelocity(vx, vy)
 
-	local angle = enemy.body:getAngle()
-	local destangle = atan2(-dy, -dx)
-	enemy.body:setAngle(destangle)
+	local angle = atan2(-dx, dy)
+	enemy.body:setAngle(angle)
 	--local av = (destangle - angle)*30
 
 	local fire = player1.fire + player2.fire
@@ -304,8 +325,7 @@ function Moves.held(enemy, map, dt)
 			fixture:setUserData("thrown")
 		end
 		enemy.timeleft = 1
-		local throwangle = destangle + pi/2
-		enemy.body:setLinearVelocity(960*cos(throwangle), 960*sin(throwangle))
+		enemy.body:setLinearVelocity(960*cos(angle), 960*sin(angle))
 	end
 end
 
@@ -324,6 +344,7 @@ function Moves.defeated(enemy, map, dt)
 		end
 		enemy.body:setLinearVelocity(0, 0)
 		enemy.body:setAngularVelocity(0)
+		enemy.timeleft = 10
 		enemy.fillcolor = playerlink.linecolor
 
 		local maxx, maxy = 0, 0
@@ -369,6 +390,54 @@ function Moves.cos(enemy, map, dt)
 	enemy.body:setLinearVelocity(-320*sin(enemy.time*pi), 120)
 end
 
+function Moves.dipY(enemy)
+	enemy.body:setLinearVelocity(0, 480*(1-enemy.time))
+end
+
+function Moves.dipY_slow(enemy)
+	enemy.body:setLinearVelocity(0, 360 - 180*enemy.time)
+end
+
+function Moves.dipX(enemy)
+	local x, y = enemy.body:getPosition()
+	local vx = 480*(1-enemy.time)
+	if x >= 320 then
+		vx = -vx
+	end
+	enemy.body:setLinearVelocity(vx, 0)
+end
+
+local function getAimedPlayer(x)
+	return x >= 320 and players[2] or players[1]
+end
+
+function Attacks.face(enemy, map, dt)
+	local x, y = enemy.body:getPosition()
+	local player = getAimedPlayer(x)
+	if not player then
+		return
+	end
+	local angle = atan2(player.y - y, player.x - x)
+	enemy.body:setAngle(angle)
+	return angle
+end
+
+function Attacks.singleAimed(enemy, map, dt)
+	local angle = Attacks.face(enemy, map, dt)
+	if not angle then
+		return
+	end
+
+	local interval = enemy.fireinterval or 1
+	local firetime = enemy.firetime or interval
+	firetime = firetime - dt
+	if firetime <= 0 then
+		fireBullet_SpeedAngle(map, enemy, "enemyshot.tx", 360, angle)
+		firetime = firetime + interval
+	end
+	enemy.firetime = firetime
+end
+
 local yield = coroutine.yield
 
 local function co_wait(t)
@@ -408,15 +477,28 @@ local function co_level(map, dt)
 		music:play()
 		map.music = music
 	end
-	local leftx = 240
-	local rightx = 320+240-160
-	local top = -32
+
+	local x, y
+
 	co_wait(1)
-	for i = 1, 20 do
-		newEnemy(map, "enemy1.tx", leftx, top)
-		newEnemy(map, "enemy1.tx", rightx, top).time = 1
-		co_wait(0.5)
+	x = 320/5
+	for i = 1, 4 do
+		newEnemy(map, "enemy1.tx", 320+x, 0, "dipY")
+		newEnemy(map, "enemy1.tx", 320-x, 0, "dipY")
+		x = x + 320/5
+		co_wait(0.25)
 	end
+	co_wait(1.5)
+	newEnemy(map, "enemy2.tx", 320+64, 0, "dipY_slow", "singleAimed")
+	newEnemy(map, "enemy2.tx", 320-64, 0, "dipY_slow", "singleAimed")
+	y = 240/5
+	for i = 1, 4 do
+		newEnemy(map, "enemy1.tx",   0, y, "dipX")
+		newEnemy(map, "enemy1.tx", 640, y, "dipX")
+		y = y + 240/5
+		co_wait(0.25)
+	end
+	co_wait(1.5)
 
 	while #enemies > 0 do
 		map, dt = yield()
@@ -460,6 +542,7 @@ local function defeatEnemy(map, enemy)
 		fillcolor[3]/2
 	}
 	enemy.move = Moves.defeated
+	enemy.attack = nil
 	if #players > 0 then
 		enemy:setParent(players[1].parent)
 	end
@@ -490,35 +573,40 @@ end
 
 local function handleCollision(map, contact)
 	local f1, f2 = contact:getFixtures()
-	local playerid, enemyid = tagsMatch(f1, f2, "player", "enemy")
+	local playerid, playershotid, enemyid, enemyshotid, thrownid
+	playerid, enemyid = tagsMatch(f1, f2, "player", "enemy")
+	if not playerid then
+		playerid, enemyid = tagsMatch(f1, f2, "player", "enemyshot")
+	end
 	if playerid and enemyid then
 		playerlink.visible = false
-		killShip(map, players[1])
-		killShip(map, players[2])
-		players[2] = nil
-		players[1] = nil
+		if #players > 0 then
+			killShip(map, players[1])
+			killShip(map, players[2])
+			players[2] = nil
+			players[1] = nil
+		end
 		local enemy = map:getObjectById(enemyid)
 		killShip(map, enemy)
 		endGame(map)
+		return
 	end
-	local playershotid, enemyid = tagsMatch(f1, f2, "playershot", "enemy")
+	playershotid, enemyid = tagsMatch(f1, f2, "playershot", "enemy")
+	if not playershotid then
+		playershotid, enemyid = tagsMatch(f1, f2, "held", "enemy")
+	end
+	if not playershotid then
+		playershotid, enemyid = tagsMatch(f1, f2, "held", "enemyshot")
+	end
 	if playershotid and enemyid then
 		local enemy = map:getObjectById(enemyid)
 		damageEnemy(map, enemy)
-
 		local bullet = map:getObjectById(playershotid)
 		newBulletSpark(map, bullet, contact)
-		audio.play(bullet.hitsound)
-		map:destroyObject(playershotid)
+		killShip(map, bullet)
+		return
 	end
-	local heldid, enemyid = tagsMatch(f1, f2, "held", "enemy")
-	if heldid and enemyid then
-		local held = map:getObjectById(heldid)
-		killShip(map, held)
-		local enemy = map:getObjectById(enemyid)
-		damageEnemy(map, enemy)
-	end
-	local thrownid, enemyid = tagsMatch(f1, f2, "thrown", "enemy")
+	thrownid, enemyid = tagsMatch(f1, f2, "thrown", "enemy")
 	if thrownid and enemyid then
 		local enemy = map:getObjectById(enemyid)
 		damageEnemy(map, enemy)
@@ -529,6 +617,7 @@ local function handleCollision(map, contact)
 		thrown.lifetime = .25
 		thrown.body:setLinearVelocity(0, 0)
 		thrown.body:setAngularVelocity(15*pi)
+		return
 	end
 end
 
@@ -631,6 +720,10 @@ function Game.fixedUpdate(map, dt)
 			if type(move)=="function" then
 				move(object, map, dt)
 			end
+			local attack = object.attack
+			if type(attack)=="function" then
+				attack(object, map, dt)
+			end
 			local time = object.time
 			if time then
 				object.time = time + dt
@@ -680,8 +773,8 @@ local function debugDrawBoundingBoxes(world, lerp)
 	end
 end
 
---function Game.drawOver(map, lerp)
---	debugDrawBoundingBoxes(world, lerp)
---end
+function Game.drawOver(map, lerp)
+	--debugDrawBoundingBoxes(world, lerp)
+end
 
 return Game
