@@ -3,7 +3,7 @@
  <object>
   <properties>
    <property name="fillcolor" type="color" value="#ffaa55ff"/>
-   <property name="health" type="int" value="4"/>
+   <property name="health" type="int" value="2"/>
    <property name="killsound" type="file" value="Explosion17.wav"/>
    <property name="linecolor" type="color" value="#ff000000"/>
    <property name="move" value="cos"/>
