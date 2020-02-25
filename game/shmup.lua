@@ -295,12 +295,12 @@ function Shmup.fixedUpdate(map, dt)
 		local gun = guns[i]
 		gun.visible = firing
 		if firing and firewait <= 0 then
-			local bullet = map:newTileObject(player.parent, "playershot", "bullet")
+			local bullet = map:newTileObject(gun, "playershot", "bullet")
 			bullet.lifetime = 0.5
-			gun:getGlobalTransform(bullet.transform)
+			bullet:setParent(player.parent)
+			local dir = -pi/2 + bullet.rotation
+			local vx, vy = 1024*cos(dir), 1024*sin(dir)
 			local body = bullet:addBody(world, "dynamic")
-			local r = -pi/2 + body:getAngle()
-			local vx, vy = 1024*cos(r), 1024*sin(r)
 			body:setLinearVelocity(vx, vy)
 		end
 	end

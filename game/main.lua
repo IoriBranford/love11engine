@@ -59,8 +59,12 @@ local function load(...)
 		local filename = select(i, ...)
 		local map = filename and assets.get(filename)
 		if map then
-			map.script = assets.get(map.script)
 			maps[filename] = map
+			local script = assets.get(map.script)
+			if i==1 and not script then
+				script = assets.get("MapViewer.lua")
+			end
+			map.script = script
 		end
 	end
 

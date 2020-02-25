@@ -133,8 +133,14 @@ end
 function load.polygon(polygon, object, dir)
 	local polygon = parsePoints(polygon.points)
 	object.polygon = polygon
-	if not LM.isConvex(polygon) then
-		object.triangles = LM.triangulate(polygon)
+	if #polygon > 6 and not LM.isConvex(polygon) then
+		local ok, triangles = pcall(LM.triangulate, polygon)
+		if ok then
+			object.triangles = triangles
+		else
+			print(object.parent.name or object.parent.id,
+				object.name or object.id, triangles)
+		end
 	end
 end
 
@@ -322,6 +328,14 @@ function load.tileset(tileset, parent, dir)
 			imagewidth = image:getWidth()
 			imageheight = image:getHeight()
 		end
+		local realtilecount = floor(imagewidth/tilewidth)
+					*floor(imageheight/tileheight)
+		if realtilecount ~= tilecount then
+			error(string.format(
+				"In tileset %s expected %d tiles, found %d",
+				tileset.name, tilecount, realtilecount))
+		end
+
 		for i = #tileset, 1, -1 do
 			local tile = tileset[i]
 			local tileid = tile.id + 1

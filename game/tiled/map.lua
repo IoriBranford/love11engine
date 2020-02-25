@@ -307,7 +307,6 @@ end
 
 local function newObject(map, parent)
 	local id = newObjectId(map)
-
 	local object = {
 		tag = "object",
 		id = id,
@@ -317,10 +316,13 @@ local function newObject(map, parent)
 		scalex = 1,
 		scaley = 1,
 		visible = true,
+		parent = parent
 	}
 	setmetatable(object, Object)
-	object:setParent(parent)
 	map.objectsbyid[id] = object
+	if parent then
+		parent[#parent+1] = object
+	end
 	return object
 end
 Map.newObject = newObject
