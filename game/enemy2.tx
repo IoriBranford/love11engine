@@ -2,11 +2,15 @@
 <template>
  <object>
   <properties>
-   <property name="attack" value="singleAimed"/>
    <property name="beziercurvetime" type="float" value="4"/>
+   <property name="bodycategory" value="enemy"/>
+   <property name="bodyheight" type="float" value="64"/>
+   <property name="bodysensor" type="bool" value="true"/>
+   <property name="bodywidth" type="float" value="64"/>
    <property name="explodeforce" type="float" value="15"/>
    <property name="explodetime" type="float" value="0.25"/>
    <property name="fillcolor" type="color" value="#ffaa55ff"/>
+   <property name="firebullet" type="file" value="enemyshot.tx"/>
    <property name="fireinterval" type="float" value="1"/>
    <property name="health" type="int" value="16"/>
    <property name="killsound" type="file" value="Explosion17.wav"/>

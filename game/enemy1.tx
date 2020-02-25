@@ -2,8 +2,9 @@
 <template>
  <object>
   <properties>
-   <property name="attack" value="face"/>
    <property name="beziercurvetime" type="float" value="2"/>
+   <property name="bodycategory" value="enemy"/>
+   <property name="bodysensor" type="bool" value="true"/>
    <property name="explodeforce" type="float" value="15"/>
    <property name="explodetime" type="float" value="0.25"/>
    <property name="fillcolor" type="color" value="#ffaa55ff"/>

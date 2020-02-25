@@ -2,8 +2,11 @@
 <template>
  <object name="player_left">
   <properties>
+   <property name="bodycategory" value="player"/>
+   <property name="bodysensor" type="bool" value="false"/>
    <property name="firekey" value="space"/>
    <property name="firetrigger" value="left"/>
+   <property name="move" value="player"/>
    <property name="movekeys" value="a,d,w,s"/>
    <property name="movestick" value="left"/>
    <property name="fillcolor" type="color" value="#ffff0080"/>
