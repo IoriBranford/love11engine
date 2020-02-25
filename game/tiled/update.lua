@@ -1,6 +1,7 @@
 local pairs = pairs
 local type = type
 local floor = math.floor
+local sort = table.sort
 
 local update = {}
 local function update_default(node, parent, root, dt)
@@ -95,6 +96,17 @@ function update.object(object, parent, map, dt)
 		end
 		object.animationframe = f
 		object.animationmsecs = msecs
+	end
+end
+
+local function sortTopDown(a, b)
+	local dy = a.y - b.y
+	return dy < 0 or (dy == 0 and a.id < b.id)
+end
+
+function update.objectgroup(objectgroup, map, map, dt)
+	if objectgroup.draworder ~= "index" then
+		sort(objectgroup, sortTopDown)
 	end
 end
 
