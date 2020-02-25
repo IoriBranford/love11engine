@@ -14,6 +14,7 @@ local LP = love.physics
 local audio = require "audio"
 local assets = require "assets"
 local tablex = require "pl.tablex"
+local pretty = require "pl.pretty"
 
 local Game = {}
 
@@ -54,8 +55,6 @@ function Game.start(map)
 
 	playerlink = map:find("named", "playerlink")
 	playerlink:setParent(players[1])
-
-	enemies = map:find("named", "enemies")
 end
 
 local function readPlayerInput(player)
@@ -210,20 +209,27 @@ end
 local Moves = {}
 local Attacks = {}
 
-local function newEnemy(map, template, x, y, move, attack)
-	local enemy = map:newTemplateObject(enemies, template)
-	enemy.x = x
-	enemy.y = y
-	enemy.time = 0
-	local move = move or enemy.move
+local function initEnemy(map, enemy)
+	local move = enemy.move
+	local attack = enemy.attack
 	enemy.move = Moves[move]
-	local attack = attack or enemy.attack
 	enemy.attack = Attacks[attack]
+	enemy.time = 0
+	enemy:setParent(enemies)
 	local body = enemy:addBody(world, "dynamic")
 	local shape = LP.newRectangleShape(32, 32)
 	local fixture = LP.newFixture(body, shape)
 	fixture:setUserData("enemy")
 	fixture:setSensor(true)
+end
+
+local function newEnemy(map, template, x, y, move, attack)
+	local enemy = map:newTemplateObject(enemies, template)
+	enemy.x = x
+	enemy.y = y
+	enemy.move = move or enemy.move
+	enemy.attack = attack or enemy.attack
+	initEnemy(map, enemy)
 	return enemy
 end
 
@@ -331,6 +337,39 @@ function Moves.thrown(enemy, map, dt)
 	haloCrackle(enemy.halo, 0)
 end
 
+local function newHalo(map, enemy)
+	local polygon = enemy.polygon
+	if not polygon then
+		return
+	end
+	local maxx, maxy = 0, 0
+	for i = 1, #polygon-1, 2 do
+		local x = polygon[i]
+		local y = polygon[i+1]
+		if abs(x) > abs(maxx) and abs(y) > abs(maxy) then
+			maxx = x
+			maxy = y
+		end
+	end
+	local radius = sqrt(maxx*maxx + maxy*maxy)
+	local halo = map:newObject(enemy)
+	enemy.halo = halo
+	halo.radius = radius
+	halo.linecolor = playerlink.linecolor
+	halo.explodeforce = enemy.explodeforce or 15
+	halo.explodetime = enemy.explodetime or .25
+	local angle = 0
+	local numpoints = 16
+	local dangle = 2*pi/numpoints
+	polygon = {}
+	halo.polygon = polygon
+	for i = 1, numpoints do
+		polygon[#polygon+1] = radius*cos(angle)
+		polygon[#polygon+1] = radius*sin(angle)
+		angle = angle + dangle
+	end
+end
+
 function Moves.defeated(enemy, map, dt)
 	local playerlinkpos = getPlayerLinkPosition(enemy)
 
@@ -345,33 +384,7 @@ function Moves.defeated(enemy, map, dt)
 		enemy.timeleft = 10
 		enemy.fillcolor = playerlink.linecolor
 
-		local maxx, maxy = 0, 0
-		local polygon = enemy.polygon
-		for i = 1, #polygon-1, 2 do
-			local x = polygon[i]
-			local y = polygon[i+1]
-			if abs(x) > abs(maxx) and abs(y) > abs(maxy) then
-				maxx = x
-				maxy = y
-			end
-		end
-		local radius = sqrt(maxx*maxx + maxy*maxy)
-		local halo = map:newObject(enemy)
-		enemy.halo = halo
-		halo.radius = radius
-		halo.linecolor = playerlink.linecolor
-		halo.explodeforce = enemy.explodeforce or 15
-		halo.explodetime = enemy.explodetime or .25
-		local angle = 0
-		local numpoints = 16
-		local dangle = 2*pi/numpoints
-		polygon = {}
-		halo.polygon = polygon
-		for i = 1, numpoints do
-			polygon[#polygon+1] = radius*cos(angle)
-			polygon[#polygon+1] = radius*sin(angle)
-			angle = angle + dangle
-		end
+		newHalo(map, enemy)
 	else
 		enemy.body:applyForce(0, 120)
 	end
@@ -400,6 +413,33 @@ function Moves.dipX(enemy)
 		vx = -vx
 	end
 	enemy.body:setLinearVelocity(vx, 0)
+end
+
+function Moves.beziercurve(enemy, map, dt)
+	local path = map.objectsbyid[enemy.beziercurveid]
+	if not path then
+		return
+	end
+	local polyline = path.polyline
+	if not polyline then
+		return
+	end
+	local curve = path.beziercurve
+	if not curve then
+		curve = LM.newBezierCurve(polyline)
+		curve:translate(path.x, path.y)
+		path.beziercurve = curve
+	end
+	local pathtime = enemy.beziercurvetime or 1
+	local t = min(enemy.time/pathtime, 1)
+	local px, py = curve:evaluate(t)
+	local x, y = enemy.body:getPosition()
+	local vx, vy = (px-x)/dt, (py-y)/dt
+	enemy.body:setLinearVelocity(vx, vy)
+	if t >= 1 then
+		map:destroyObject(enemy.id)
+		map:destroyObject(enemy.beziercurveid)
+	end
 end
 
 local function getAimedPlayer(x)
@@ -473,30 +513,23 @@ local function co_level(map, dt)
 		map.music = music
 	end
 
-	local x, y
+	enemies = map:find("named", "enemies")
 
-	co_wait(1)
-	x = 320/5
-	for i = 1, 4 do
-		newEnemy(map, "enemy1.tx", 320+x, 0, "dipY")
-		newEnemy(map, "enemy1.tx", 320-x, 0, "dipY")
-		x = x + 320/5
-		co_wait(0.25)
-	end
-	co_wait(1.5)
-	newEnemy(map, "enemy2.tx", 320+64, 0, "dipY_slow", "singleAimed")
-	newEnemy(map, "enemy2.tx", 320-64, 0, "dipY_slow", "singleAimed")
-	y = 240/5
-	for i = 1, 4 do
-		newEnemy(map, "enemy1.tx",   0, y, "dipX")
-		newEnemy(map, "enemy1.tx", 640, y, "dipX")
-		y = y + 240/5
-		co_wait(0.25)
-	end
-	co_wait(1.5)
+	local enemywaves = map:find("named", "enemywaves")
+	if enemywaves then
+		for w = 1, #enemywaves do
+			local enemywave = enemywaves[w]
+			for e = #enemywave, 1, -1 do
+				local enemy = enemywave[e]
+				if enemy.health then
+					initEnemy(map, enemy)
+				end
+			end
 
-	while #enemies > 0 do
-		map, dt = yield()
+			while #enemies > 0 do
+				map, dt = yield()
+			end
+		end
 	end
 
 	endGame(map, dt)
@@ -531,11 +564,13 @@ local function defeatEnemy(map, enemy)
 	enemy.time = 0
 	enemy.linecolor = nil
 	local fillcolor = enemy.fillcolor
-	enemy.fillcolor = {
-		fillcolor[1]/2,
-		fillcolor[2]/2,
-		fillcolor[3]/2
-	}
+	if fillcolor then
+		enemy.fillcolor = {
+			fillcolor[1]/2,
+			fillcolor[2]/2,
+			fillcolor[3]/2
+		}
+	end
 	enemy.move = Moves.defeated
 	enemy.attack = nil
 	if #players > 0 then
