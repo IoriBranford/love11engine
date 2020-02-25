@@ -166,12 +166,10 @@ local function killShip(map, ship)
 end
 
 local function fireBullet_XY(map, ship, template, vx, vy, angle)
-	local bullet = map:newTemplateObject(ship.parent, template)
+	local bullet = map:newTemplateObject(ship, template)
 	bullet.fillcolor = tablex.copy(ship.fillcolor)
 	bullet.linecolor = tablex.copy(ship.linecolor)
-	bullet.x = ship.x
-	bullet.y = ship.y
-	bullet.rotation = ship.rotation
+	bullet:setParent(ship.parent)
 	local body = bullet:addBody(world, "dynamic")
 	local radius = 16
 	local polygon = bullet.polygon
@@ -361,9 +359,6 @@ function Moves.defeated(enemy, map, dt)
 		local halo = map:newObject(enemy)
 		enemy.halo = halo
 		halo.radius = radius
-		halo.x = 0
-		halo.y = 0
-		halo.rotation = 0
 		halo.linecolor = playerlink.linecolor
 		halo.explodeforce = enemy.explodeforce or 15
 		halo.explodetime = enemy.explodetime or .25
@@ -560,14 +555,12 @@ local function damageEnemy(map, ship)
 end
 
 local function newBulletSpark(map, bullet, contact)
-	local spark = map:newTemplateObject(bullet.parent, "hitspark.tx")
+	local spark = map:newTemplateObject(bullet, "hitspark.tx")
 	spark.fillcolor = bullet.fillcolor
 	local x, y = contact:getPositions()
-	x = x or 0
-	y = y or 0
-	spark.x = bullet.x + x
-	spark.y = bullet.y + y
-	spark.rotation = bullet.rotation
+	spark.x = x or 0
+	spark.y = y or 0
+	spark:setParent(bullet.parent)
 	spark:addBody(world, "dynamic")
 end
 
