@@ -15,6 +15,7 @@ local audio = require "audio"
 local assets = require "assets"
 local tablex = require "pl.tablex"
 local pretty = require "pl.pretty"
+local find = require "tiled.find"
 
 local Game = {}
 
@@ -215,6 +216,7 @@ local function initEnemy(map, enemy)
 	enemy.move = Moves[move]
 	enemy.attack = Attacks[attack]
 	enemy.time = 0
+	enemy.group = enemy.parent
 	enemy:setParent(enemies)
 	local body = enemy:addBody(world, "dynamic")
 	local shape = LP.newRectangleShape(32, 32)
@@ -415,10 +417,22 @@ function Moves.dipX(enemy)
 	enemy.body:setLinearVelocity(vx, 0)
 end
 
+local function lineStartsAt(node, x, y)
+	local polyline = node.polyline
+	return polyline
+		and x == polyline[1] + node.x
+		and y == polyline[2] + node.y
+end
+
 function Moves.beziercurve(enemy, map, dt)
+	local x, y = enemy.body:getPosition()
 	local path = map.objectsbyid[enemy.beziercurveid]
 	if not path then
-		return
+		path = find.custom(enemy.group, lineStartsAt, x, y)
+		if not path then
+			return
+		end
+		enemy.beziercurveid = path.id
 	end
 	local polyline = path.polyline
 	if not polyline then
@@ -433,7 +447,6 @@ function Moves.beziercurve(enemy, map, dt)
 	local pathtime = enemy.beziercurvetime or 1
 	local t = min(enemy.time/pathtime, 1)
 	local px, py = curve:evaluate(t)
-	local x, y = enemy.body:getPosition()
 	local vx, vy = (px-x)/dt, (py-y)/dt
 	enemy.body:setLinearVelocity(vx, vy)
 	if t >= 1 then

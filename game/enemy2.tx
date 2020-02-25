@@ -3,14 +3,15 @@
  <object>
   <properties>
    <property name="attack" value="singleAimed"/>
+   <property name="beziercurvetime" type="float" value="4"/>
    <property name="explodeforce" type="float" value="15"/>
    <property name="explodetime" type="float" value="0.25"/>
    <property name="fillcolor" type="color" value="#ffaa55ff"/>
-   <property name="fireinterval" type="float" value=".5"/>
+   <property name="fireinterval" type="float" value="1"/>
    <property name="health" type="int" value="16"/>
    <property name="killsound" type="file" value="Explosion17.wav"/>
    <property name="linecolor" type="color" value="#ff000000"/>
-   <property name="move" value="cos"/>
+   <property name="move" value="beziercurve"/>
    <property name="throwsound" type="file" value="Powerup28.wav"/>
    <property name="timeleft" type="float" value="10"/>
   </properties>
