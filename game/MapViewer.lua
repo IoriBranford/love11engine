@@ -25,7 +25,7 @@ end
 
 function MapViewer:keypressed(key)
 	if key == "f2" then
-		setNextMaps(self.filename, "gameplay.tmx")
+		LE.load(self.filename)
 	elseif key == "escape" then
 		LE.quit()
 	end

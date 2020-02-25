@@ -61,13 +61,12 @@ local function load(...)
 			maps[filename] = map
 		end
 
-		local properties = map and map.properties
-		if properties then
-			local script = assets.get(properties.script)
-			if script then
-				map.script = script
-				properties.script = nil
+		if map then
+			local script = assets.get(map.script)
+			if i==1 and not script then
+				script = assets.get("MapViewer.lua")
 			end
+			map.script = script
 		end
 	end
 
