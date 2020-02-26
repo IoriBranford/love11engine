@@ -491,8 +491,16 @@ function Ship.co_spawnWaves(map, dt, wrld)
 			end
 		end
 
-		while #enemies > 0 do
-			map, dt = yield()
+		local nextwavedelay = shipwave.nextwavedelay
+		if nextwavedelay then
+			while nextwavedelay > 0 do
+				nextwavedelay = nextwavedelay - dt
+				map, dt = yield()
+			end
+		else
+			while #enemies > 0 do
+				map, dt = yield()
+			end
 		end
 	end
 end
