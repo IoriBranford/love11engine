@@ -18,6 +18,7 @@ local level
 
 function Game.start(map)
 	world = LP.newWorld()
+	map.world = world
 	local worldbody = LP.newBody(world)
 
 	local worldobjects = map:find("named", "worldobjects")
@@ -39,6 +40,9 @@ function Game.start(map)
 
 	playerlink = map:find("named", "playerlink")
 	playerlink:setParent(players[1])
+
+	map.players = players
+	map.playerlink = playerlink
 end
 
 local yield = coroutine.yield
@@ -74,7 +78,7 @@ local function co_level(map, dt)
 		map.music = music
 	end
 
-	Ship.co_spawnWaves(map, dt, world)
+	Ship.co_spawnWaves(map, dt)
 
 	endGame(map, dt)
 end
@@ -197,8 +201,15 @@ local function handleCollision(map, contact)
 end
 
 function Game.fixedUpdate(map, dt)
-	local player1 = players[1]
-	local player2 = players[2]
+	if level and coroutine.status(level) ~= "dead" then
+		local ok, err = coroutine.resume(level, map, dt)
+		if not ok then
+			error(err)
+		end
+	end
+
+	local player1 = map.players[1]
+	local player2 = map.players[2]
 	if player1 and player2 then
 		local x1, y1 = player1.x, player1.y
 		local x2, y2 = player2.x, player2.y
@@ -219,13 +230,6 @@ function Game.fixedUpdate(map, dt)
 		end
 		polyline[#polyline-1] = dx
 		polyline[#polyline  ] = dy
-	end
-
-	if level and coroutine.status(level) ~= "dead" then
-		local ok, err = coroutine.resume(level, map, dt)
-		if not ok then
-			error(err)
-		end
 	end
 
 	for _, body in pairs(world:getBodies()) do

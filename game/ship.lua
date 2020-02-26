@@ -16,12 +16,9 @@ local tablex = require "pl.tablex"
 
 local Ship = {}
 
-local world
 local enemies
-local players
-local playerlink
 
-local function initShip(ship, newparent)
+local function initShip(ship, newparent, world)
 	local move = ship.move
 	ship.move = Ship["move_"..move]
 	ship.time = 0
@@ -54,6 +51,7 @@ local function explodeLines(object, map)
 	end
 	local x, y, parent, force, lifetime = object.x, object.y,
 		object.parent, object.explodeforce, object.explodetime
+	local world = map.world
 	for i = 1, #polygon-3, 2 do
 		local x1 = polygon[i+0]
 		local y1 = polygon[i+1]
@@ -85,6 +83,7 @@ local function explodeTriangles(object, map)
 	local tris = object.triangles or LM.triangulate(polygon)
 	local x, y, parent, force, lifetime = object.x, object.y,
 		object.parent, object.explodeforce, object.explodetime
+	local world = map.world
 	for i = 1, #tris do
 		local tri = tris[i]
 		local cx = (tri[1] + tri[3] + tri[5]) / 3
@@ -124,9 +123,7 @@ local function killShip(ship, map)
 end
 Ship.kill = killShip
 
-local function getPlayerLinkPosition(ship)
-	local player1 = players[1]
-	local player2 = players[2]
+local function getPlayerLinkPosition(ship, player1, player2)
 	if not player1 or not player2 then
 		return
 	end
@@ -184,8 +181,8 @@ local function move_thrown(ship, map, dt)
 end
 
 local function move_held(ship, map, dt)
-	local player1 = players[1]
-	local player2 = players[2]
+	local player1 = map.players[1]
+	local player2 = map.players[2]
 	if not player1 or not player2 then
 		killShip(ship, map)
 		return
@@ -246,7 +243,8 @@ local function newHalo(ship, map)
 	local halo = map:newObject(ship)
 	ship.halo = halo
 	halo.radius = radius
-	halo.linecolor = playerlink.linecolor
+	local playerlink = map.playerlink
+	halo.linecolor = playerlink and playerlink.linecolor
 	halo.explodeforce = ship.explodeforce or 15
 	halo.explodetime = ship.explodetime or .25
 	local angle = 0
@@ -262,7 +260,7 @@ local function newHalo(ship, map)
 end
 
 local function move_defeated(ship, map, dt)
-	local playerlinkpos = getPlayerLinkPosition(ship)
+	local playerlinkpos = getPlayerLinkPosition(ship, map.players[1], map.players[2])
 
 	if playerlinkpos then
 		ship.move = move_held
@@ -273,7 +271,8 @@ local function move_defeated(ship, map, dt)
 		ship.body:setLinearVelocity(0, 0)
 		ship.body:setAngularVelocity(0)
 		ship.timeleft = 10
-		ship.fillcolor = playerlink.linecolor
+		local playerlink = map.playerlink
+		ship.fillcolor = playerlink and playerlink.linecolor
 
 		newHalo(ship, map)
 	else
@@ -308,8 +307,8 @@ local function defeatShip(ship, map)
 		}
 	end
 	ship.move = move_defeated
-	if #players > 0 then
-		ship:setParent(players[1].parent)
+	if #map.players > 0 then
+		ship:setParent(map.players[1].parent)
 	end
 	return ship
 end
@@ -322,13 +321,13 @@ local function lineStartsAt(node, x, y)
 		and y == polyline[2] + node.y
 end
 
-local function getAimedPlayer(x)
-	return x >= 320 and players[2] or players[1]
+local function getAimedPlayer(x, p1, p2)
+	return x >= 320 and p2 or p1
 end
 
 local function face(ship, map, dt)
 	local x, y = ship.x, ship.y
-	local player = getAimedPlayer(x)
+	local player = getAimedPlayer(x, map.players[1], map.players[2])
 	if not player then
 		return
 	end
@@ -342,7 +341,7 @@ local function fireBullet_XY(map, ship, template, vx, vy, angle)
 	bullet.fillcolor = tablex.copy(ship.fillcolor)
 	bullet.linecolor = tablex.copy(ship.linecolor)
 	bullet:setParent(ship.parent)
-	local body = bullet:addBody(world, "dynamic")
+	local body = bullet:addBody(map.world, "dynamic")
 	local radius = 16
 	local polygon = bullet.polygon
 	if polygon then
@@ -469,25 +468,19 @@ function Ship.damage(ship, map)
 	end
 end
 
-function Ship.co_spawnWaves(map, dt, wrld)
-	world = wrld
+function Ship.co_spawnWaves(map, dt)
 	enemies = map:find("named", "enemies")
-	players = {
-		map:find("named", "player_left"),
-		map:find("named", "player_right"),
-	}
-	setmetatable(players, { __mode = "v" })
+	local players = map.players
 	for i = 1, #players do
-		initShip(players[i], players[i].parent)
+		initShip(players[i], players[i].parent, map.world)
 	end
-	playerlink = map:find("named", "playerlink")
 	local shipwaves = map:find("named", "enemywaves")
 	for w = 1, #shipwaves do
 		local shipwave = shipwaves[w]
 		for e = #shipwave, 1, -1 do
 			local ship = shipwave[e]
 			if ship.health then
-				initShip(ship, enemies)
+				initShip(ship, enemies, map.world)
 			end
 		end
 
