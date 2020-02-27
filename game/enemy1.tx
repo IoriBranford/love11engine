@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <template>
- <object>
+ <object rotation="-270">
   <properties>
    <property name="beziercurvetime" type="float" value="2"/>
    <property name="bodycategory" value="enemy"/>
