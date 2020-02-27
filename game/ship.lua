@@ -316,9 +316,18 @@ Ship.defeat = defeatShip
 
 local function lineStartsAt(node, x, y)
 	local polyline = node.polyline
-	return polyline
-		and x == polyline[1] + node.x
-		and y == polyline[2] + node.y
+	if not polyline then
+		return false
+	end
+	local rotation = node.rotation
+	local cosr = cos(rotation)
+	local sinr = sin(rotation)
+	local x1 = polyline[1]
+	local y1 = polyline[2]
+	x1, y1 = x1*cosr - y1*sinr, x1*sinr + y1*cosr
+	local dx = (x1 + node.x - x)
+	local dy = (y1 + node.y - y)
+	return abs(dx) < 1 and abs(dy) < 1
 end
 
 local function getAimedPlayer(x, p1, p2)
@@ -403,6 +412,7 @@ function Ship.move_beziercurve(ship, map, dt)
 	local curve = path.beziercurve
 	if not curve then
 		curve = LM.newBezierCurve(polyline)
+		curve:rotate(path.rotation)
 		curve:translate(path.x, path.y)
 		path.beziercurve = curve
 	end
