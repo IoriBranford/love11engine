@@ -221,6 +221,8 @@ local function zapShip(ship, ship2, map)
 	ship.time = 0
 	local body = ship.body
 	ship.body:setLinearVelocity(0, 0)
+	ship.body:setAngularVelocity(0)
+	ship.body:setAngle(0)
 	for _, fixture in pairs(body:getFixtures()) do
 		fixture:setUserData("zap")
 	end
@@ -235,12 +237,13 @@ local function zapShip(ship, ship2, map)
 	ship.fillcolor = ship2.fillcolor
 
 	local thunder = map:newObject(ship)
-	thunder.linecolor = ship.linecolor
+	local playerlink = map.playerlink
+	thunder.linecolor = playerlink and playerlink.linecolor
 	thunder.polyline = makeThunder({}, 8, x2-x, y2-y)
 end
 
 move_zap = function(ship, map, dt)
-	if ship.time < .5 then
+	if ship.time < 1/20 then
 		return
 	end
 	local world = map.world

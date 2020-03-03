@@ -55,147 +55,291 @@
    <object id="36" template="enemy2.tx" x="64" y="-32" rotation="-270"/>
   </objectgroup>
   <objectgroup id="12" name="lotsofsmall1">
-   <object id="37" template="enemy1.tx" x="280" y="-8" rotation="-270"/>
+   <object id="37" template="enemy1.tx" x="280" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="38" x="280" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="39" template="enemy1.tx" x="232" y="-8" rotation="-270"/>
+   <object id="39" template="enemy1.tx" x="232" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="40" x="232" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="41" template="enemy1.tx" x="184" y="-8" rotation="-270"/>
+   <object id="41" template="enemy1.tx" x="184" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="42" x="184" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="43" template="enemy1.tx" x="136" y="-8" rotation="-270"/>
+   <object id="43" template="enemy1.tx" x="136" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="44" x="136" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="45" template="enemy1.tx" x="88" y="-8" rotation="-270"/>
+   <object id="45" template="enemy1.tx" x="88" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="46" x="88" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="47" template="enemy1.tx" x="40" y="-8" rotation="-270"/>
+   <object id="47" template="enemy1.tx" x="40" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="48" x="40" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="49" template="enemy1.tx" x="280" y="-64" rotation="-270"/>
+   <object id="49" template="enemy1.tx" x="280" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="50" x="280" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="51" template="enemy1.tx" x="232" y="-64" rotation="-270"/>
+   <object id="51" template="enemy1.tx" x="232" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="52" x="232" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="53" template="enemy1.tx" x="184" y="-64" rotation="-270"/>
+   <object id="53" template="enemy1.tx" x="184" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="54" x="184" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="55" template="enemy1.tx" x="136" y="-64" rotation="-270"/>
+   <object id="55" template="enemy1.tx" x="136" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="56" x="136" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="57" template="enemy1.tx" x="88" y="-64" rotation="-270"/>
+   <object id="57" template="enemy1.tx" x="88" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="58" x="88" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="59" template="enemy1.tx" x="40" y="-64" rotation="-270"/>
+   <object id="59" template="enemy1.tx" x="40" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="60" x="40" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="61" template="enemy1.tx" x="280" y="-120" rotation="-270"/>
+   <object id="61" template="enemy1.tx" x="280" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="62" x="280" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="63" template="enemy1.tx" x="232" y="-120" rotation="-270"/>
+   <object id="63" template="enemy1.tx" x="232" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="64" x="232" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="65" template="enemy1.tx" x="184" y="-120" rotation="-270"/>
+   <object id="65" template="enemy1.tx" x="184" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="66" x="184" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="67" template="enemy1.tx" x="136" y="-120" rotation="-270"/>
+   <object id="67" template="enemy1.tx" x="136" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="68" x="136" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="69" template="enemy1.tx" x="88" y="-120" rotation="-270"/>
+   <object id="69" template="enemy1.tx" x="88" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="70" x="88" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="71" template="enemy1.tx" x="40" y="-120" rotation="-270"/>
+   <object id="71" template="enemy1.tx" x="40" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="72" x="40" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="73" template="enemy1.tx" x="600" y="-8" rotation="-270"/>
+   <object id="73" template="enemy1.tx" x="600" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="74" x="600" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="75" template="enemy1.tx" x="552" y="-8" rotation="-270"/>
+   <object id="75" template="enemy1.tx" x="552" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="76" x="552" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="77" template="enemy1.tx" x="504" y="-8" rotation="-270"/>
+   <object id="77" template="enemy1.tx" x="504" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="78" x="504" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="79" template="enemy1.tx" x="456" y="-8" rotation="-270"/>
+   <object id="79" template="enemy1.tx" x="456" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="80" x="456" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="81" template="enemy1.tx" x="408" y="-8" rotation="-270"/>
+   <object id="81" template="enemy1.tx" x="408" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="82" x="408" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="83" template="enemy1.tx" x="360" y="-8" rotation="-270"/>
+   <object id="83" template="enemy1.tx" x="360" y="-8" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="84" x="360" y="-8">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="85" template="enemy1.tx" x="600" y="-64" rotation="-270"/>
+   <object id="85" template="enemy1.tx" x="600" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="86" x="600" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="87" template="enemy1.tx" x="552" y="-64" rotation="-270"/>
+   <object id="87" template="enemy1.tx" x="552" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="88" x="552" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="89" template="enemy1.tx" x="504" y="-64" rotation="-270"/>
+   <object id="89" template="enemy1.tx" x="504" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="90" x="504" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="91" template="enemy1.tx" x="456" y="-64" rotation="-270"/>
+   <object id="91" template="enemy1.tx" x="456" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="92" x="456" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="93" template="enemy1.tx" x="408" y="-64" rotation="-270"/>
+   <object id="93" template="enemy1.tx" x="408" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="94" x="408" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="95" template="enemy1.tx" x="360" y="-64" rotation="-270"/>
+   <object id="95" template="enemy1.tx" x="360" y="-64" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="96" x="360" y="-64">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="97" template="enemy1.tx" x="600" y="-120" rotation="-270"/>
+   <object id="97" template="enemy1.tx" x="600" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="98" x="600" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="99" template="enemy1.tx" x="552" y="-120" rotation="-270"/>
+   <object id="99" template="enemy1.tx" x="552" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="100" x="552" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="101" template="enemy1.tx" x="504" y="-120" rotation="-270"/>
+   <object id="101" template="enemy1.tx" x="504" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="102" x="504" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="103" template="enemy1.tx" x="456" y="-120" rotation="-270"/>
+   <object id="103" template="enemy1.tx" x="456" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="104" x="456" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="105" template="enemy1.tx" x="408" y="-120" rotation="-270"/>
+   <object id="105" template="enemy1.tx" x="408" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="106" x="408" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="107" template="enemy1.tx" x="360" y="-120" rotation="-270"/>
+   <object id="107" template="enemy1.tx" x="360" y="-120" rotation="-270">
+    <properties>
+     <property name="beziercurvetime" type="float" value="5"/>
+    </properties>
+   </object>
    <object id="108" x="360" y="-120">
     <polyline points="0,0 0,424 0,-24"/>
    </object>
