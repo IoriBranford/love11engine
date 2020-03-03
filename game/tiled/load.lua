@@ -314,9 +314,6 @@ function load.tileset(tileset, parent, dir)
 		local exttileset = assets.get(file)
 		tablex.update(tileset, exttileset)
 	else
-		local tilecount = tileset.tilecount or 0
-		local columns = tileset.columns or 0
-		local rows = floor(tilecount/columns)
 		local tilewidth = tileset.tilewidth
 		local tileheight = tileset.tileheight
 		tileset.tileoffsetx = tileset.tileoffsetx or 0
@@ -328,13 +325,19 @@ function load.tileset(tileset, parent, dir)
 			imagewidth = image:getWidth()
 			imageheight = image:getHeight()
 		end
-		local realtilecount = floor(imagewidth/tilewidth)
-					*floor(imageheight/tileheight)
-		if realtilecount ~= tilecount then
-			error(string.format(
-				"In tileset %s expected %d tiles, found %d",
-				tileset.name, tilecount, realtilecount))
+		local imagecolumns = floor(imagewidth/tilewidth)
+		local imagerows = floor(imageheight/tileheight)
+		local imagetilecount = imagecolumns*imagerows
+		local tilecount = tileset.tilecount or 0
+		local columns = tileset.columns or 0
+		if imagetilecount ~= tilecount then
+			print(string.format("WARNING: In tileset %s expected %d tiles, found %d", tileset.name, tilecount, imagetilecount))
+			tilecount = imagetilecount
+			columns = imagecolumns
+			tileset.tilecount = tilecount
+			tileset.columns = columns
 		end
+		local rows = floor(tilecount/columns)
 
 		for i = #tileset, 1, -1 do
 			local tile = tileset[i]
