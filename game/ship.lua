@@ -1,3 +1,17 @@
+--- Ship
+--@field group layer it originated from
+--@field bodywidth default 32
+--@field bodyheight default 32
+--@field bodycategory
+--@field bodysensor
+--@field explodeforce
+--@field explodetime
+--@field firebullet
+--@field fireinterval
+--@field health
+--@field killsound
+--@table Ship
+
 local pi = math.pi
 local cos = math.cos
 local sin = math.sin
@@ -17,6 +31,26 @@ local tablex = require "pl.tablex"
 local Ship = {}
 
 local enemies
+
+local function makeThunder(polyline, numpoints, dx, dy)
+	local dist = sqrt(dx*dx + dy*dy)
+	local perpx, perpy = dy/dist, -dx/dist
+	polyline[1] = 0
+	polyline[2] = 0
+	local n = 2*numpoints
+	for i = 3, n-3, 2 do
+		local rand = (LM.random()*2 - 1) * 8
+		local t = i/n
+		local x = dx*t + perpx*rand
+		local y = dy*t + perpy*rand
+		polyline[i  ] = x
+		polyline[i+1] = y
+	end
+	polyline[n-1] = dx
+	polyline[n  ] = dy
+	return polyline
+end
+Ship.makeThunder = makeThunder
 
 local function initShip(ship, newparent, world)
 	local move = ship.move
@@ -111,7 +145,7 @@ local function knockoutShip(ship, map)
 end
 
 local function killShip(ship, map)
-	for i = 1, #ship do
+	for i = #ship, 1, -1 do
 		local child = ship[i]
 		child:setParent(ship.parent)
 		killShip(child, map)
@@ -180,6 +214,65 @@ local function move_thrown(ship, map, dt)
 	haloCrackle(ship.halo, 0)
 end
 
+local move_zap
+local function zapShip(ship, ship2, map)
+	ship.nextmove = ship.move
+	ship.move = move_zap
+	ship.time = 0
+	local body = ship.body
+	ship.body:setLinearVelocity(0, 0)
+	for _, fixture in pairs(body:getFixtures()) do
+		fixture:setUserData("zap")
+	end
+
+	if not ship2 then
+		return
+	end
+
+	local x, y = body:getPosition()
+	local x2, y2 = ship2.body:getPosition()
+	ship.linecolor = ship2.linecolor
+	ship.fillcolor = ship2.fillcolor
+
+	local thunder = map:newObject(ship)
+	thunder.linecolor = ship.linecolor
+	thunder.polyline = makeThunder({}, 8, x2-x, y2-y)
+end
+
+move_zap = function(ship, map, dt)
+	if ship.time < .5 then
+		return
+	end
+	local world = map.world
+	local nearestbody
+	local nearestdsq = math.huge
+	local x, y = ship.body:getPosition()
+	world:queryBoundingBox(ship.x - 480, ship.y - 480, ship.x + 480, ship.y + 480,
+		function(fixture)
+			local category = fixture:getUserData()
+			if category ~= "enemy" then
+				return true
+			end
+			local body = fixture:getBody()
+			local x2, y2 = body:getPosition()
+			local dx, dy = x2-x, y2-y
+			local dsq = dx*dx + dy*dy
+			if nearestdsq > dsq then
+				nearestdsq = dsq
+				nearestbody = body
+			end
+			return true
+		end)
+
+	if nearestbody then
+		local id2 = nearestbody:getUserData()
+		local ship2 = map:getObjectById(id2)
+		zapShip(ship2, ship, map)
+	end
+
+	killShip(ship, map)
+end
+
 local function move_held(ship, map, dt)
 	local player1 = map.players[1]
 	local player2 = map.players[2]
@@ -215,13 +308,7 @@ local function move_held(ship, map, dt)
 	haloCrackle(ship.halo, fire)
 
 	if fire >= 2 then
-		audio.play(ship.throwsound)
-		ship.move = move_thrown
-		for _, fixture in pairs(ship.body:getFixtures()) do
-			fixture:setUserData("thrown")
-		end
-		ship.timeleft = 1
-		ship.body:setLinearVelocity(960*cos(angle), 960*sin(angle))
+		zapShip(ship, nil, map)
 	end
 end
 
@@ -467,10 +554,11 @@ function Ship.move_player(ship, map, dt)
 	ship.firewait = firewait
 end
 
-function Ship.damage(ship, map)
+function Ship.damage(ship, map, damage)
 	local health = ship.health or 1
+	damage = damage or 1
 	if health then
-		health = health-1
+		health = health-damage
 		ship.health = health
 		if health <= 0 then
 			return defeatShip(ship, map)

@@ -1,3 +1,9 @@
+--- Universal moving object properties
+--@field move function that decides object's move this frame
+--@field time general-purpose auto-incrementing timer
+--@field timeleft until despawn
+--@table MovingObject
+
 local sqrt = math.sqrt
 local pi = math.pi
 local min = math.min
@@ -213,23 +219,8 @@ function Game.fixedUpdate(map, dt)
 	if player1 and player2 then
 		local x1, y1 = player1.x, player1.y
 		local x2, y2 = player2.x, player2.y
-		local dx, dy = x2-x1, y2-y1
-		local dist = sqrt(dx*dx + dy*dy)
-		local perpx, perpy = dy/dist, -dx/dist
-
 		local polyline = playerlink.polyline
-		polyline[1] = 0
-		polyline[2] = 0
-		for i = 3, #polyline-3, 2 do
-			local rand = (LM.random()*2 - 1) * 8
-			local t = i/#polyline
-			local x = dx*t + perpx*rand
-			local y = dy*t + perpy*rand
-			polyline[i  ] = x
-			polyline[i+1] = y
-		end
-		polyline[#polyline-1] = dx
-		polyline[#polyline  ] = dy
+		Ship.makeThunder(polyline, #polyline/2, x2-x1, y2-y1)
 	end
 
 	for _, body in pairs(world:getBodies()) do

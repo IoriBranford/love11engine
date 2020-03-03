@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.2" tiledversion="1.3.2" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" backgroundcolor="#008040" nextlayerid="14" nextobjectid="49">
+<map version="1.2" tiledversion="1.3.2" orientation="orthogonal" renderorder="right-down" compressionlevel="0" width="40" height="30" tilewidth="16" tileheight="16" infinite="0" backgroundcolor="#008040" nextlayerid="13" nextobjectid="109">
  <properties>
   <property name="music" type="file" value="bitshift.xm"/>
   <property name="script" type="file" value="game.lua"/>
@@ -54,32 +54,150 @@
    </object>
    <object id="36" template="enemy2.tx" x="64" y="-32" rotation="-270"/>
   </objectgroup>
-  <objectgroup id="12" name="sideswipe1">
-   <object id="37" template="enemy1.tx" x="120" y="-8"/>
-   <object id="38" x="112" y="-8">
-    <polyline points="8,0 -64,0 -64,56 -64,144 -64,232 -64,384 96,384 96,552"/>
+  <objectgroup id="12" name="lotsofsmall1">
+   <object id="37" template="enemy1.tx" x="280" y="-8" rotation="-270"/>
+   <object id="38" x="280" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="39" template="enemy1.tx" x="152" y="-40"/>
-   <object id="40" x="144" y="-40">
-    <polyline points="8,0 -64,0 -64,56 -64,144 -64,232 -64,384 96,384 96,552"/>
+   <object id="39" template="enemy1.tx" x="232" y="-8" rotation="-270"/>
+   <object id="40" x="232" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="41" template="enemy1.tx" x="184" y="-72"/>
-   <object id="42" x="176" y="-72">
-    <polyline points="8,0 -64,0 -64,56 -64,144 -64,232 -64,384 96,384 96,552"/>
+   <object id="41" template="enemy1.tx" x="184" y="-8" rotation="-270"/>
+   <object id="42" x="184" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
    </object>
-  </objectgroup>
-  <objectgroup id="13" name="sideswipe2">
-   <object id="43" template="enemy1.tx" x="520" y="-8"/>
-   <object id="44" x="528" y="544" rotation="180">
-    <polyline points="8,552 -64,552 -64,496 -64,408 -64,320 -64,168 96,168 96,0"/>
+   <object id="43" template="enemy1.tx" x="136" y="-8" rotation="-270"/>
+   <object id="44" x="136" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="45" template="enemy1.tx" x="488" y="-40"/>
-   <object id="46" x="496" y="512" rotation="180">
-    <polyline points="8,552 -64,552 -64,496 -64,408 -64,320 -64,168 96,168 96,0"/>
+   <object id="45" template="enemy1.tx" x="88" y="-8" rotation="-270"/>
+   <object id="46" x="88" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
    </object>
-   <object id="47" template="enemy1.tx" x="456" y="-72"/>
-   <object id="48" x="464" y="480" rotation="180">
-    <polyline points="8,552 -64,552 -64,496 -64,408 -64,320 -64,168 96,168 96,0"/>
+   <object id="47" template="enemy1.tx" x="40" y="-8" rotation="-270"/>
+   <object id="48" x="40" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="49" template="enemy1.tx" x="280" y="-64" rotation="-270"/>
+   <object id="50" x="280" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="51" template="enemy1.tx" x="232" y="-64" rotation="-270"/>
+   <object id="52" x="232" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="53" template="enemy1.tx" x="184" y="-64" rotation="-270"/>
+   <object id="54" x="184" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="55" template="enemy1.tx" x="136" y="-64" rotation="-270"/>
+   <object id="56" x="136" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="57" template="enemy1.tx" x="88" y="-64" rotation="-270"/>
+   <object id="58" x="88" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="59" template="enemy1.tx" x="40" y="-64" rotation="-270"/>
+   <object id="60" x="40" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="61" template="enemy1.tx" x="280" y="-120" rotation="-270"/>
+   <object id="62" x="280" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="63" template="enemy1.tx" x="232" y="-120" rotation="-270"/>
+   <object id="64" x="232" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="65" template="enemy1.tx" x="184" y="-120" rotation="-270"/>
+   <object id="66" x="184" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="67" template="enemy1.tx" x="136" y="-120" rotation="-270"/>
+   <object id="68" x="136" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="69" template="enemy1.tx" x="88" y="-120" rotation="-270"/>
+   <object id="70" x="88" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="71" template="enemy1.tx" x="40" y="-120" rotation="-270"/>
+   <object id="72" x="40" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="73" template="enemy1.tx" x="600" y="-8" rotation="-270"/>
+   <object id="74" x="600" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="75" template="enemy1.tx" x="552" y="-8" rotation="-270"/>
+   <object id="76" x="552" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="77" template="enemy1.tx" x="504" y="-8" rotation="-270"/>
+   <object id="78" x="504" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="79" template="enemy1.tx" x="456" y="-8" rotation="-270"/>
+   <object id="80" x="456" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="81" template="enemy1.tx" x="408" y="-8" rotation="-270"/>
+   <object id="82" x="408" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="83" template="enemy1.tx" x="360" y="-8" rotation="-270"/>
+   <object id="84" x="360" y="-8">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="85" template="enemy1.tx" x="600" y="-64" rotation="-270"/>
+   <object id="86" x="600" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="87" template="enemy1.tx" x="552" y="-64" rotation="-270"/>
+   <object id="88" x="552" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="89" template="enemy1.tx" x="504" y="-64" rotation="-270"/>
+   <object id="90" x="504" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="91" template="enemy1.tx" x="456" y="-64" rotation="-270"/>
+   <object id="92" x="456" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="93" template="enemy1.tx" x="408" y="-64" rotation="-270"/>
+   <object id="94" x="408" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="95" template="enemy1.tx" x="360" y="-64" rotation="-270"/>
+   <object id="96" x="360" y="-64">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="97" template="enemy1.tx" x="600" y="-120" rotation="-270"/>
+   <object id="98" x="600" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="99" template="enemy1.tx" x="552" y="-120" rotation="-270"/>
+   <object id="100" x="552" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="101" template="enemy1.tx" x="504" y="-120" rotation="-270"/>
+   <object id="102" x="504" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="103" template="enemy1.tx" x="456" y="-120" rotation="-270"/>
+   <object id="104" x="456" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="105" template="enemy1.tx" x="408" y="-120" rotation="-270"/>
+   <object id="106" x="408" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
+   </object>
+   <object id="107" template="enemy1.tx" x="360" y="-120" rotation="-270"/>
+   <object id="108" x="360" y="-120">
+    <polyline points="0,0 0,424 0,-24"/>
    </object>
   </objectgroup>
  </group>
