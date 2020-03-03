@@ -422,6 +422,7 @@
   <object id="8" name="playerlink" x="160" y="384">
    <properties>
     <property name="linecolor" type="color" value="#ffffff7f"/>
+    <property name="zapsound" type="file" value="Zap.wav"/>
    </properties>
    <polyline points="0,0 32,0 64,0 96,0 128,0 160,0 192,0 224,0 256,0 288,0 320,0"/>
   </object>

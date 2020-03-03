@@ -240,10 +240,13 @@ local function zapShip(ship, ship2, map)
 	local playerlink = map.playerlink
 	thunder.linecolor = playerlink and playerlink.linecolor
 	thunder.polyline = makeThunder({}, 8, x2-x, y2-y)
+	if playerlink then
+		audio.play(playerlink.zapsound)
+	end
 end
 
 move_zap = function(ship, map, dt)
-	if ship.time < 1/20 then
+	if ship.time < 5/60 then
 		return
 	end
 	local world = map.world
