@@ -32,6 +32,51 @@ local Ship = {}
 
 local enemies
 
+local function getPolygonRadius(polygon)
+	local rsq = 0
+	for i = 1, #polygon - 1, 2 do
+		local x = polygon[i]
+		local y = polygon[i+1]
+		rsq = rsq + x*x + y*y
+	end
+	return sqrt(rsq/(#polygon/2))
+end
+
+local function newHalo(ship, map)
+	local polygon = ship.polygon
+	if not polygon then
+		return
+	end
+	local maxx, maxy = 0, 0
+	for i = 1, #polygon-1, 2 do
+		local x = polygon[i]
+		local y = polygon[i+1]
+		if abs(x) > abs(maxx) and abs(y) > abs(maxy) then
+			maxx = x
+			maxy = y
+		end
+	end
+	local radius = sqrt(maxx*maxx + maxy*maxy)
+	local halo = map:newObject(ship)
+	ship.halo = halo
+	halo.radius = radius
+	local playerlink = map.playerlink
+	halo.linecolor = playerlink and playerlink.linecolor
+	halo.explodeforce = ship.explodeforce or 15
+	halo.explodetime = ship.explodetime or .25
+	local angle = 0
+	local numpoints = 16
+	local dangle = 2*pi/numpoints
+	polygon = {}
+	halo.polygon = polygon
+	for i = 1, numpoints do
+		polygon[#polygon+1] = radius*cos(angle)
+		polygon[#polygon+1] = radius*sin(angle)
+		angle = angle + dangle
+	end
+	return halo
+end
+
 local function makeThunder(polyline, numpoints, dx, dy)
 	local dist = sqrt(dx*dx + dy*dy)
 	local perpx, perpy = dy/dist, -dx/dist
@@ -60,8 +105,10 @@ local function initShip(ship, newparent, world)
 	ship:setParent(newparent)
 	local body = ship:addBody(world, "dynamic")
 	body:setFixedRotation(true)
-	local w, h = ship.bodywidth or 32, ship.bodyheight or 32
-	local shape = LP.newRectangleShape(w, h)
+	local polygon = ship.polygon
+	local radius = polygon and getPolygonRadius(polygon) or 16
+	ship.radius = radius
+	local shape = LP.newCircleShape(radius)
 	local fixture = LP.newFixture(body, shape)
 	local category = ship.bodycategory
 	local sensor =   ship.bodysensor
@@ -179,26 +226,22 @@ local function getPlayerLinkPosition(ship, player1, player2)
 	local rejx = p1ex - projx
 	local rejy = p1ey - projy
 	local rejsq = rejx*rejx + rejy*rejy
-	if rejsq > 32*32 then
+	local radius = ship.radius or 16
+	if rejsq > radius*radius then
 		return
 	end
 	return pos
 end
 
-local function haloCrackle(halo, fire)
+local function haloCrackle(halo)
 	local radius = halo.radius
 	local polygon = halo.polygon
 	local numpoints = #polygon/2
 	local angle = pi/2
 	local dangle = 2*pi/numpoints
-	local aiming = fire >= 1 and fire < 2
 	for i = 1, #polygon-1, 2 do
 		local x = cos(angle)
 		local y = sin(angle)
-		if aiming and y >= 1 then
-			y = y * 2
-		end
-
 		local rand = (LM.random()*2 - 1) * 8
 		local r = radius + rand
 		x = x*r
@@ -211,72 +254,94 @@ local function haloCrackle(halo, fire)
 end
 
 local function move_thrown(ship, map, dt)
-	haloCrackle(ship.halo, 0)
+	haloCrackle(ship.halo)
 end
 
 local move_zap
-local function zapShip(ship, ship2, map)
+local function zapShip(ship, map)
+	if ship.move == move_zap then
+		return
+	end
+	ship.timeleft = nil
 	ship.nextmove = ship.move
 	ship.move = move_zap
 	ship.time = 0
 	local body = ship.body
 	ship.body:setLinearVelocity(0, 0)
 	ship.body:setAngularVelocity(0)
-	ship.body:setAngle(0)
 	for _, fixture in pairs(body:getFixtures()) do
 		fixture:setUserData("zap")
 	end
 
-	if not ship2 then
-		return
-	end
-
-	local x, y = body:getPosition()
-	local x2, y2 = ship2.body:getPosition()
-	ship.linecolor = ship2.linecolor
-	ship.fillcolor = ship2.fillcolor
-
-	local thunder = map:newObject(ship)
 	local playerlink = map.playerlink
-	thunder.linecolor = playerlink and playerlink.linecolor
-	thunder.polyline = makeThunder({}, 8, x2-x, y2-y)
+	local x, y = body:getPosition()
+	local color = playerlink and playerlink.linecolor
+	ship.linecolor = color
+	ship.fillcolor = color
+
+	local thunder = map:newObject(map)
+	thunder.x, thunder.y = x, y
+	thunder.linecolor = color
+	thunder.polyline = {}
+	thunder.visible = false
 	if playerlink then
 		audio.play(playerlink.zapsound)
 	end
+	ship.thunder = thunder
+
+	ship.halo = ship.halo or newHalo(ship, map)
 end
 
 move_zap = function(ship, map, dt)
-	if ship.time < 5/60 then
-		return
-	end
 	local world = map.world
-	local nearestbody
-	local nearestdsq = math.huge
-	local x, y = ship.body:getPosition()
-	world:queryBoundingBox(ship.x - 480, ship.y - 480, ship.x + 480, ship.y + 480,
-		function(fixture)
-			local category = fixture:getUserData()
-			if category ~= "enemy" then
-				return true
-			end
-			local body = fixture:getBody()
-			local x2, y2 = body:getPosition()
-			local dx, dy = x2-x, y2-y
-			local dsq = dx*dx + dy*dy
-			if nearestdsq > dsq then
-				nearestdsq = dsq
-				nearestbody = body
-			end
-			return true
-		end)
+	local zappedid = ship.zappedid
 
-	if nearestbody then
-		local id2 = nearestbody:getUserData()
-		local ship2 = map:getObjectById(id2)
-		zapShip(ship2, ship, map)
+	haloCrackle(ship.halo)
+
+	if not zappedid then
+		local x, y = ship.body:getPosition()
+		local nearestdsq = math.huge
+		world:queryBoundingBox(ship.x - 640, ship.y - 480,
+			ship.x + 640, ship.y + 480,
+			function(fixture)
+				local category = fixture:getUserData()
+				if category ~= "enemy" and category ~= "enemyshot" then
+					return true
+				end
+				local body = fixture:getBody()
+				local id = body:getUserData()
+				local x2, y2 = body:getPosition()
+				local dx, dy = x2-x, y2-y
+				local dsq = dx*dx + dy*dy
+				if nearestdsq <= dsq then
+					return true
+				end
+				nearestdsq = dsq
+				zappedid = id
+				return true
+			end)
 	end
 
-	killShip(ship, map)
+	local zappedenemy = zappedid and map:getObjectById(zappedid)
+	if zappedenemy then
+		local x, y = ship.body:getPosition()
+		local ex, ey = zappedenemy.body:getPosition()
+		makeThunder(ship.thunder.polyline, 8, ex-x, ey-y)
+		ship.thunder.visible = true
+		if ship.time >= 5/60 then
+			zapShip(zappedenemy, map)
+		end
+	else
+		zappedid = nil
+		ship.thunder.visible = false
+	end
+
+	ship.zappedid = zappedid
+
+	if ship.time >= .5 then
+		map:destroyObject(ship.thunder)
+		killShip(ship, map)
+	end
 end
 
 local function move_held(ship, map, dt)
@@ -310,45 +375,11 @@ local function move_held(ship, map, dt)
 	ship.body:setAngle(angle)
 	--local av = (destangle - angle)*30
 
+	haloCrackle(ship.halo)
+
 	local fire = player1.fire + player2.fire
-	haloCrackle(ship.halo, fire)
-
 	if fire >= 2 then
-		zapShip(ship, nil, map)
-	end
-end
-
-local function newHalo(ship, map)
-	local polygon = ship.polygon
-	if not polygon then
-		return
-	end
-	local maxx, maxy = 0, 0
-	for i = 1, #polygon-1, 2 do
-		local x = polygon[i]
-		local y = polygon[i+1]
-		if abs(x) > abs(maxx) and abs(y) > abs(maxy) then
-			maxx = x
-			maxy = y
-		end
-	end
-	local radius = sqrt(maxx*maxx + maxy*maxy)
-	local halo = map:newObject(ship)
-	ship.halo = halo
-	halo.radius = radius
-	local playerlink = map.playerlink
-	halo.linecolor = playerlink and playerlink.linecolor
-	halo.explodeforce = ship.explodeforce or 15
-	halo.explodetime = ship.explodetime or .25
-	local angle = 0
-	local numpoints = 16
-	local dangle = 2*pi/numpoints
-	polygon = {}
-	halo.polygon = polygon
-	for i = 1, numpoints do
-		polygon[#polygon+1] = radius*cos(angle)
-		polygon[#polygon+1] = radius*sin(angle)
-		angle = angle + dangle
+		zapShip(ship, map)
 	end
 end
 
@@ -444,17 +475,9 @@ local function fireBullet_XY(map, ship, template, vx, vy, angle)
 	bullet.linecolor = tablex.copy(ship.linecolor)
 	bullet:setParent(ship.parent)
 	local body = bullet:addBody(map.world, "dynamic")
-	local radius = 16
 	local polygon = bullet.polygon
-	if polygon then
-		local rsq = 0
-		for i = 1, #polygon - 1, 2 do
-			local x = polygon[i]
-			local y = polygon[i+1]
-			rsq = rsq + x*x + y*y
-		end
-		radius = sqrt(rsq/(#polygon/2))
-	end
+	local radius = polygon and getPolygonRadius(polygon) or 16
+	bullet.radius = radius
 	local shape = LP.newCircleShape(radius)
 	local fixture = LP.newFixture(body, shape)
 	fixture:setUserData(bullet.collisiontag)
