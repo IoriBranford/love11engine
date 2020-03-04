@@ -191,6 +191,12 @@ local function handleCollision(map, contact)
 		Ship.kill(bullet, map)
 		return
 	end
+	local heldid, defeatedid = tagsMatch(f1, f2, "held", "defeated")
+	if heldid and defeatedid then
+		local held = map:getObjectById(heldid)
+		Ship.kill(held, map)
+		return
+	end
 	thrownid, enemyid = tagsMatch(f1, f2, "thrown", "enemy")
 	if thrownid and enemyid then
 		local enemy = map:getObjectById(enemyid)
@@ -212,15 +218,6 @@ function Game.fixedUpdate(map, dt)
 		if not ok then
 			error(err)
 		end
-	end
-
-	local player1 = map.players[1]
-	local player2 = map.players[2]
-	if player1 and player2 then
-		local x1, y1 = player1.x, player1.y
-		local x2, y2 = player2.x, player2.y
-		local polyline = playerlink.polyline
-		Ship.makeThunder(polyline, #polyline/2, x2-x1, y2-y1)
 	end
 
 	for _, body in pairs(world:getBodies()) do
@@ -264,6 +261,15 @@ function Game.fixedUpdate(map, dt)
 				end
 			end
 		end
+	end
+
+	local player1 = map.players[1]
+	local player2 = map.players[2]
+	if player1 and player2 then
+		local x1, y1 = player1.x, player1.y
+		local x2, y2 = player2.x, player2.y
+		local polyline = playerlink.polyline
+		Ship.makeThunder(polyline, #polyline/2, x2-x1, y2-y1)
 	end
 end
 
