@@ -70,7 +70,11 @@ function load.properties(properties, parent, dir)
 			local ptype = property.type
 			local pname = property.name
 			if ptype == "file" then
+				local ext = value:match('%.(%w-)$')
 				value = dir..value
+				if assets.canPreload(value) then
+					assets.get(value)
+				end
 			elseif ptype == "color" then
 				value = { parseColor(value) }
 			end

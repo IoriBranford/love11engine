@@ -11,13 +11,9 @@ local cache = {}
 local load = {}
 setmetatable(load, {
 	__index = function()
-		return load.file
+		return LFS.read
 	end
 })
-
-function load.file(filename)
-	return LFS.read(filename)
-end
 
 function load.xml(filename)
 	local text, err = load.file(filename)
@@ -87,12 +83,23 @@ function load.lua(filename)
 	return module, err
 end
 
-load.wav = LA.newSource
-load.ogg = LA.newSource
-load.xm = LA.newSource
-load.mod = LA.newSource
-load.s3m = LA.newSource
-load.it = LA.newSource
+local function load_audio_stream(filename)
+	return LA.newSource(filename, "stream")
+end
+
+local function load_audio_guessSourceType(filename)
+	local maxsize = 1048576
+	local sourcetype = LFS.getInfo(filename).size >= maxsize and "stream"
+								or "static"
+	return LA.newSource(filename, sourcetype)
+end
+
+load.wav = load_audio_guessSourceType
+load.ogg = load_audio_guessSourceType
+load.xm = load_audio_stream
+load.mod = load_audio_stream
+load.s3m = load_audio_stream
+load.it = load_audio_stream
 
 local function assetName(filename, ...)
 	local assetname = filename
@@ -110,6 +117,11 @@ function Assets.clear()
 	for assetname, _ in pairs(cache) do
 		cache[assetname] = nil
 	end
+end
+
+function Assets.canPreload(filename)
+	local ext = filename:match('%.(%w-)$')
+	return ext and ext ~= "tmx"
 end
 
 function Assets.get(filename, ...)
