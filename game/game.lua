@@ -220,18 +220,10 @@ function Game.fixedUpdate(map, dt)
 		end
 	end
 
-	for _, body in pairs(world:getBodies()) do
-		local id = body:getUserData()
-		local object = map:getObjectById(id)
-		if object then
-			local move = object.move
-			if type(move)=="function" then
-				move(object, map, dt)
-			end
-			local time = object.time
-			if time then
-				object.time = time + dt
-			end
+	for _, object in pairs(map.objectsbyid) do
+		local move = object.move
+		if type(move)=="function" then
+			move(object, map, dt)
 		end
 	end
 
@@ -243,22 +235,18 @@ function Game.fixedUpdate(map, dt)
 		end
 	end
 
-	for _, body in pairs(world:getBodies()) do
-		local id = body:getUserData()
-		local object = map:getObjectById(id)
-		if object then
-			object:updateFromBody()
-
-			local timeleft = object.timeleft
-			if timeleft then
-				timeleft = timeleft - dt
-				object.timeleft = timeleft
-				if timeleft <= 0 then
-					for i = 1, #object do
-						map:destroyObject(object[i].id)
-					end
-					map:destroyObject(id)
-				end
+	for _, object in pairs(map.objectsbyid) do
+		object:updateFromBody()
+		local time = object.time
+		if time then
+			object.time = time + dt
+		end
+		local timeleft = object.timeleft
+		if timeleft then
+			timeleft = timeleft - dt
+			object.timeleft = timeleft
+			if timeleft <= 0 then
+				map:destroyObject(object)
 			end
 		end
 	end
@@ -268,8 +256,9 @@ function Game.fixedUpdate(map, dt)
 	if player1 and player2 then
 		local x1, y1 = player1.x, player1.y
 		local x2, y2 = player2.x, player2.y
-		local polyline = playerlink.polyline
-		Ship.makeThunder(polyline, #polyline/2, x2-x1, y2-y1)
+		playerlink.dirx = x2 - x1
+		playerlink.diry = y2 - y1
+		Ship.move_thunder(playerlink, map, dt)
 	end
 end
 
