@@ -156,6 +156,7 @@ function love.run()
 		timeaccum = timeaccum + dt
 		while timeaccum >= fixeddt do
 			fixedUpdate(fixeddt)
+			collectgarbage("step", 2)
 			timeaccum = timeaccum - fixeddt
 		end
 
@@ -166,7 +167,6 @@ function love.run()
 		end
 
 		if LT then LT.sleep(0.001) end
-		collectgarbage("step", 2)
 	end
 end
 

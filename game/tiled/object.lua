@@ -131,6 +131,7 @@ function Object.onDestroy(object)
 	end
 	object:setParent()
 	local body = object.body
+	object.body = nil
 	if body then
 		body:setUserData(nil)
 		body:destroy()
