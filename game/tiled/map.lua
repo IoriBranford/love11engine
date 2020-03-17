@@ -395,13 +395,13 @@ function Map.find(map, condition, ...)
 end
 
 function Map.update(map, dt)
+	update(map, dt)
 	local objectsbyid = map.objectsbyid
 	local destroyedobjectids = map.destroyedobjectids
 	for id, _ in pairs(destroyedobjectids) do
 		clearDestroyedObject(objectsbyid, id)
 		destroyedobjectids[id] = nil
 	end
-	update(map, dt)
 end
 
 function Map.draw(map, lerp)
