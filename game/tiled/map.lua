@@ -319,7 +319,9 @@ local function newObject(map, parent)
 		parent = parent
 	}
 	setmetatable(object, Object)
-	map.objectsbyid[id] = object
+	local newobjects = map.newobjects or {}
+	map.newobjects = newobjects
+	newobjects[#newobjects+1] = object
 	if parent then
 		parent[#parent+1] = object
 	end
@@ -397,6 +399,13 @@ end
 function Map.update(map, dt)
 	update(map, dt)
 	local objectsbyid = map.objectsbyid
+	local newobjects = map.newobjects or {}
+	map.newobjects = newobjects
+	for i = #newobjects, 1, -1 do
+		local object = newobjects[i]
+		objectsbyid[object.id] = object
+		newobjects[i] = nil
+	end
 	local destroyedobjectids = map.destroyedobjectids
 	for id, _ in pairs(destroyedobjectids) do
 		clearDestroyedObject(objectsbyid, id)
