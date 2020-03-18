@@ -100,13 +100,13 @@ function draw.object(object, parent, map, lerp)
 		local image = tile.image or tileset.image
 		local quad = tile.quad
 		local dx, dy, dr
-		local body = object.body
-		if body and not body:isDestroyed() then
-			dx, dy = body:getLinearVelocity()
-			dx = dx * lerp
-			dy = dy * lerp
-			dr = body:getAngularVelocity() * lerp
-		end
+		--local body = object.body
+		--if body and not body:isDestroyed() then
+		--	dx, dy = body:getLinearVelocity()
+		--	dx = dx * lerp
+		--	dy = dy * lerp
+		--	dr = body:getAngularVelocity() * lerp
+		--end
 
 		if quad then
 			LG.draw(image, quad, dx, dy, dr, 1, 1,
