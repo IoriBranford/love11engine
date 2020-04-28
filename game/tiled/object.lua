@@ -55,9 +55,7 @@ function Object.setParent(object, newparent)
 	local xx, yx, zx, x, xy, yy, zy, y = newtransform:getMatrix()
 	object.x = x
 	object.y = y
-	local rotation = atan2(xy, xx)
-	object.rotation = rotation
-	local cosr = cos(rotation)
+	object.rotation = atan2(xy, xx)
 	object.scalex = sqrt(xx*xx + xy*xy)
 	object.scaley = sqrt(yx*yx + yy*yy)
 	object.parent = newparent
@@ -135,6 +133,7 @@ function Object.onDestroy(object)
 	if body then
 		body:setUserData(nil)
 		body:destroy()
+		body = nil
 	end
 end
 
