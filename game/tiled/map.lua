@@ -290,6 +290,7 @@ end
 
 function Map.initObjectManagement(map)
 	map.layersbyid, map.objectsbyid = listObjectsById(map)
+	map.newobjects = {}
 	map.destroyedobjectids = {}
 end
 
@@ -318,8 +319,9 @@ local function newObject(map, parent)
 		visible = true,
 		parent = parent
 	}
+	local newobjects = map.newobjects
+	newobjects[#newobjects+1] = object
 	setmetatable(object, Object)
-	map.objectsbyid[id] = object
 	if parent then
 		parent[#parent+1] = object
 	end
@@ -378,14 +380,6 @@ function Map.destroyObject(map, id)
 	map.destroyedobjectids[id] = true
 end
 
-local function clearDestroyedObject(objectsbyid, id)
-	local object = objectsbyid[id]
-	objectsbyid[id] = nil
-	if object then
-		object:onDestroy()
-	end
-end
-
 local find = require "tiled.find"
 local update = require "tiled.update"
 local draw = require "tiled.draw"
@@ -396,11 +390,28 @@ end
 
 function Map.update(map, dt)
 	update(map, dt)
+
 	local objectsbyid = map.objectsbyid
+	local newobjects = map.newobjects
 	local destroyedobjectids = map.destroyedobjectids
+
 	for id, _ in pairs(destroyedobjectids) do
-		clearDestroyedObject(objectsbyid, id)
+		local object = objectsbyid[id]
+		objectsbyid[id] = nil
+		if object then
+			object:onDestroy()
+		end
 		destroyedobjectids[id] = nil
+	end
+
+	for i = 1, #newobjects do
+		local object = newobjects[i]
+		local id = object.id
+		objectsbyid[id] = object
+	end
+
+	for i = #newobjects, 1, -1 do
+		newobjects[i] = nil
 	end
 end
 
