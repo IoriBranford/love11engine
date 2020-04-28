@@ -3,6 +3,9 @@
  <object rotation="-270">
   <properties>
    <property name="beziercurvetime" type="float" value="2"/>
+   <property name="bodytype" value="dynamic"/>
+   <property name="bodyshape" value="circle"/>
+   <property name="bodyradius" value="polygon"/>
    <property name="bodycategory" value="enemy"/>
    <property name="bodysensor" type="bool" value="true"/>
    <property name="explodeforce" type="float" value="15"/>

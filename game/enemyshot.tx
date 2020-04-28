@@ -2,7 +2,11 @@
 <template>
  <object>
   <properties>
-   <property name="collisiontag" value="enemyshot"/>
+   <property name="bodytype" value="dynamic"/>
+   <property name="bodyshape" value="circle"/>
+   <property name="bodyradius" value="polygon"/>
+   <property name="bodycategory" value="enemyshot"/>
+   <property name="bodysensor" type="bool" value="true"/>
    <property name="explodeforce" type="float" value="5"/>
    <property name="explodetime" type="float" value="0.25"/>
    <property name="timeleft" type="float" value="2"/>

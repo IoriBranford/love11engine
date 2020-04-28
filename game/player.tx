@@ -2,6 +2,9 @@
 <template>
  <object name="player_left">
   <properties>
+   <property name="bodytype" value="dynamic"/>
+   <property name="bodyshape" value="circle"/>
+   <property name="bodyradius" value="polygon"/>
    <property name="bodycategory" value="player"/>
    <property name="bodysensor" type="bool" value="false"/>
    <property name="firekey" value="space"/>

@@ -22,6 +22,59 @@ local enemies
 local playerlink
 local level
 
+local function getPolygonRadius(polygon)
+	local rsq = 0
+	for i = 1, #polygon - 1, 2 do
+		local x = polygon[i]
+		local y = polygon[i+1]
+		rsq = rsq + x*x + y*y
+	end
+	return sqrt(rsq/(#polygon/2))
+end
+
+local function addBody(object)
+	local bodytype = object.bodytype
+	if not bodytype then
+		return
+	end
+
+	object.bodytype = nil
+
+	local body = object:addBody(world, bodytype)
+	body:setFixedRotation(true)
+	object.body = body
+
+	local shape = object.bodyshape
+	object.bodyshape = nil
+	if shape == "circle" then
+		local radius = object.bodyradius
+		object.bodyradius = nil
+		if radius == "polygon" then
+			local polygon = object.polygon
+			radius = polygon and getPolygonRadius(polygon)
+		end
+		if not radius then
+			radius = 32
+		end
+		shape = LP.newCircleShape(radius)
+	end
+	if shape then
+		local fixture = LP.newFixture(body, shape)
+		local category = object.bodycategory
+		local sensor = object.bodysensor
+		object.bodycategory = nil
+		object.bodysensor = nil
+		fixture:setUserData(category)
+		fixture:setSensor(sensor or false)
+	end
+
+	local velx, vely, velr = object.velx, object.vely, object.velr
+	object.velx, object.vely, object.velr = nil, nil, nil
+	body:setLinearVelocity(velx or 0, vely or 0)
+	body:setAngularVelocity(velr or 0)
+	body:setAngle(object.rotation or 0)
+end
+
 function Game.start(map)
 	world = LP.newWorld()
 	map.world = world
@@ -84,7 +137,36 @@ local function co_level(map, dt)
 		map.music = music
 	end
 
-	Ship.co_spawnWaves(map, dt)
+	for i = 1, #players do
+		local player = players[i]
+		Ship.init(player, player.parent)
+		addBody(player)
+	end
+
+	enemies = map:find("named", "enemies")
+	local shipwaves = map:find("named", "enemywaves")
+	for w = 1, #shipwaves do
+		local shipwave = shipwaves[w]
+		for e = #shipwave, 1, -1 do
+			local ship = shipwave[e]
+			if ship.health then
+				Ship.init(ship, enemies)
+				addBody(ship)
+			end
+		end
+
+		local nextwavedelay = shipwave.nextwavedelay
+		if nextwavedelay then
+			while nextwavedelay > 0 do
+				nextwavedelay = nextwavedelay - dt
+				map, dt = yield()
+			end
+		else
+			while #enemies > 0 do
+				map, dt = yield()
+			end
+		end
+	end
 
 	endGame(map, dt)
 end
@@ -153,7 +235,6 @@ local function newBulletSpark(map, bullet, contact)
 	spark.x = x or 0
 	spark.y = y or 0
 	spark:setParent(bullet.parent)
-	spark:addBody(world, "dynamic")
 end
 
 local function handleCollision(map, contact)
@@ -204,7 +285,7 @@ local function handleCollision(map, contact)
 
 		local thrown = map:getObjectById(thrownid)
 		newBulletSpark(map, thrown, contact)
-		--explodeTriangles(map, thrown)
+		explodeTriangles(map, thrown)
 		thrown.lifetime = .25
 		thrown.body:setLinearVelocity(0, 0)
 		thrown.body:setAngularVelocity(15*pi)
@@ -220,18 +301,14 @@ function Game.fixedUpdate(map, dt)
 		end
 	end
 
-	for _, body in pairs(world:getBodies()) do
-		local id = body:getUserData()
-		local object = map:getObjectById(id)
-		if object then
-			local move = object.move
-			if type(move)=="function" then
-				move(object, map, dt)
-			end
-			local time = object.time
-			if time then
-				object.time = time + dt
-			end
+	for id, object in pairs(map.objectsbyid) do
+		local move = object.move
+		if type(move)=="function" then
+			move(object, map, dt)
+		end
+		local time = object.time
+		if time then
+			object.time = time + dt
 		end
 	end
 
@@ -243,22 +320,18 @@ function Game.fixedUpdate(map, dt)
 		end
 	end
 
-	for _, body in pairs(world:getBodies()) do
-		local id = body:getUserData()
-		local object = map:getObjectById(id)
-		if object then
-			object:updateFromBody()
+	for id, object in pairs(map.objectsbyid) do
+		object:updateFromBody()
 
-			local timeleft = object.timeleft
-			if timeleft then
-				timeleft = timeleft - dt
-				object.timeleft = timeleft
-				if timeleft <= 0 then
-					for i = 1, #object do
-						map:destroyObject(object[i].id)
-					end
-					map:destroyObject(id)
+		local timeleft = object.timeleft
+		if timeleft then
+			timeleft = timeleft - dt
+			object.timeleft = timeleft
+			if timeleft <= 0 then
+				for i = 1, #object do
+					map:destroyObject(object[i].id)
 				end
+				map:destroyObject(id)
 			end
 		end
 	end
@@ -270,6 +343,11 @@ function Game.fixedUpdate(map, dt)
 		local x2, y2 = player2.x, player2.y
 		local polyline = playerlink.polyline
 		Ship.makeThunder(polyline, #polyline/2, x2-x1, y2-y1)
+	end
+
+	local newobjects = map.newobjects
+	for i = 1, #newobjects do
+		addBody(newobjects[i])
 	end
 end
 

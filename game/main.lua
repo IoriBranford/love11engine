@@ -8,7 +8,7 @@ local config = {
 	window_width = 640,
 	window_height = 480,
 	window_resizable = true,
-	window_vsync = -1,
+	window_vsync = 0,
 	window_maximize = true
 }
 

@@ -2,6 +2,8 @@
 --@field group layer it originated from
 --@field bodywidth default 32
 --@field bodyheight default 32
+--@field bodyshape
+--@field bodyradius for circle shape
 --@field bodycategory
 --@field bodysensor
 --@field explodeforce
@@ -19,7 +21,6 @@ local abs = math.abs
 local atan2 = math.atan2
 local min = math.min
 local sqrt = math.sqrt
-local yield = coroutine.yield
 local LJ = love.joystick
 local LK = love.keyboard
 local LM = love.math
@@ -31,16 +32,6 @@ local tablex = require "pl.tablex"
 local Ship = {}
 
 local enemies
-
-local function getPolygonRadius(polygon)
-	local rsq = 0
-	for i = 1, #polygon - 1, 2 do
-		local x = polygon[i]
-		local y = polygon[i+1]
-		rsq = rsq + x*x + y*y
-	end
-	return sqrt(rsq/(#polygon/2))
-end
 
 local function newHalo(ship, map)
 	local polygon = ship.polygon
@@ -97,24 +88,14 @@ local function makeThunder(polyline, numpoints, dx, dy)
 end
 Ship.makeThunder = makeThunder
 
-local function initShip(ship, newparent, world)
+local function initShip(ship, newparent)
 	local move = ship.move
 	ship.move = Ship["move_"..move]
 	ship.time = 0
 	ship.group = ship.parent
 	ship:setParent(newparent)
-	local body = ship:addBody(world, "dynamic")
-	body:setFixedRotation(true)
-	local polygon = ship.polygon
-	local radius = polygon and getPolygonRadius(polygon) or 16
-	ship.radius = radius
-	local shape = LP.newCircleShape(radius)
-	local fixture = LP.newFixture(body, shape)
-	local category = ship.bodycategory
-	local sensor =   ship.bodysensor
-	fixture:setUserData(category)
-	fixture:setSensor(sensor or false)
 end
+Ship.init = initShip
 
 local function newShip(map, template, x, y, move)
 	local ship = map:newTemplateObject(enemies, template)
@@ -150,9 +131,9 @@ local function explodeLines(object, map)
 		shard.polyline = { x1, y1, x2, y2 }
 		shard.linecolor = linecolor
 		shard.timeleft = lifetime
-		local body = shard:addBody(world, "dynamic")
-		body:setLinearVelocity(force*cx, force*cy)
-		body:setAngularVelocity(force*pi)
+		shard.bodytype = "dynamic"
+		shard.velx, shard.vely = force*cx, force*cy
+		shard.velr = force*pi
 	end
 end
 
@@ -179,9 +160,9 @@ local function explodeTriangles(object, map)
 		shard.polygon = tri
 		shard.fillcolor = fillcolor
 		shard.timeleft = lifetime
-		local body = shard:addBody(world, "dynamic")
-		body:setLinearVelocity(force*cx, force*cy)
-		body:setAngularVelocity(force*pi)
+		shard.bodytype = "dynamic"
+		shard.velx, shard.vely = force*cx, force*cy
+		shard.velr = force*pi
 	end
 end
 
@@ -474,16 +455,8 @@ local function fireBullet_XY(map, ship, template, vx, vy, angle)
 	bullet.fillcolor = tablex.copy(ship.fillcolor)
 	bullet.linecolor = tablex.copy(ship.linecolor)
 	bullet:setParent(ship.parent)
-	local body = bullet:addBody(map.world, "dynamic")
-	local polygon = bullet.polygon
-	local radius = polygon and getPolygonRadius(polygon) or 16
-	bullet.radius = radius
-	local shape = LP.newCircleShape(radius)
-	local fixture = LP.newFixture(body, shape)
-	fixture:setUserData(bullet.collisiontag)
-	fixture:setSensor(true)
-	body:setAngle(angle or atan2(vy, vx))
-	body:setLinearVelocity(vx, vy)
+	bullet.rotation = angle or atan2(vy, vx)
+	bullet.velx, bullet.vely = vx, vy
 end
 
 local function fireBullet_SpeedAngle(map, ship, template, speed, angle)
@@ -591,36 +564,6 @@ function Ship.damage(ship, map, damage)
 		ship.health = health
 		if health <= 0 then
 			return defeatShip(ship, map)
-		end
-	end
-end
-
-function Ship.co_spawnWaves(map, dt)
-	enemies = map:find("named", "enemies")
-	local players = map.players
-	for i = 1, #players do
-		initShip(players[i], players[i].parent, map.world)
-	end
-	local shipwaves = map:find("named", "enemywaves")
-	for w = 1, #shipwaves do
-		local shipwave = shipwaves[w]
-		for e = #shipwave, 1, -1 do
-			local ship = shipwave[e]
-			if ship.health then
-				initShip(ship, enemies, map.world)
-			end
-		end
-
-		local nextwavedelay = shipwave.nextwavedelay
-		if nextwavedelay then
-			while nextwavedelay > 0 do
-				nextwavedelay = nextwavedelay - dt
-				map, dt = yield()
-			end
-		else
-			while #enemies > 0 do
-				map, dt = yield()
-			end
 		end
 	end
 end
