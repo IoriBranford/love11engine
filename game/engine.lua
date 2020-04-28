@@ -156,7 +156,7 @@ function love.run()
 		timeaccum = timeaccum + dt
 		while timeaccum >= fixeddt do
 			fixedUpdate(fixeddt)
-			collectgarbage("step", 2)
+			collectgarbage("step", 1)
 			timeaccum = timeaccum - fixeddt
 		end
 
@@ -165,6 +165,8 @@ function love.run()
 			draw(timeaccum)
 			LG.present()
 		end
+
+		collectgarbage("step", 1)
 
 		if LT then LT.sleep(0.001) end
 	end
