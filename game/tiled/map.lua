@@ -388,12 +388,24 @@ function Map.find(map, condition, ...)
 	return find[condition](map, ...)
 end
 
+local function cleanupObjects(map)
+	local objectsbyid = map.objectsbyid
+	local destroyedobjectids = map.destroyedobjectids
+	for id, _ in pairs(destroyedobjectids) do
+		local object = objectsbyid[id]
+		objectsbyid[id] = nil
+		if object then
+			object:onDestroy()
+		end
+		destroyedobjectids[id] = nil
+	end
+end
+
 function Map.update(map, dt)
 	update(map, dt)
 
 	local objectsbyid = map.objectsbyid
 	local newobjects = map.newobjects
-	local destroyedobjectids = map.destroyedobjectids
 
 	for i = 1, #newobjects do
 		local object = newobjects[i]
@@ -405,14 +417,7 @@ function Map.update(map, dt)
 		newobjects[i] = nil
 	end
 
-	for id, _ in pairs(destroyedobjectids) do
-		local object = objectsbyid[id]
-		objectsbyid[id] = nil
-		if object then
-			object:onDestroy()
-		end
-		destroyedobjectids[id] = nil
-	end
+	cleanupObjects(map)
 end
 
 function Map.draw(map, lerp)
@@ -437,6 +442,13 @@ function Map.setViewTransform(map, x, y, r, sx, sy, dx, dy, dr, dsx, dsy, lerp)
 	viewtransform:translate(x + dx*lerp, y + dy*lerp)
 	viewtransform:rotate(r + dr*lerp)
 	viewtransform:scale(sx, sy)
+end
+
+function Map.clear(map)
+	for id, _ in pairs(map.objectsbyid) do
+		map:destroyObject(id)
+	end
+	cleanupObjects(map)
 end
 
 return Map
