@@ -231,6 +231,7 @@ end
 local function newBulletSpark(map, bullet, contact)
 	local spark = map:newTemplateObject(bullet, "hitspark.tx")
 	spark.fillcolor = bullet.fillcolor
+	spark.timeleft = spark.lifetime
 	local x, y = contact:getPositions()
 	spark.x = x or 0
 	spark.y = y or 0
@@ -239,7 +240,7 @@ end
 
 local function handleCollision(map, contact)
 	local f1, f2 = contact:getFixtures()
-	local playerid, playershotid, enemyid, enemyshotid, thrownid
+	local playerid, playershotid, enemyid, enemyshotid
 	playerid, enemyid = tagsMatch(f1, f2, "player", "enemy")
 	if not playerid then
 		playerid, enemyid = tagsMatch(f1, f2, "player", "enemyshot")
@@ -276,19 +277,6 @@ local function handleCollision(map, contact)
 	if heldid and defeatedid then
 		local held = map:getObjectById(heldid)
 		Ship.kill(held, map)
-		return
-	end
-	thrownid, enemyid = tagsMatch(f1, f2, "thrown", "enemy")
-	if thrownid and enemyid then
-		local enemy = map:getObjectById(enemyid)
-		Ship.damage(enemy, map)
-
-		local thrown = map:getObjectById(thrownid)
-		newBulletSpark(map, thrown, contact)
-		explodeTriangles(map, thrown)
-		thrown.lifetime = .25
-		thrown.body:setLinearVelocity(0, 0)
-		thrown.body:setAngularVelocity(15*pi)
 		return
 	end
 end

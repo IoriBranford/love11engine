@@ -10,7 +10,7 @@
    <property name="explodeforce" type="float" value="5"/>
    <property name="explodetime" type="float" value="0.25"/>
    <property name="killsound" type="file" value="Hit.wav"/>
-   <property name="timeleft" type="float" value="1"/>
+   <property name="lifetime" type="float" value="1"/>
   </properties>
   <polygon points="16,0 -8,-8 -16,0 -8,8"/>
  </object>

@@ -15,10 +15,10 @@
    <property name="fireinterval" type="float" value="1"/>
    <property name="health" type="int" value="16"/>
    <property name="killsound" type="file" value="Explosion17.wav"/>
+   <property name="lifetime" type="float" value="10"/>
    <property name="linecolor" type="color" value="#ff000000"/>
    <property name="move" value="beziercurve"/>
    <property name="throwsound" type="file" value="Powerup28.wav"/>
-   <property name="timeleft" type="float" value="10"/>
   </properties>
   <polygon points="-32,0 -48,32 -32,16 0,48 24,40 48,8 24,24 0,16 16,0 0,-16 24,-24 48,-8 24,-40 0,-48 -32,-16 -48,-32"/>
  </object>

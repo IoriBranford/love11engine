@@ -13,10 +13,10 @@
    <property name="fillcolor" type="color" value="#ffaa55ff"/>
    <property name="health" type="int" value="2"/>
    <property name="killsound" type="file" value="Explosion17.wav"/>
+   <property name="lifetime" type="float" value="5"/>
    <property name="linecolor" type="color" value="#ff000000"/>
    <property name="move" value="beziercurve"/>
    <property name="throwsound" type="file" value="Powerup28.wav"/>
-   <property name="timeleft" type="float" value="5"/>
   </properties>
   <polygon points="8,0 0,-8 24,-8 0,-16 -8,-24 -16,-8 -24,-8 -16,0 -24,8 -16,8 -8,24 0,16 24,8 0,8"/>
  </object>

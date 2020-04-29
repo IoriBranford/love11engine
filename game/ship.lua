@@ -92,6 +92,7 @@ local function initShip(ship, newparent)
 	local move = ship.move
 	ship.move = Ship["move_"..move]
 	ship.time = 0
+	ship.timeleft = ship.lifetime
 	ship.group = ship.parent
 	ship:setParent(newparent)
 end
