@@ -7,9 +7,13 @@ local LW = love.window
 local config = {
 	window_width = 640,
 	window_height = 480,
-	window_resizable = true,
-	window_vsync = 0,
-	window_maximize = true
+	window_maximize = true,
+	window_flags = {
+		resizable = true,
+		vsync = 0,
+		fullscreen = false,
+		fullscreentype = "desktop"
+	}
 }
 
 function engine.init(args, baseandargs)
@@ -20,10 +24,7 @@ function engine.init(args, baseandargs)
 
 	local window_width = config.window_width
 	local window_height = config.window_height
-	local window_flags = {
-		resizable = config.window_resizable,
-		vsync = config.window_vsync
-	}
+	local window_flags = config.window_flags
 	LW.setMode(window_width, window_height, window_flags)
 	LW.setTitle(LFS.getIdentity())
 	if config.window_maximize then
