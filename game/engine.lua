@@ -34,9 +34,21 @@ local function onEvent(ev, ...)
 	end
 end
 
+local function finishCurrentMaps()
+	for filename, map in pairs(maps) do
+		map:clear()
+	end
+	onEvent("finish")
+end
+
 local function load(...)
+	finishCurrentMaps()
+
 	LA.stop()
 	assets.clear()
+
+	collectgarbage()
+
 	local font = assets.get(".defaultFont", floor(LG.getHeight()/48))
 	LG.setFont(font)
 
@@ -53,6 +65,8 @@ local function load(...)
 			map.script = script
 		end
 	end
+
+	collectgarbage()
 
 	onEvent("start")
 end
@@ -133,9 +147,8 @@ function love.run()
 			LE.pump()
 			for name, a,b,c,d,e,f in LE.poll() do
 				if name == "quit" then
-					if not love.quit or not love.quit() then
-						return a or 0
-					end
+					finishCurrentMaps()
+					return a or 0
 				end
 
 				onEvent(name, a, b, c, d, e, f)
