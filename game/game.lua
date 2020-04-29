@@ -339,6 +339,10 @@ function Game.fixedUpdate(map, dt)
 	end
 end
 
+function Game.finish()
+	world:destroy()
+end
+
 local function debugDrawBoundingBoxes(world, lerp)
 	for _, body in pairs(world:getBodies()) do
 		local vx, vy = body:getLinearVelocity()
