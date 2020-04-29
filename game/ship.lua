@@ -455,6 +455,7 @@ local function fireBullet_XY(map, ship, template, vx, vy, angle)
 	local bullet = map:newTemplateObject(ship, template)
 	bullet.fillcolor = tablex.copy(ship.fillcolor)
 	bullet.linecolor = tablex.copy(ship.linecolor)
+	bullet.timeleft = bullet.lifetime
 	bullet:setParent(ship.parent)
 	bullet.rotation = angle or atan2(vy, vx)
 	bullet.velx, bullet.vely = vx, vy
