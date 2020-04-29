@@ -395,15 +395,6 @@ function Map.update(map, dt)
 	local newobjects = map.newobjects
 	local destroyedobjectids = map.destroyedobjectids
 
-	for id, _ in pairs(destroyedobjectids) do
-		local object = objectsbyid[id]
-		objectsbyid[id] = nil
-		if object then
-			object:onDestroy()
-		end
-		destroyedobjectids[id] = nil
-	end
-
 	for i = 1, #newobjects do
 		local object = newobjects[i]
 		local id = object.id
@@ -412,6 +403,15 @@ function Map.update(map, dt)
 
 	for i = #newobjects, 1, -1 do
 		newobjects[i] = nil
+	end
+
+	for id, _ in pairs(destroyedobjectids) do
+		local object = objectsbyid[id]
+		objectsbyid[id] = nil
+		if object then
+			object:onDestroy()
+		end
+		destroyedobjectids[id] = nil
 	end
 end
 
