@@ -24,21 +24,21 @@ end
 
 local function onEvent(ev, ...)
 	for filename, map in pairs(maps) do
-		local script = map.script
-		if script then
-			local handler = script[ev]
-			if handler then
-				handler(map, ...)
+		local callbacks = map.callbacks
+		if callbacks then
+			local callback = callbacks[ev]
+			if callback then
+				callback(map, ...)
 			end
 		end
 	end
 end
 
 local function finishCurrentMaps()
+	onEvent("finish")
 	for filename, map in pairs(maps) do
 		map:clear()
 	end
-	onEvent("finish")
 end
 
 local function load(...)
@@ -58,11 +58,11 @@ local function load(...)
 		local map = filename and assets.get(filename)
 		if map then
 			maps[filename] = map
-			local script = assets.get(map.script)
-			if i==1 and not script then
-				script = assets.get("MapViewer.lua")
+			local callbacks = assets.get(map.callbacks)
+			if i==1 and not callbacks then
+				callbacks = assets.get("MapViewer.lua")
 			end
-			map.script = script
+			map.callbacks = callbacks
 		end
 	end
 
