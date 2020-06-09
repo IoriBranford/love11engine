@@ -4,6 +4,7 @@ local sqrt = math.sqrt
 local pi = math.pi
 local cos = math.cos
 local sin = math.sin
+local coyield = coroutine.yield
 local LG = love.graphics
 local LJ = love.joystick
 local LK = love.keyboard
@@ -155,8 +156,9 @@ local find = require "tiled.find"
 
 local Shmup = {}
 local world
-local player = {}
-local guns = {}
+
+local coroutines
+local fixedCoroutines
 
 local function updateObjectLifetimes(map, dt)
 	for id, object in pairs(map.objectsbyid) do
@@ -181,7 +183,136 @@ local function updateBodyTransforms(map, world)
 	end
 end
 
+local function co_waitTime(t, dt)
+	while t > 0 do
+		t = t - dt
+		coyield()
+	end
+end
+
+local function co_bullet(bullet, map, dt)
+	co_waitTime(0.5, dt)
+	map:destroyObject(bullet.id)
+end
+
+local function co_player_update(player, map, dt)
+	while true do
+		local keyUp = "up"
+		local keyDown = "down"
+		local keyLeft = "left"
+		local keyRight = "right"
+		local keyFire = "z"
+		local keySlow = "lshift"
+		local joyX = 1
+		local joyY = 2
+		local joyHat = 1
+		local joyFire = 1
+		local joySlow = 2
+		local padX = "leftx"
+		local padY = "lefty"
+		local padUp = "dpup"
+		local padDown = "dpdown"
+		local padLeft = "dpleft"
+		local padRight = "dpright"
+		local padFire = "x"
+		local padSlow = "a"
+		local deadzonesq = 1/16
+		local speedNormal = 360
+		local speedSlow = 240
+
+		local firing = LK.isDown(keyFire)
+		local slowed = LK.isDown(keySlow)
+
+		local inx, iny = 0, 0
+		inx = inx - (LK.isDown(keyLeft)	and 1 or 0)
+		inx = inx + (LK.isDown(keyRight)and 1 or 0)
+		iny = iny - (LK.isDown(keyUp)	and 1 or 0)
+		iny = iny + (LK.isDown(keyDown)	and 1 or 0)
+		for _, joystick in pairs(LJ.getJoysticks()) do
+			local ax, ay = 0, 0
+			local bl, br, bu, bd
+			if joystick:isGamepad() then
+				firing = firing or joystick:isGamepadDown(padFire)
+				slowed = slowed or joystick:isGamepadDown(padSlow)
+				ax = joystick:getGamepadAxis(padX)
+				ay = joystick:getGamepadAxis(padY)
+				bl = joystick:isGamepadDown(padLeft)
+				br = joystick:isGamepadDown(padRight)
+				bu = joystick:isGamepadDown(padUp)
+				bd = joystick:isGamepadDown(padDown)
+			else
+				firing = firing or joystick:isDown(joyFire)
+				slowed = slowed or joystick:isDown(joySlow)
+				ax = joystick:getAxis(joyX)
+				ay = joystick:getAxis(joyY)
+				local hat = joystick:getHat(joyHat)
+				bl = hat:find("l")
+				br = hat:find("r")
+				bu = hat:find("u")
+				bd = hat:find("d")
+			end
+			if ax*ax + ay*ay >= deadzonesq then
+				inx = inx + ax
+				iny = iny + ay
+			end
+			inx = inx - (bl and 1 or 0)
+			inx = inx + (br and 1 or 0)
+			iny = iny - (bu and 1 or 0)
+			iny = iny + (bd and 1 or 0)
+		end
+		local insq = inx*inx + iny*iny
+		if insq > 1 then
+			local inmag = sqrt(insq)
+			inx = inx / inmag
+			iny = iny / inmag
+		end
+
+		local speed = slowed and speedSlow or speedNormal
+		local vx, vy = inx*speed, iny*speed
+		player.body:setLinearVelocity(vx, vy)
+		player.body:setAngularVelocity(inx*pi)
+
+		player.firing = firing
+		coyield()
+	end
+end
+
+local function co_player_fixedUpdate(player, map, dt)
+	while true do
+		local firing = player.firing
+		local firewait = player.firewait or 0
+		local guns = player.guns
+		for i = 1, #guns do
+			local gun = guns[i]
+			gun.visible = firing
+			if firing and firewait <= 0 then
+				local bullet = map:newTileObject(gun, "playershot", "bullet")
+				bullet:setParent(player.parent)
+				local dir = -pi/2 + bullet.rotation
+				local vx, vy = 1024*cos(dir), 1024*sin(dir)
+				local body = bullet:addBody(world, "dynamic")
+				body:setLinearVelocity(vx, vy)
+				fixedCoroutines:add(bullet, co_bullet)
+			end
+		end
+
+		if firing then
+			if firewait <= 0 then
+				player.firewait = firewait + 1/15
+			else
+				player.firewait = firewait - dt
+			end
+		else
+			player.firewait = 0
+		end
+		coyield()
+	end
+end
+
 function Shmup.start(map)
+	coroutines = require("coroutines")()
+	fixedCoroutines = require("coroutines")()
+
 	map:setViewTransform(-LG.getWidth()/2, -LG.getHeight()/2)
 
 	world = LP.newWorld()
@@ -191,11 +322,13 @@ function Shmup.start(map)
 	--fixture:setFriction(0)
 
 	local playerteam = find.named(map, "playerteam")
-	player = find.objectNamed(playerteam, "player")
+	local player = find.objectNamed(playerteam, "player")
 	if player then
 		local body = player:addBody(world, "dynamic")
 		local shape = LP.newRectangleShape(16, 16)
 		local fixture = LP.newFixture(body, shape)
+		local guns = {}
+		player.guns = guns
 		for i = 1,2 do
 			local gun = find.objectNamed(playerteam, "gun"..i)
 			if gun then
@@ -204,120 +337,24 @@ function Shmup.start(map)
 				guns[#guns+1] = gun
 			end
 		end
+		coroutines:add(player, co_player_update)
+		fixedCoroutines:add(player, co_player_fixedUpdate)
 	end
 end
 
 function Shmup.update(map, dt)
-	local keyUp = "up"
-	local keyDown = "down"
-	local keyLeft = "left"
-	local keyRight = "right"
-	local keyFire = "z"
-	local keySlow = "lshift"
-	local joyX = 1
-	local joyY = 2
-	local joyHat = 1
-	local joyFire = 1
-	local joySlow = 2
-	local padX = "leftx"
-	local padY = "lefty"
-	local padUp = "dpup"
-	local padDown = "dpdown"
-	local padLeft = "dpleft"
-	local padRight = "dpright"
-	local padFire = "x"
-	local padSlow = "a"
-	local deadzonesq = 1/16
-	local speedNormal = 360
-	local speedSlow = 240
-
-	local firing = LK.isDown(keyFire)
-	local slowed = LK.isDown(keySlow)
-
-	local inx, iny = 0, 0
-	inx = inx - (LK.isDown(keyLeft)	and 1 or 0)
-	inx = inx + (LK.isDown(keyRight)and 1 or 0)
-	iny = iny - (LK.isDown(keyUp)	and 1 or 0)
-	iny = iny + (LK.isDown(keyDown)	and 1 or 0)
-	for _, joystick in pairs(LJ.getJoysticks()) do
-		local ax, ay = 0, 0
-		local bl, br, bu, bd
-		if joystick:isGamepad() then
-			firing = firing or joystick:isGamepadDown(padFire)
-			slowed = slowed or joystick:isGamepadDown(padSlow)
-			ax = joystick:getGamepadAxis(padX)
-			ay = joystick:getGamepadAxis(padY)
-			bl = joystick:isGamepadDown(padLeft)
-			br = joystick:isGamepadDown(padRight)
-			bu = joystick:isGamepadDown(padUp)
-			bd = joystick:isGamepadDown(padDown)
-		else
-			firing = firing or joystick:isDown(joyFire)
-			slowed = slowed or joystick:isDown(joySlow)
-			ax = joystick:getAxis(joyX)
-			ay = joystick:getAxis(joyY)
-			local hat = joystick:getHat(joyHat)
-			bl = hat:find("l")
-			br = hat:find("r")
-			bu = hat:find("u")
-			bd = hat:find("d")
-		end
-		if ax*ax + ay*ay >= deadzonesq then
-			inx = inx + ax
-			iny = iny + ay
-		end
-		inx = inx - (bl and 1 or 0)
-		inx = inx + (br and 1 or 0)
-		iny = iny - (bu and 1 or 0)
-		iny = iny + (bd and 1 or 0)
-	end
-	local insq = inx*inx + iny*iny
-	if insq > 1 then
-		local inmag = sqrt(insq)
-		inx = inx / inmag
-		iny = iny / inmag
-	end
-
-	local speed = slowed and speedSlow or speedNormal
-	local vx, vy = inx*speed, iny*speed
-	player.body:setLinearVelocity(vx, vy)
-	player.body:setAngularVelocity(inx*pi)
-
-	player.firing = firing
-
-	local x, y = player.body:getPosition()
+	coroutines:update(map, dt)
 end
 
 function Shmup.fixedUpdate(map, dt)
-	local firing = player.firing
-	local firewait = player.firewait or 0
-	for i = 1, #guns do
-		local gun = guns[i]
-		gun.visible = firing
-		if firing and firewait <= 0 then
-			local bullet = map:newTileObject(gun, "playershot", "bullet")
-			bullet.lifetime = 0.5
-			bullet:setParent(player.parent)
-			local dir = -pi/2 + bullet.rotation
-			local vx, vy = 1024*cos(dir), 1024*sin(dir)
-			local body = bullet:addBody(world, "dynamic")
-			body:setLinearVelocity(vx, vy)
-		end
-	end
-
-	if firing then
-		if firewait <= 0 then
-			player.firewait = firewait + 1/15
-		else
-			player.firewait = firewait - dt
-		end
-	else
-		player.firewait = 0
-	end
-
+	fixedCoroutines:update(map, dt)
 	world:update(dt)
 	updateBodyTransforms(map, world)
-	updateObjectLifetimes(map, dt)
+end
+
+function Shmup.finish()
+	coroutines = nil
+	fixedCoroutines = nil
 end
 
 return Shmup
