@@ -130,10 +130,9 @@ function Object.onDestroy(object)
 	object:setParent()
 	local body = object.body
 	object.body = nil
-	if body then
+	if body and not body:isDestroyed() then
 		body:setUserData(nil)
 		body:destroy()
-		body = nil
 	end
 end
 
