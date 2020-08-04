@@ -271,7 +271,7 @@ local function co_player_update(player, map, dt)
 		local vx, vy = inx*speed, iny*speed
 		player.body:setLinearVelocity(vx, vy)
 		player.body:setAngularVelocity(inx*pi)
-
+		player:updateFromBody()
 		player.firing = firing
 		coyield()
 	end
