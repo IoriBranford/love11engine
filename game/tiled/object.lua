@@ -116,6 +116,8 @@ function Object.updateFromBody(object)
 	if body then
 		object.x, object.y = body:getPosition()
 		object.rotation = body:getAngle()
+		object.velx, object.vely = body:getLinearVelocity()
+		object.velrotation = body:getAngularVelocity()
 	end
 end
 

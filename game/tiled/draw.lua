@@ -99,20 +99,11 @@ function draw.object(object, parent, map, lerp)
 		local tileoffsety = tileset.tileoffsety
 		local image = tile.image or tileset.image
 		local quad = tile.quad
-		local dx, dy, dr
-		--local body = object.body
-		--if body and not body:isDestroyed() then
-		--	dx, dy = body:getLinearVelocity()
-		--	dx = dx * lerp
-		--	dy = dy * lerp
-		--	dr = body:getAngularVelocity() * lerp
-		--end
-
 		if quad then
-			LG.draw(image, quad, dx, dy, dr, 1, 1,
+			LG.draw(image, quad, 0, 0, 0, 1, 1,
 				tileoffsetx, tileoffsety)
 		else
-			LG.draw(image, dx, dy, dr, 1, 1,
+			LG.draw(image, 0, 0, 0, 1, 1,
 				tileoffsetx, tileoffsety)
 		end
 	end
@@ -183,6 +174,12 @@ local function drawRecursive(node, parent, map, lerp)
 	local x, y = node.x or 0, node.y or 0
 	local r = node.rotation or 0
 	local sx, sy = node.scalex or 1, node.scaley or 1
+	local dx = (node.velx or 0) * lerp
+	local dy = (node.vely or 0) * lerp
+	local dr = (node.velrotation or 0) * lerp
+	x = x + dx
+	y = y + dy
+	r = r + dr
 	LG.translate(x, y)
 	LG.rotate(r)
 	LG.scale(sx, sy)
