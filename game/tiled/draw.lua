@@ -1,4 +1,5 @@
 local type = type
+local sort = table.sort
 local LG = love.graphics
 
 local draw = {}
@@ -161,6 +162,16 @@ function draw.objectgroup(objectgroup, map, _, lerp)
 	if spritebatch then
 		LG.draw(spritebatch)
 		return true
+	end
+	if objectgroup.draworder ~= "index" then
+		sort(objectgroup, function(a, b)
+			local avy = a.vely or 0
+			local bvy = b.vely or 0
+			local ay = a.y + avy*lerp
+			local by = b.y + bvy*lerp
+			local dy = ay - by
+			return dy < 0 or (dy == 0 and a.id < b.id)
+		end)
 	end
 end
 

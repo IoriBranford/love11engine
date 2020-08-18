@@ -99,17 +99,6 @@ function update.object(object, parent, map, dt)
 	end
 end
 
-local function sortTopDown(a, b)
-	local dy = a.y - b.y
-	return dy < 0 or (dy == 0 and a.id < b.id)
-end
-
-function update.objectgroup(objectgroup, map, map, dt)
-	if objectgroup.draworder ~= "index" then
-		sort(objectgroup, sortTopDown)
-	end
-end
-
 local function updateRecursive(node, parent, map, dt)
 	if not update[node.tag](node, parent, map, dt) then
 		for i = 1, #node do
