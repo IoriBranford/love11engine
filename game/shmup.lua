@@ -184,9 +184,10 @@ local function updateBodyTransforms(map, world)
 end
 
 local function co_waitTime(t, dt)
+	local _
 	while t > 0 do
 		t = t - dt
-		coyield()
+		_, _, dt = coyield()
 	end
 end
 
@@ -273,7 +274,7 @@ local function co_player_update(player, map, dt)
 		player.body:setAngularVelocity(inx*pi)
 		player:updateFromBody()
 		player.firing = firing
-		coyield()
+		player, map, dt = coyield()
 	end
 end
 
@@ -296,16 +297,12 @@ local function co_player_fixedUpdate(player, map, dt)
 			end
 		end
 
-		if firing then
-			if firewait <= 0 then
-				player.firewait = firewait + 1/15
-			else
-				player.firewait = firewait - dt
-			end
+		if firing and firewait <= 0 then
+			player.firewait = firewait + 1/10
 		else
-			player.firewait = 0
+			player.firewait = math.max(0, firewait - dt)
 		end
-		coyield()
+		player, map, dt = coyield()
 	end
 end
 
