@@ -73,13 +73,13 @@ end
 
 local function update(dt)
 	onEvent("update", dt)
+	for filename, map in pairs(maps) do
+		map:update(dt)
+	end
 end
 
 local function fixedUpdate(dt)
 	onEvent("fixedUpdate", dt)
-	for filename, map in pairs(maps) do
-		map:update(dt)
-	end
 end
 
 local stats = {}
