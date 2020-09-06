@@ -19,7 +19,7 @@ fi
 LOVE_VERSION=${LOVE_VERSION:="11.3"}
 LOVE_DIR=love-${LOVE_VERSION}-win${ARCH_BITS}
 LOVE_ZIP=${LOVE_DIR}.zip
-LOVE_URL=https://bitbucket.org/rude/love/downloads/${LOVE_ZIP}
+LOVE_URL=https://github.com/love2d/love/releases/download/${LOVE_VERSION}/${LOVE_ZIP}
 
 GME_VERSION=0.6.2
 GME_MSVC=msvc12
@@ -46,14 +46,21 @@ fi
 cat ${LOVE_DIR}/lovec.exe ${GAME_ASSET} > game-win/${PROJECT}.exe
 cp ${LOVE_DIR}/*.dll game-win
 
-ICO=${ICO:=${LOVE_DIR}/game.ico}
+ICO=appicon.ico
 if [ -e $ICO ]
 then
 	if ! [ -e ${RCEDIT} ]
 	then
 		wget -N ${RCEDIT_URL}
 	fi
-	wine ${RCEDIT} game-win/${PROJECT}.exe --set-icon "$ICO"
+	case $(uname | tr '[:upper:]' '[:lower:]') in
+		windows*|mingw*|msys*|cygwin*)
+			;;
+		*)
+			WINE="${CI+xvfb-run} wine"
+			;;
+	esac
+	${WINE} ${RCEDIT} game-win/${PROJECT}.exe --set-icon "$ICO"
 fi
 
 if [ -e gme.dll ]

@@ -20,35 +20,35 @@ stages:
 image: alpine:latest
 
 before_script:
-        - apk add --update zip git
+        - apk add --update git zip luajit
 
 .debian:
         <<: &debian
                 before_script:
                         - apt-get update
-                        - apt-get install -y -qq zip git
+                        - apt-get install -y -qq git zip luajit
 
+# variables:
+#   GAME_ASSET: "filename of the output love package"
 .build-data: &build-data
         stage: build
-        variables:
-                GAME_ASSET: "${PROJECT}.love"
         script:
                 - apk add wget xz
                 - ./make-game.sh
         artifacts:
                 name: "${PROJECT}-${VERSION}-data"
                 paths:
-                        - "${PROJECT}.love"
+                        - "${GAME_ASSET}"
 
+# variables:
+#   ARCH_BITS: "64 or 32"
+#   GAME_DIR: "name of the output game folder"
 .build-windows: &build-windows
         <<: *debian
         image: tianon/wine
         stage: build
-        variables:
-                ARCH_BITS: "64"
-                GAME_DIR: "${PROJECT_TITLE}"
         script:
-                - apt-get install -y -qq wget
+                - apt-get install -y -qq wget xvfb
                 - ./make-windows.sh
         cache:
                 key: "${PROJECT}-win-${ARCH_BITS}"
@@ -61,6 +61,8 @@ before_script:
                 paths:
                         - "${PROJECT_TITLE}"
 
+# variables:
+#   ARCH: "target architecture"
 .build-linux: &build-linux
         <<: *debian
         stage: build
@@ -79,10 +81,16 @@ before_script:
                 paths:
                         - ${PROJECT_TITLE_NOSPACE}-${ARCH}.AppImage
 
-osx:
+# variables:
+#   CFBundleIdentifier: "${APPLICATION_ID_BASE} plus type of build if applicable e.g. 'demo'"
+.build-osx: &build-osx
         <<: *debian
         stage: build
         image: fzwoch/osxcross
+        variables:
+                <<: &build-osx-variables
+                        NSHumanReadableCopyright: "${COPYRIGHT}"
+                        INSTALL_NAME_TOOL: x86_64-apple-darwin12-install_name_tool
         script:
                 - apt-get install -y -qq wget
                 - ./make-macosx.sh
@@ -96,23 +104,33 @@ osx:
                         - "${PROJECT_TITLE}.app"
 
 data:
-        <<: *build-data
+  <<: *build-data
+  variables:
+    GAME_ASSET: "${PROJECT}.love"
 
 win-64:
-        <<: *build-windows
+  <<: *build-windows
+  variables:
+    ARCH_BITS: "64"
 
 win-32:
-        <<: *build-windows
-        variables:
-                ARCH_BITS: "32"
+  <<: *build-windows
+  variables:
+    ARCH_BITS: "32"
 
 linux-x86_64:
-        <<: *build-linux
-        variables:
-                ARCH: "x86_64"
+  <<: *build-linux
+  variables:
+    ARCH: "x86_64"
 
 linux-i686:
-        <<: *build-linux
-        image: i386/debian:stretch-slim
-        variables:
-                ARCH: "i686"
+  <<: *build-linux
+  image: i386/debian:stretch-slim
+  variables:
+    ARCH: "i686"
+
+osx:
+  <<: *build-osx
+  variables:
+    CFBundleIdentifier: "${APPLICATION_ID_BASE}"
+    <<: *build-osx-variables

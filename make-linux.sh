@@ -80,6 +80,12 @@ set_property love.desktop Comment "${DESCRIPTION}"
 set_property love.desktop MimeType
 set_property love.desktop Categories "Game;"
 set_property love.desktop NoDisplay "false"
+if [ -f appicon.png ]
+then
+	cp appicon.png ${GAME_APPDIR}
+	set_property love.desktop Icon "appicon"
+fi
+mv love.desktop ${PROJECT_TITLE_NOSPACE}.desktop
 cat usr/bin/love ../${GAME_ASSET} > love-fused
 mv love-fused usr/bin/love
 chmod +x usr/bin/love
