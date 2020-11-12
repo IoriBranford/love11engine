@@ -14,8 +14,9 @@ variables:
         GIT_DEPTH: "1"
         GIT_SUBMODULE_STRATEGY: recursive
 
-rules:
-  - if: '$CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG != null'
+.rules: &rules
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG != null'
 
 stages:
         - build
@@ -34,100 +35,105 @@ before_script:
 # variables:
 #   GAME_ASSET: "filename of the output love package"
 .build-data: &build-data
-        stage: build
-        script:
-                - apk add wget xz
-                - ./make-game.sh
-        artifacts:
-                name: "${PROJECT}-${VERSION}-data"
-                paths:
-                        - "${GAME_ASSET}"
+  <<: *rules
+  stage: build
+  script:
+    - apk add wget xz
+    - ./make-game.sh
+  artifacts:
+    name: "${PROJECT}-${VERSION}-data"
+    paths:
+      - "${GAME_ASSET}"
 
 # variables:
 #   ARCH_BITS: "64 or 32"
 #   GAME_DIR: "name of the output game folder"
 .build-windows: &build-windows
-        <<: *debian
-        image: tianon/wine
-        stage: build
-        script:
-                - apt-get install -y -qq wget
-                - ./make-windows.sh
-        cache:
-                key: "${PROJECT}-win-${ARCH_BITS}"
-                paths:
-                        - "love-${LOVE_VERSION}-win${ARCH_BITS}"
-                        - "bin"
-                        - "rcedit-x64.exe"
-        artifacts:
-                name: "${PROJECT}-${VERSION}-win-${ARCH_BITS}"
-                paths:
-                        - "${PROJECT_TITLE}"
+  <<: *rules
+  <<: *debian
+  image: tianon/wine
+  stage: build
+  script:
+    - apt-get install -y -qq wget
+    - ./make-windows.sh
+  cache:
+    key: "${PROJECT}-win-${ARCH_BITS}"
+    paths:
+      - "love-${LOVE_VERSION}-win${ARCH_BITS}"
+      - "bin"
+      - "rcedit-x64.exe"
+  artifacts:
+    name: "${PROJECT}-${VERSION}-win-${ARCH_BITS}"
+    paths:
+      - "${PROJECT_TITLE}"
 
 # variables:
 #   ARCH: "target architecture"
 .build-linux: &build-linux
-        <<: *debian
-        stage: build
-        image: debian:stretch-slim
-        script:
-                - apt-get install -y -qq file wget fuse libglib2.0-0
-                - ./make-linux.sh
-        cache:
-                key: "${PROJECT}-linux-${ARCH}"
-                paths:
-                        - "love-${LOVE_VERSION}-${ARCH}.AppImage"
-                        - "appimagetool"
-                        - "*.deb"
-        artifacts:
-                name: "${PROJECT}-${VERSION}-linux-${ARCH}"
-                paths:
-                        - ${PROJECT_TITLE_NOSPACE}-${ARCH}.AppImage
+  <<: *rules
+  <<: *debian
+  stage: build
+  image: debian:stretch-slim
+  script:
+    - apt-get install -y -qq file wget fuse libglib2.0-0
+    - ./make-linux.sh
+  cache:
+    key: "${PROJECT}-linux-${ARCH}"
+    paths:
+      - "love-${LOVE_VERSION}-${ARCH}.AppImage"
+      - "appimagetool"
+      - "*.deb"
+  artifacts:
+    name: "${PROJECT}-${VERSION}-linux-${ARCH}"
+    paths:
+      - ${PROJECT_TITLE_NOSPACE}-${ARCH}.AppImage
 
 # variables:
 #   CFBundleIdentifier: "${APPLICATION_ID_BASE} plus type of build if applicable e.g. 'demo'"
 .build-osx: &build-osx
-        <<: *debian
-        stage: build
-        image: fzwoch/osxcross
-        variables:
-                <<: &build-osx-variables
-                        NSHumanReadableCopyright: "${COPYRIGHT}"
-                        INSTALL_NAME_TOOL: x86_64-apple-darwin12-install_name_tool
-        script:
-                - apt-get install -y -qq wget
-                - ./make-macosx.sh
-        cache:
-                key: "${PROJECT}-osx"
-                paths:
-                        - "love.app"
-        artifacts:
-                name: "${PROJECT}-${VERSION}-osx"
-                paths:
-                        - "${PROJECT_TITLE}.app"
+  <<: *rules
+  <<: *debian
+  stage: build
+  image: fzwoch/osxcross
+  variables:
+    <<: &build-osx-variables
+      NSHumanReadableCopyright: "${COPYRIGHT}"
+      INSTALL_NAME_TOOL: x86_64-apple-darwin12-install_name_tool
+  script:
+    - apt-get install -y -qq wget
+    - ./make-macosx.sh
+  cache:
+    key: "${PROJECT}-osx"
+    paths:
+      - "love.app"
+  artifacts:
+    name: "${PROJECT}-${VERSION}-osx"
+    paths:
+      - "${PROJECT_TITLE}.app"
 
 .build-android: &build-android
-        <<: *debian
-        stage: build
-        image: lakoo/android-ndk:28-28.0.3-r19c
-        variables:
-                APPLICATION_ID: "${APPLICATION_ID_BASE}"
-                GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
-        script:
-                - apt-get install -y -qq make file
-                - ./make-android.sh
-        cache:
-                key: "${PROJECT}-android"
-                paths:
-                        - love-apk-src
-                        - apktool.jar
-                        - uber-apk-signer.jar
-                        - apktool
-                        - .gradle
-        artifacts:
-                name: "${PROJECT}-${VERSION}-android"
-                paths:
-                        - "${PROJECT_TITLE_NOSPACE}.apk"
+  <<: *rules
+  <<: *debian
+  stage: build
+  image: lakoo/android-ndk:28-28.0.3-r19c
+  variables:
+    APPLICATION_ID: "${APPLICATION_ID_BASE}"
+    GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+  script:
+    - apt-get install -y -qq make file
+    - ./make-android.sh
+  cache:
+    key: "${PROJECT}-android"
+    paths:
+      - love-apk-src
+      - apktool.jar
+      - uber-apk-signer.jar
+      - apktool
+      - .gradle
+    artifacts:
+      name: "${PROJECT}-${VERSION}-android"
+      paths:
+        - "${PROJECT_TITLE_NOSPACE}.apk"
 
 data:
   <<: *build-data
