@@ -1,4 +1,5 @@
-local engine = require "engine"
+require "pl.strict"
+local mainloop = require "mainloop"
 local LE = love.event
 local LFS = love.filesystem
 local LJ = love.joystick
@@ -8,11 +9,11 @@ local config = {
 	window_width = 480,
 	window_height = 640,
 	window_resizable = false,
-	window_vsync = -1,
+	window_vsync = 0,
 	window_maximize = false
 }
 
-function engine.init(args, baseandargs)
+function mainloop.start(args, baseandargs)
 	local gamepadfile = "gamecontrollerdb.txt"
 	if LFS.getInfo(gamepadfile) then
 		LJ.loadGamepadMappings(gamepadfile)
@@ -29,5 +30,5 @@ function engine.init(args, baseandargs)
 	if config.window_maximize then
 		LW.maximize()
 	end
-	LE.push("load", "shmup.tmx")
+	LE.push("nextphase", "shmup.lua")
 end
