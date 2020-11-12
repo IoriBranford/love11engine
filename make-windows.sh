@@ -46,7 +46,7 @@ fi
 cat ${LOVE_DIR}/lovec.exe ${GAME_ASSET} > game-win/${PROJECT}.exe
 cp ${LOVE_DIR}/*.dll game-win
 
-ICO=appicon.ico
+ICO=${ICO:=${LOVE_DIR}/game.ico}
 if [ -e $ICO ]
 then
 	if ! [ -e ${RCEDIT} ]
@@ -57,7 +57,7 @@ then
 		windows*|mingw*|msys*|cygwin*)
 			;;
 		*)
-			WINE="${CI+xvfb-run} wine"
+			WINE="wine"
 			;;
 	esac
 	${WINE} ${RCEDIT} game-win/${PROJECT}.exe --set-icon "$ICO"

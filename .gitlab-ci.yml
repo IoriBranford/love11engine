@@ -48,7 +48,7 @@ before_script:
         image: tianon/wine
         stage: build
         script:
-                - apt-get install -y -qq wget xvfb
+                - apt-get install -y -qq wget
                 - ./make-windows.sh
         cache:
                 key: "${PROJECT}-win-${ARCH_BITS}"
@@ -102,6 +102,29 @@ before_script:
                 name: "${PROJECT}-${VERSION}-osx"
                 paths:
                         - "${PROJECT_TITLE}.app"
+
+.build-android: &build-android
+        <<: *debian
+        stage: build
+        image: lakoo/android-ndk:28-28.0.3-r19c
+        variables:
+                APPLICATION_ID: "${APPLICATION_ID_BASE}"
+                GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+        script:
+                - apt-get install -y -qq make file
+                - ./make-android.sh
+        cache:
+                key: "${PROJECT}-android"
+                paths:
+                        - love-apk-src
+                        - apktool.jar
+                        - uber-apk-signer.jar
+                        - apktool
+                        - .gradle
+        artifacts:
+                name: "${PROJECT}-${VERSION}-android"
+                paths:
+                        - "${PROJECT_TITLE_NOSPACE}.apk"
 
 data:
   <<: *build-data
