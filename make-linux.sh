@@ -15,6 +15,8 @@ if [ ${ARCH} = x86_64 ]; then
 	DEB_ARCH=amd64
 elif [ ${ARCH} = i686 ]; then
 	DEB_ARCH=i386
+else
+	DEB_ARCH=${ARCH}
 fi
 LOVE_APPIMAGE_URL=https://github.com/love2d/love/releases/download/${LOVE_VERSION}
 LOVE_APPIMAGE=love-${LOVE_VERSION}-${ARCH}.AppImage
@@ -55,6 +57,10 @@ download ${LOVE_APPIMAGE_URL} ${LOVE_APPIMAGE}
 chmod a+x ${LOVE_APPIMAGE}
 
 ./${LOVE_APPIMAGE} --appimage-extract
+if [ -d ${GAME_APPDIR} ]
+then
+	rm -rf ${GAME_APPDIR}
+fi
 mv squashfs-root ${GAME_APPDIR}
 
 #download ${LIBGME_URL} ${LIBGME_DEB}
