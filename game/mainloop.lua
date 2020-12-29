@@ -8,15 +8,14 @@ local mainloop = {
 local phase = {}
 local fixedupdatecounter = 0
 
-local function changephase(nextphasefile, args)
-	assets.clear()
+local function changephase(nextphase, args)
 	if phase.quit then
 		phase.quit()
 	end
 	phase = nil
 	collectgarbage()
 
-	phase = assets.get(nextphasefile)
+	phase = require(nextphase)
 	if phase.load then
 		phase.load(args)
 	end
@@ -36,7 +35,6 @@ function love.run()
 	if love.timer then love.timer.step() end
 
 	local dt = 0
-	local _
 
 	-- Main loop time.
 	return function()
@@ -69,12 +67,14 @@ function love.run()
 
 		if phase then
 			if phase.fixedupdate then
-				fixedupdatecounter = fixedupdatecounter + dt*mainloop.fixedupdaterate
-				fixedupdatecounter = math.min(fixedupdatecounter, mainloop.fixedupdatelimit)
-				while fixedupdatecounter >= 1 do
+				fixedupdatecounter = fixedupdatecounter
+					+ dt*mainloop.fixedupdaterate
+				local n, f = math.modf(fixedupdatecounter)
+				n = math.min(n, mainloop.fixedupdatelimit)
+				fixedupdatecounter = f
+				for i = 1, n do
 					phase.fixedupdate()
 					collectgarbage("step", 1)
-					fixedupdatecounter = fixedupdatecounter - 1
 				end
 			end
 
