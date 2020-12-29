@@ -8,7 +8,6 @@
 
 local Assets = require "assets"
 local LG = love.graphics
-local pretty = require "pl.pretty"
 
 local Aseprite = {}
 Aseprite.__index = Aseprite

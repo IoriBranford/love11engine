@@ -1,43 +1,63 @@
 local LA = love.audio
 local LFS = love.filesystem
 local LG = love.graphics
-local json = require "json"
-local pl_xml = require "pl.xml"
 
 local Assets = {}
 
 local cache = {}
 
-local load = {}
-setmetatable(load, {
+local loaders = {}
+setmetatable(loaders, {
 	__index = function()
 		return LFS.read
 	end
 })
 
-function load.xml(filename)
-	local text, err = load.file(filename)
-	if text then
-		return pl_xml.parse(text)
+function loaders.tmx(filename)
+	local text, err = loaders.file(filename)
+	if not text then
+		return text, err
 	end
-	return text, err
-end
 
-function load.tmx(filename)
-	local doc, err = load.xml(filename)
-	if doc then
-		local tiled = require "tiled"
-		return tiled.load(doc, filename)
+	local filedir = filename:match("(.*/)") or ""
+	local handlers = {}
+
+	function handlers.startElement(name)
+		handlers.attribute = handlers[name.."Attr"]
 	end
-	return doc, err
+
+	function handlers.tilesetAttr(attr, value)
+		if attr == "source" then
+			Assets.get(filedir..value)
+		end
+	end
+
+	function handlers.objectAttr(attr, value)
+		if attr == "template" then
+			Assets.get(filedir..value)
+		end
+	end
+
+	function handlers.imageAttr(attr, value)
+		if attr == "source" then
+			Assets.get(filedir..value)
+		end
+	end
+
+	local slaxml = require "slaxml"
+	local parser = slaxml:parser(handlers)
+	parser:parse(text)
+
+	local slaxdom = require "slaxdom"
+	return slaxdom:dom(text)
 end
+loaders.tsx = loaders.tmx
+loaders.tx = loaders.tmx
 
-load.tsx = load.tmx
-load.tx = load.tmx
-
-function load.json(filename)
-	local text, err = load.file(filename)
+function loaders.json(filename)
+	local text, err = loaders.file(filename)
 	if text then
+		local json = require "json"
 		local ok, doc = pcall(json.decode, text)
 		if not ok then
 			return nil, doc
@@ -52,7 +72,7 @@ function load.json(filename)
 	return text, err
 end
 
-function load.fnt(filename, ...)
+function loaders.fnt(filename, ...)
 	local ok, font = pcall(LG.newFont, filename, ...)
 	if not ok then
 		return nil, font
@@ -60,14 +80,14 @@ function load.fnt(filename, ...)
 	return font
 end
 
-load.ttf = load.fnt
-load.otf = load.fnt
+loaders.ttf = loaders.fnt
+loaders.otf = loaders.fnt
 
-function load.defaultFont(filename, ...)
+function loaders.defaultFont(filename, ...)
 	return LG.newFont(...)
 end
 
-function load.png(filename, ...)
+function loaders.png(filename, ...)
 	local ok, image = pcall(LG.newImage, filename, ...)
 	if not ok then
 		return nil, image
@@ -75,31 +95,33 @@ function load.png(filename, ...)
 	return image
 end
 
-function load.lua(filename)
-	local module, err = LFS.load(filename)
-	if module then
-		return module()
+function loaders.lua(filename)
+	local code, err = LFS.load(filename)
+	if code then
+		return code()
 	end
-	return module, err
+	return code, err
 end
 
 local function load_audio_stream(filename)
 	return LA.newSource(filename, "stream")
 end
 
-local function load_audio_guessSourceType(filename)
-	local maxsize = 1048576
-	local sourcetype = LFS.getInfo(filename).size >= maxsize and "stream"
-								or "static"
+local function load_audio(filename, sourcetype)
+	if not sourcetype then
+		local maxsize = 1048576
+		sourcetype = LFS.getInfo(filename).size >= maxsize
+			and "stream" or "static"
+	end
 	return LA.newSource(filename, sourcetype)
 end
 
-load.wav = load_audio_guessSourceType
-load.ogg = load_audio_guessSourceType
-load.xm = load_audio_stream
-load.mod = load_audio_stream
-load.s3m = load_audio_stream
-load.it = load_audio_stream
+loaders.wav = load_audio
+loaders.ogg = load_audio
+loaders.xm = load_audio_stream
+loaders.mod = load_audio_stream
+loaders.s3m = load_audio_stream
+loaders.it = load_audio_stream
 
 local function assetName(filename, ...)
 	local assetname = filename
@@ -133,13 +155,19 @@ function Assets.get(filename, ...)
 	if asset == nil then
 		local ext = filename:match('%.(%w-)$') or "file"
 		local err
-		asset, err = load[ext](filename, ...)
+		asset, err = loaders[ext](filename, ...)
 		if err then
 			print(filename..': '..err)
 		end
 		cache[assetname] = asset or false
+		--DEBUG
+		--if asset then print(assetname) end
 	end
 	return asset
+end
+
+function Assets.put(assetname, asset)
+	cache[assetname] = asset
 end
 
 return Assets
