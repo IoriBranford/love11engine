@@ -102,11 +102,11 @@ local function load_cel(cel, filename, ase, layers, image)
 	ase.height = size.h
 end
 
-local function loadAseprite(doc, anchorx, anchory)
+local function loadAseprite(doc, cwd)
 	local cels = doc.frames
 	local meta = doc.meta
 	local image = meta.image
-	image = Assets.get(image)
+	image = Assets.get(cwd..image)
 	image:setFilter("nearest", "nearest")
 
 	local layers = meta.layers
@@ -163,9 +163,7 @@ local function loadAseprite(doc, anchorx, anchory)
 	ase.animations = animations
 	
 	setmetatable(ase, Aseprite)
-	anchorx = anchorx or 0
-	anchory = anchory or 0
-	ase:setAnchor(anchorx, anchory)
+	ase:setAnchor(0, 0)
 	return ase
 end
 
