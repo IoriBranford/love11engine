@@ -1,0 +1,23 @@
+{ "columns":1,
+ "editorsettings":
+    {
+     "export":
+        {
+         "format":"",
+         "target":"."
+        }
+    },
+ "image":"title.png",
+ "imageheight":50,
+ "imagewidth":200,
+ "margin":0,
+ "name":"title",
+ "objectalignment":"topleft",
+ "spacing":0,
+ "tilecount":1,
+ "tiledversion":"1.4.3",
+ "tileheight":50,
+ "tilewidth":200,
+ "type":"tileset",
+ "version":1.4
+}

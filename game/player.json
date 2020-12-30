@@ -1,0 +1,24 @@
+{ "object":
+    {
+     "gid":1,
+     "height":64,
+     "id":55,
+     "name":"",
+     "properties":[
+            {
+             "name":"coroutine",
+             "type":"string",
+             "value":"waitCoroutine"
+            }],
+     "rotation":0,
+     "type":"",
+     "visible":true,
+     "width":64
+    },
+ "tileset":
+    {
+     "firstgid":1,
+     "source":"tilesets\/player.json"
+    },
+ "type":"template"
+}
