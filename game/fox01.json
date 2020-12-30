@@ -1,0 +1,18 @@
+{ "object":
+    {
+     "gid":33,
+     "height":120,
+     "id":1,
+     "name":"player",
+     "rotation":0,
+     "type":"",
+     "visible":true,
+     "width":120
+    },
+ "tileset":
+    {
+     "firstgid":1,
+     "source":"tilesets\/fox01.json"
+    },
+ "type":"template"
+}

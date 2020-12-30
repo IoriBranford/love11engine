@@ -13,47 +13,30 @@ setmetatable(loaders, {
 	end
 })
 
-function loaders.tmx(filename)
+function loaders.xml(filename)
 	local text, err = loaders.file(filename)
 	if not text then
 		return text, err
 	end
 
-	local filedir = filename:match("(.*/)") or ""
-	local handlers = {}
-
-	function handlers.startElement(name)
-		handlers.attribute = handlers[name.."Attr"]
-	end
-
-	function handlers.tilesetAttr(attr, value)
-		if attr == "source" then
-			Assets.get(filedir..value)
-		end
-	end
-
-	function handlers.objectAttr(attr, value)
-		if attr == "template" then
-			Assets.get(filedir..value)
-		end
-	end
-
-	function handlers.imageAttr(attr, value)
-		if attr == "source" then
-			Assets.get(filedir..value)
-		end
-	end
-
-	local slaxml = require "slaxml"
-	local parser = slaxml:parser(handlers)
-	parser:parse(text)
-
 	local slaxdom = require "slaxdom"
-	return slaxdom:dom(text)
+	local doc = slaxdom:dom(text)
+	return doc
+end
+--[[
+function loaders.tmx(filename)
+	local doc, err = loaders.xml(filename)
+	if not doc then
+		return doc, err
+	end
+
+	local cwd = filename:match("(.*/)") or ""
+	local tiled = require "tiled"
+	tiled.parsedocument(doc, cwd)
 end
 loaders.tsx = loaders.tmx
 loaders.tx = loaders.tmx
-
+]]
 function loaders.json(filename)
 	local text, err = loaders.file(filename)
 	if text then
@@ -63,9 +46,14 @@ function loaders.json(filename)
 			return nil, doc
 		end
 
+		local cwd = filename:match("(.*/)") or ""
 		if doc.meta and doc.meta.app == "http://www.aseprite.org/" then
 			local aseprite = require "aseprite"
-			return aseprite.load(doc)
+			return aseprite.load(doc, cwd)
+		end
+		if doc.tiledversion or doc.type == "template" then
+			local tiled = require "tiled"
+			return tiled.loadelement(doc, cwd)
 		end
 		return doc
 	end

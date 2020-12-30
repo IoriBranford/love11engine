@@ -4,7 +4,7 @@ local unit = require "unit"
 local shmup = {}
 
 function shmup.load()
-	assets.get("shmup.tmx")
+	shmup.map = assets.get("shmup.json")
 	love.graphics.setLineStyle("rough")
 	assets.get(".defaultFont"):setFilter("nearest", "nearest")
 	shmup.canvas = love.graphics.newCanvas(480, 640)
@@ -34,7 +34,8 @@ end
 
 function shmup.draw(lerp)
 	love.graphics.setCanvas(shmup.canvas)
-	love.graphics.clear(.5, .5, 1)
+	love.graphics.clear(shmup.map.backgroundcolor)
+	shmup.map:draw()
 	unit.drawall(lerp)
 	love.graphics.setCanvas()
 
