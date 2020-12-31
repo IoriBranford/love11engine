@@ -24,5 +24,5 @@ function mainloop.start(args, baseandargs)
 	if prefs.window_maximize then
 		LW.maximize()
 	end
-	LE.push("nextphase", "shmup")
+	LE.push("nextphase", "shmup", args)
 end

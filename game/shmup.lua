@@ -1,42 +1,46 @@
 local assets = require "assets"
 local player = require "player"
-local unit = require "unit"
+local world = require "world"
 local shmup = {}
 
-function shmup.load()
-	shmup.map = assets.get("shmup.json")
+function shmup.load(args)
+	local commandline = args[1]
+	local mapfile = commandline and commandline[1]
+	mapfile = mapfile and love.filesystem.getInfo(mapfile) and mapfile or "shmup.json"
+	shmup.map = assets.get(mapfile)
+
 	love.graphics.setLineStyle("rough")
 	assets.get(".defaultFont"):setFilter("nearest", "nearest")
 	shmup.canvas = love.graphics.newCanvas(480, 640)
 	shmup.canvas:setFilter("nearest", "nearest")
 
-	unit.load()
-	unit.world:add({ team = "boundary" }, -16, 0, 16, 640)
-	unit.world:add({ team = "boundary" }, 480, 0, 16, 640)
-	unit.world:add({ team = "boundary" }, 0, -16, 480, 16)
-	unit.world:add({ team = "boundary" }, 0, 640, 480, 16)
+	world.load()
+	world.physics_world:add({ team = "boundary" }, -16, 0, 16, 640)
+	world.physics_world:add({ team = "boundary" }, 480, 0, 16, 640)
+	world.physics_world:add({ team = "boundary" }, 0, -16, 480, 16)
+	world.physics_world:add({ team = "boundary" }, 0, 640, 480, 16)
 
 	shmup.player = player.create(240, 640)
 end
 
 function shmup.quit()
-	unit.quit()
+	world.quit()
 	assets.clear()
 end
 
 function shmup.fixedupdate()
-	unit.fixedupdateall()
+	world.fixedupdate()
 end
 
 function shmup.update(dt)
-	unit.updateall(dt)
+	world.update(dt)
 end
 
 function shmup.draw(lerp)
 	love.graphics.setCanvas(shmup.canvas)
 	love.graphics.clear(shmup.map.backgroundcolor)
 	shmup.map:draw()
-	unit.drawall(lerp)
+	world.draw(lerp)
 	love.graphics.setCanvas()
 
 	local graphicshalfw = love.graphics.getWidth()/2

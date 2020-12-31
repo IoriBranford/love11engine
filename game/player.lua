@@ -1,21 +1,21 @@
+local world = require "world"
 local unit = require "unit"
 
-local player = {
-	states = {
-		playing = {},
-		entering = { timeout = 30, timeoutstate = "playing" }
-	}
+local player = {}
+local states = {
+	playing = {},
+	entering = { timeout = 30, timeoutstate = "playing" }
 }
 
 function player.create(x, y)
-	local p = unit.create(x, y)
-	p.states = player.states
-	unit.setstate(p, "entering")
+	local p = world.createunit(x, y)
+	p.states = states
+	p:enterstate("entering")
 	return p
 end
 
-function player.states.entering:onenter()
-	self.velocity_y = -8
+function states.entering:onenter()
+	self.move_dy = -8
 	self.face_x = 0
 	self.face_y = -1
 	self.firetimer = 0
@@ -24,19 +24,13 @@ function player.states.entering:onenter()
 	end
 end
 
-function player.states.entering:fixedupdate()
-	if self.velocity_y < 0 then
-		self.velocity_y = self.velocity_y + 1
+function states.entering:think()
+	if self.move_dy < 0 then
+		self.move_dy = self.move_dy + 1
 	end
-	local newx, newy, colls, numcolls = unit.world:move(self,
-		self.aabb_x + self.velocity_x,
-		self.aabb_y + self.velocity_y,
-		self.aabb_filter)
-	self.aabb_x = newx
-	self.aabb_y = newy
 end
 
-function player.states.playing:onenter()
+function states.playing:onenter()
 	self.aabb_filter = function(self, other)
 		if other.team == "boundary" then
 			return "slide"
@@ -45,44 +39,33 @@ function player.states.playing:onenter()
 	end
 end
 
-function player.states.playing:update(dt)
-	local velocity_x, velocity_y = 0, 0
-	if love.keyboard.isDown("left"	) then velocity_x = velocity_x - 2 end
-	if love.keyboard.isDown("right"	) then velocity_x = velocity_x + 2 end
-	if love.keyboard.isDown("up"	) then velocity_y = velocity_y - 2 end
-	if love.keyboard.isDown("down"	) then velocity_y = velocity_y + 2 end
-	self.velocity_x = velocity_x
-	self.velocity_y = velocity_y
+function states.playing:update(dt)
+	local move_dx, move_dy = 0, 0
+	if love.keyboard.isDown("left"	) then move_dx = move_dx - 2 end
+	if love.keyboard.isDown("right"	) then move_dx = move_dx + 2 end
+	if love.keyboard.isDown("up"	) then move_dy = move_dy - 2 end
+	if love.keyboard.isDown("down"	) then move_dy = move_dy + 2 end
+	self.move_dx = move_dx
+	self.move_dy = move_dy
 end
 
-function player.states.playing:fixedupdate()
-	local newx, newy, colls, numcolls = unit.world:move(self,
-		self.aabb_x + self.velocity_x,
-		self.aabb_y + self.velocity_y,
-		self.aabb_filter)
-	self.aabb_x = newx
-	self.aabb_y = newy
+function states.playing:think()
 	if self.firetimer <= 0 and love.keyboard.isDown("space") then
 		self.firetimer = 6
-		local cx = newx + self.aabb_w/2
-		local cy = newy + self.aabb_h/2
-		local bullet = unit.create(cx, cy)
+		local cx = self.aabb_x + self.aabb_w/2
+		local cy = self.aabb_y + self.aabb_h/2
+		local bullet = world.createunit(cx, cy)
 		bullet.face_x = 0
 		bullet.face_y = -1
 		bullet.lifetime = 30
-		bullet.velocity_y = -8
-		function bullet:fixedupdate()
-			local newx, newy, colls, numcolls = unit.world:move(self,
-				self.aabb_x + self.velocity_x,
-				self.aabb_y + self.velocity_y,
-				function(self, other)
-					return "cross"
-				end)
-			self.aabb_x = newx
-			self.aabb_y = newy
+		bullet.move_dy = -8
+		bullet.aabb_filter = function(self, other)
+			return "cross"
+		end
+		function bullet:think()
 			self.lifetime = self.lifetime - 1
 			if self.lifetime <= 0 then
-				unit.expire(self)
+				world.expireunit(self)
 			end
 		end
 	else
