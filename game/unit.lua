@@ -1,7 +1,15 @@
-local unit = {}
+local unit = {
+	nextid = 1
+}
 unit.__index = unit
 
-function unit.create(cx, cy, template, world)
+function unit.load(nextid)
+	unit.nextid = nextid or 1
+end
+
+function unit.create(cx, cy, template)
+	local id = unit.nextid
+	unit.nextid = id + 1
 	local w, h = 8, 8
 	local facex, facey = 1, 0
 	local move_dx, move_dy = 0, 0
@@ -11,36 +19,46 @@ function unit.create(cx, cy, template, world)
 	end
 
 	local x, y = cx - w/2, cy - h/2
-	local move_x = x + move_dx
-	local move_y = y + move_dy
+	local moved_x = x + move_dx
+	local moved_y = y + move_dy
 
-	local u = setmetatable({
+	local u = {
+		id = id,
 		face_x = facex,
 		face_y = facey,
 		aabb_x = x,
 		aabb_y = y,
 		aabb_w = w,
 		aabb_h = h,
-		move_x = move_x,
-		move_y = move_y,
+		moved_x = moved_x,
+		moved_y = moved_y,
 		move_dx = move_dx,
 		move_dy = move_dy
-	}, unit)
-	if world then
-		world:add(u, x, y, w, h)
-	end
+	}
+	setmetatable(u, unit)
 	return u
 end
 
+function unit:addtoworld(world)
+	world:add(self.id, self.aabb_x, self.aabb_y, self.aabb_w, self.aabb_h)
+end
+
+function unit:removefromworld(world)
+	local id = self.id
+	if world:hasItem(id) then
+		world:remove(id)
+	end
+end
+
 function unit:move(world)
-	if not world:hasItem(self) then
+	if not world:hasItem(self.id) then
 		return
 	end
-	local move_x = self.aabb_x + self.move_dx
-	local move_y = self.aabb_y + self.move_dy
-	self.move_x, self.move_y = move_x, move_y
-	self.aabb_x, self.aabb_y, self.aabb_collisions = world:move(self,
-		move_x, move_y, self.aabb_filter)
+	local moved_x = self.aabb_x + self.move_dx
+	local moved_y = self.aabb_y + self.move_dy
+	self.moved_x, self.moved_y = moved_x, moved_y
+	self.aabb_x, self.aabb_y, self.aabb_collisions = world:move(self.id,
+		moved_x, moved_y, self.aabb_filter)
 end
 
 function unit:enterstate(statename)
@@ -84,4 +102,47 @@ function unit:fixedupdate()
 	end
 end
 
+function unit:draw(lerp, world)
+	local lerpdx = self.move_dx * lerp
+	local lerpdy = self.move_dy * lerp
+	local lerpx = self.aabb_x + lerpdx
+	local lerpy = self.aabb_y + lerpdy
+
+	local newx, newy = world:check(self.id, lerpx, lerpy, self.aabb_filter)
+	if newx ~= lerpx then
+		lerpdx = 0
+	end
+	if newy ~= lerpy then
+		lerpdy = 0
+	end
+
+	local texture, quad = self.sprite_texture, self.sprite_quad
+	local x, y = self.sprite_x, self.sprite_y
+	if texture and x and y then
+		x = x + lerpdx
+		y = y + lerpdy
+		local r = self.sprite_rotation or 0
+		local sx = self.sprite_scalex or 1
+		local sy = self.sprite_scaley or 1
+		local ox = self.sprite_originx or 0
+		local oy = self.sprite_originy or 0
+		if quad then
+			love.graphics.draw(texture, quad, x, y,
+				r, sx, sy, ox, oy)
+		else
+			love.graphics.draw(texture, x, y,
+				r, sx, sy, ox, oy)
+		end
+	else
+		x = self.aabb_x
+		y = self.aabb_y
+		local w = self.aabb_w
+		local h = self.aabb_h
+		x = x + lerpdx
+		y = y + lerpdy
+		love.graphics.rectangle("line", x, y, w, h)
+		local cx, cy = x + w/2, y + h/2
+		love.graphics.line(cx, cy, cx + self.face_x*16, cy + self.face_y*16)
+	end
+end
 return unit

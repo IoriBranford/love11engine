@@ -19,9 +19,7 @@ function states.entering:onenter()
 	self.face_x = 0
 	self.face_y = -1
 	self.firetimer = 0
-	self.aabb_filter = function(self, other)
-		return "cross"
-	end
+	self.aabb_filter = function() end
 end
 
 function states.entering:think()
@@ -31,11 +29,12 @@ function states.entering:think()
 end
 
 function states.playing:onenter()
-	self.aabb_filter = function(self, other)
-		if other.team == "boundary" then
-			return "slide"
+	self.aabb_filter = function(self, otherid)
+		local other = world.getunit(otherid)
+		if other then
+			return "cross"
 		end
-		return "cross"
+		return "slide"
 	end
 end
 
@@ -59,7 +58,7 @@ function states.playing:think()
 		bullet.face_y = -1
 		bullet.lifetime = 30
 		bullet.move_dy = -8
-		bullet.aabb_filter = function(self, other)
+		bullet.aabb_filter = function(self, otherid)
 			return "cross"
 		end
 		function bullet:think()
