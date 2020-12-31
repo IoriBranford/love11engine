@@ -100,7 +100,7 @@ local function drawobjecttile(object, objectgroup)
 	end
 end
 
-local function drawtiles(tilelayer, c1, r1, cols, rows, data)
+local function drawlayertiles(tilelayer, c1, r1, cols, rows, data)
 	local map = tilelayer.map
 	local tiles = map.tiles
 	local cellwidth = map.cellwidth
@@ -134,10 +134,10 @@ function tiled.tilelayer:draw()
 	if chunks then
 		for i = 1, #chunks do
 			local chunk = chunks[i]
-			drawtiles(self, chunk.x, chunk.y, chunk.width, chunk.height, chunk.data)
+			drawlayertiles(self, chunk.x, chunk.y, chunk.width, chunk.height, chunk.data)
 		end
 	else
-		drawtiles(self, 0, 0, self.width, self.height, self.data)
+		drawlayertiles(self, 0, 0, self.width, self.height, self.data)
 	end
 end
 
@@ -223,11 +223,10 @@ local function loadproperties(properties, cwd)
 		local name = property.name
 		properties[name] = property
 		properties[i] = nil
-		--local t = property.type
-		--if t == "file" then
-		--	property.value = cwd..property.value
-		--	assets.get(property.value)
-		--end
+		local t = property.type
+		if t == "file" then
+			property.value = cwd..property.value
+		end
 	end
 end
 
