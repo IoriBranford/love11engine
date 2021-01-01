@@ -84,25 +84,16 @@ local function flip(gid, h, v)
 	return gid
 end
 
-local function drawobjecttile(object, objectgroup)
-	local tileset = object.tileset or objectgroup.map
-	local gid, h, v = unflip(object.gid)
-	local tile = tileset.tiles[gid]
-	if tile then
-		local image = tile.image
-		local quad = tile.quad
-		local originx = tile.objectoriginx
-		local originy = tile.objectoriginy
-		local x = object.x
-		local y = object.y
-		local r = object.rotation
-		love.graphics.draw(image, quad, x, y, r, h, v, originx, originy)
-	end
+local function drawobjecttile(object)
+	local tile = object.tile
+	love.graphics.draw(tile.image, tile.quad, object.x, object.y,
+		object.rotation, object.scalex, object.scaley,
+		tile.objectoriginx, tile.objectoriginy)
 end
 
 local function drawlayertiles(tilelayer, c1, r1, cols, rows, data)
 	local map = tilelayer.map
-	local tiles = map.tiles
+	local tiles = map.tileset
 	local cellwidth = map.cellwidth
 	local cellheight = map.cellheight
 	local i = 1
@@ -115,12 +106,12 @@ local function drawlayertiles(tilelayer, c1, r1, cols, rows, data)
 			if tile then
 				local image = tile.image
 				local quad = tile.quad
-				local originx = tile.layeroriginx
-				local originy = tile.layeroriginy
-				love.graphics.draw(image, quad,
+				love.graphics.draw(tile.image, tile.quad,
 					x + tile.layeroffsetx,
 					y + tile.layeroffsety,
-					0, h, v, originx, originy)
+					0, h, v,
+					tile.layeroriginx,
+					tile.layeroriginy)
 			end
 			i = i + 1
 			x = x + cellwidth
@@ -144,7 +135,7 @@ end
 local function batchtiles(tilelayer, c1, r1, cols, rows, data)
 	local batch = tilelayer.spritebatch
 	local map = tilelayer.map
-	local tiles = map.tiles
+	local tiles = map.tileset
 	local cellwidth = map.cellwidth
 	local cellheight = map.cellheight
 	--TODO
@@ -275,6 +266,23 @@ local function drawobjecttext(object)
 	love.graphics.printf(str, font, object.x, object.y + y, wrap and width, halign)
 end
 
+local function initobjectdraw(object)
+	local gid = object.gid
+	local text = object.text
+	if gid then
+		gid, object.scalex, object.scaley = unflip(gid)
+		local tile = object.tileset[gid]
+		object.tile = tile
+		object.gid = gid
+		object.scalex = object.scalex * object.width/tile.width
+		object.scaley = object.scaley * object.height/tile.height
+		object.draw = drawobjecttile
+	elseif text then
+		loadtext(text, cwd)
+		object.draw = drawobjecttext
+	end
+end
+
 local function initobjectfromtemplate(object, template)
 	object.template = template
 	template = assets.get(template)
@@ -296,30 +304,20 @@ local function initobjectfromtemplate(object, template)
 		end
 	end
 	object.properties = properties
-	object.tileset = template.tileset
+	initobjectdraw(object)
 end
 
-local function loadobject(object, cwd)
+local function loadobject(object, cwd, root)
 	loadproperties(object.properties, cwd)
+	local rotation = object.rotation
+	object.rotation = rotation and math.rad(rotation)
 	local template = object.template
 	if template then
 		template = cwd..template
 		initobjectfromtemplate(object, template)
-		return
-	end
-	local rotation = object.rotation
-	object.rotation = rotation and math.rad(rotation)
-	if object.visible == nil then
-		object.visible = true
-	end
-	local text = object.text
-	if text then
-		loadtext(text, cwd)
-		object.draw = drawobjecttext
-	end
-	local gid = object.gid
-	if gid then
-		object.draw = drawobjecttile
+	else
+		object.tileset = root.tileset
+		initobjectdraw(object)
 	end
 end
 
@@ -330,7 +328,9 @@ local function loadobjectgroup(objectgroup, cwd, root)
 	end
 	local objects = objectgroup.objects
 	for i = 1, #objects do
-		loadobject(objects[i], cwd)
+		local object = objects[i]
+		object.group = objectgroup
+		loadobject(object, cwd, root)
 	end
 end
 tiled.loadobjectgroup = loadobjectgroup
@@ -382,20 +382,15 @@ local alignmentorigins = {
 }
 
 local function loadtileset(tileset, cwd)
+	if not tileset then return end
 	local source = tileset.source
 	if source then
 		source = cwd..source
-		tileset.source = nil
-		tileset.loadedsource = source
-		local exttileset = assets.get(source)
-		if exttileset then
-			for k, v in pairs(exttileset) do
-				tileset[k] = v
-			end
-		end
-		return
+		tileset.source = source
+		return assets.get(source)
 	end
 
+	loadproperties(tileset.properties, cwd)
 	local tilewidth = tileset.tilewidth
 	local tileheight = tileset.tileheight
 	local tilewidthhalf = tilewidth/2
@@ -416,18 +411,17 @@ local function loadtileset(tileset, cwd)
 	local objectoriginx = -tileoffsetx + alignx * tilewidth
 	local objectoriginy = -tileoffsety + aligny * tileheight
 
-	loadproperties(tileset.properties, cwd)
 	tileset.image = cwd..tileset.image
 	local image = assets.get(tileset.image)
 	assert(image, "Error loading tileset image "..tileset.image)
-	local tiles = tileset.tiles or {}
-	tileset.tiles = tiles
-	for i = #tiles, 1, -1 do
-		local tile = tiles[i]
-		tiles[i] = nil
-		tiles[tile.id+1] = tile
-		loadproperties(tile.properties, cwd)
-		loadelement(tile.objectgroup, cwd)
+	local tiles = tileset.tiles
+	if tiles then
+		for i = 1, #tiles do
+			local tile = tiles[i]
+			tileset[tile.id+1] = tile
+			loadproperties(tile.properties, cwd)
+			loadelement(tile.objectgroup, cwd)
+		end
 	end
 
 	local tilecount = tileset.tilecount
@@ -437,11 +431,8 @@ local function loadtileset(tileset, cwd)
 	local i = 1
 	for y = 0, (rows-1) * tileheight, tileheight do
 		for x = 0, (columns-1) * tilewidth, tilewidth do
-			local tile = tiles[i]
-			if not tile then
-				tile = {}
-				tiles[i] = tile
-			end
+			local tile = tileset[i] or {}
+			tileset[i] = tile
 			tile.layeroriginx = tilewidthhalf
 			tile.layeroriginy = tileheighthalf
 			tile.layeroffsetx = layeroffsetx
@@ -455,15 +446,13 @@ local function loadtileset(tileset, cwd)
 			i = i + 1
 		end
 	end
+	return tileset
 end
 tiled.loadtileset = loadtileset
 
 function tiled.loadtemplate(template, cwd)
-	local tileset = template.tileset
-	if tileset then
-		loadtileset(tileset, cwd)
-	end
-	loadobject(template.object, cwd)
+	template.tileset = loadtileset(template.tileset, cwd)
+	loadobject(template.object, cwd, template)
 end
 
 function tiled.loadmap(map, cwd)
@@ -477,15 +466,14 @@ function tiled.loadmap(map, cwd)
 
 	loadproperties(map.properties, cwd)
 
-	local alltiles = {}
-	map.tiles = alltiles
+	local maptileset = {}
+	map.tileset = maptileset
 	local tilesets = map.tilesets
 	for i = 1, #tilesets do
-		local tileset = tilesets[i]
-		loadtileset(tileset, cwd, map)
-		local tiles = tileset.tiles
-		for t = 1, #tiles do
-			alltiles[#alltiles+1] = tiles[t]
+		local tileset = loadtileset(tilesets[i], cwd, map)
+		tilesets[i] = tileset
+		for t = 1, #tileset do
+			maptileset[#maptileset+1] = tileset[t]
 		end
 	end
 	--TODO make atlas
